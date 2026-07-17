@@ -7,7 +7,8 @@ import { useZones } from './hooks/useZones.js';
 import { useCategories } from './hooks/useCategories.js';
 import { SEED } from './lib/defaults.js';
 import { daysUntil } from './lib/date.js';
-import { isScanSupported, scanAndLookup, capturePhotoAndReadDate } from './scan/scan.js';
+import { isScanSupported, scanAndLookup } from './scan/scan.js';
+import { captureMhdViaPhoto } from './scan/camera.js';
 
 import { Header } from './components/Header.jsx';
 import { ZoneTabs } from './components/ZoneTabs.jsx';
@@ -19,7 +20,7 @@ import { Toast } from './components/Toast.jsx';
 
 import { AddItemSheet } from './features/add/AddItemSheet.jsx';
 import { EditItemSheet } from './features/edit/EditItemSheet.jsx';
-import { BatchScanSheet } from './features/batch/BatchScanSheet.jsx';
+import { ScanFlowSheet } from './features/scanflow/ScanFlowSheet.jsx';
 import { ShoppingSheet } from './features/shopping/ShoppingSheet.jsx';
 import { ManageZonesSheet } from './features/zones/ManageZonesSheet.jsx';
 import { SettingsSheet } from './features/settings/SettingsSheet.jsx';
@@ -41,7 +42,6 @@ export default function App() {
   // Sheets
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [showBatch, setShowBatch] = useState(false);
   const [showShopping, setShowShopping] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showZones, setShowZones] = useState(false);
@@ -50,8 +50,8 @@ export default function App() {
   const [newItem, setNewItem] = useState({ name: '', zone: null, category: null, qty: 1, unit: 'stk', mhd: null });
   const [scanBusy, setScanBusy] = useState(false);
   const [scanMsg, setScanMsg] = useState('');
-  const [batchItems, setBatchItems] = useState([]);
-  const [batchZone, setBatchZone] = useState(null);
+  const [showScanFlow, setShowScanFlow] = useState(false);
+  const [scanZone, setScanZone] = useState(null);
 
   // Toast / Feedback
   const [deletedItem, setDeletedItem] = useState(null);
@@ -209,14 +209,15 @@ export default function App() {
     setScanMsg('');
     setScanBusy(true);
     try {
-      const { date, text } = await capturePhotoAndReadDate();
+      // Center-Crop vor der OCR isoliert das Datum aus dem Foto.
+      const { date, text } = await captureMhdViaPhoto();
       if (date) {
         if (target === 'edit') setEditItem((s) => ({ ...s, mhd: date }));
         else setNewItem((s) => ({ ...s, mhd: date }));
         setScanMsg('✓ Datum erkannt.');
       } else if (text && text.trim()) {
         const snippet = text.trim().replace(/\s+/g, ' ').slice(0, 45);
-        setScanMsg(`Kein Datum erkannt (gelesen: „${snippet}…"). Näher rangehen und nur das Datum fotografieren.`);
+        setScanMsg(`Kein Datum erkannt (gelesen: „${snippet}…"). Datum mittig ins Bild holen und erneut fotografieren.`);
       } else {
         setScanMsg('Kein Text erkannt – Etikett schärfer/näher fotografieren.');
       }
@@ -227,64 +228,26 @@ export default function App() {
     }
   };
 
-  // -- Batch-Scan -------------------------------------------------------------
-  const openBatch = () => {
-    setBatchZone(activeZone);
+  // -- Geführter Scan-Flow (Barcode -> MHD -> nächstes) -----------------------
+  const openScanFlow = () => {
+    setScanZone(activeZone);
     setScanMsg('');
     setShowAdd(false);
-    setShowBatch(true);
+    setShowScanFlow(true);
   };
 
-  const handleBatchScan = async () => {
-    setScanMsg('');
-    setScanBusy(true);
-    try {
-      const result = await scanAndLookup();
-      if (!result) return;
-      const { barcode, product } = result;
-      setBatchItems((prev) => {
-        const idx = prev.findIndex((b) => b.barcode && b.barcode === barcode);
-        if (idx >= 0 && prev[idx].unit === 'stk') {
-          const next = [...prev];
-          next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
-          return next;
-        }
-        const base = product || { name: '', category: 'Sonstiges', qty: 1, unit: 'stk' };
-        return [...prev, {
-          key: newId('b'), barcode,
-          name: base.name || '', category: base.category || 'Sonstiges',
-          qty: base.qty || 1, unit: base.unit || 'stk', zone: batchZone,
-        }];
-      });
-      setScanMsg(product ? `✓ ${product.name || 'Artikel'} hinzugefügt.` : `Barcode ${barcode} nicht gefunden – Name bitte ergänzen.`);
-    } catch (e) {
-      setScanMsg(e?.message || 'Scan fehlgeschlagen.');
-    } finally {
-      setScanBusy(false);
-    }
-  };
-
-  const updateBatchItem = (key, patch) => setBatchItems((prev) => prev.map((b) => (b.key === key ? { ...b, ...patch } : b)));
-  const removeBatchItem = (key) => setBatchItems((prev) => prev.filter((b) => b.key !== key));
-  const cycleBatchZone = (key) => setBatchItems((prev) => prev.map((b) => {
-    if (b.key !== key) return b;
-    const order = zones.map((z) => z.id);
-    return { ...b, zone: order[(order.indexOf(b.zone) + 1) % order.length] };
-  }));
-
-  const commitBatch = () => {
-    const valid = batchItems.filter((b) => b.name.trim());
+  const commitScanFlow = (scanned) => {
+    setShowScanFlow(false);
+    const valid = (scanned || []).filter((b) => b.name && b.name.trim());
     if (valid.length === 0) return;
     const newOnes = valid.map((b) => ({
-      id: newId(), zone: b.zone, category: b.category, name: b.name.trim(),
-      qty: b.qty > 0 ? b.qty : 1, unit: b.unit, mhd: null,
+      id: newId(), zone: b.zone || scanZone, category: b.category || categories[0],
+      name: b.name.trim(), qty: b.qty > 0 ? b.qty : 1, unit: b.unit || 'stk', mhd: b.mhd || null,
     }));
     setItems((prev) => [...prev, ...newOnes]);
     setShopping((prev) => prev.filter((s) =>
       !newOnes.some((n) => n.name.toLowerCase() === s.name.toLowerCase() && (s.zone === n.zone || s.zone === null))));
-    setBatchItems([]);
-    setShowBatch(false);
-    setActiveZone(batchZone);
+    if (newOnes[0]) setActiveZone(newOnes[0].zone);
   };
 
   // -- Einkaufsliste ----------------------------------------------------------
@@ -412,7 +375,8 @@ export default function App() {
   const totalInZone = grouped.reduce((sum, [, list]) => sum + list.length, 0);
 
   return (
-    <div style={{ minHeight: '100dvh', background: t.bg, paddingBottom: 110 }}>
+    <>
+    <div className="gt-hide-while-scanning" style={{ minHeight: '100dvh', background: t.bg, paddingBottom: 110 }}>
       {/* Kopf + Tabs bleiben oben kleben */}
       <div style={{ position: 'sticky', top: 0, zIndex: 10, background: t.bg }}>
         <Header
@@ -478,7 +442,7 @@ export default function App() {
         zones={zones} categories={categories} onAddCategory={addCategory}
         newItem={newItem} setNewItem={setNewItem}
         scanSupported={scanSupported} scanBusy={scanBusy} scanMsg={scanMsg}
-        onScanBarcode={handleScanBarcode} onScanDate={handleScanDate} onOpenBatch={openBatch} onSubmit={addItem}
+        onScanBarcode={handleScanBarcode} onScanDate={handleScanDate} onOpenBatch={openScanFlow} onSubmit={addItem}
       />
 
       <EditItemSheet
@@ -486,14 +450,6 @@ export default function App() {
         t={t} dark={dark} zones={zones} categories={categories} onAddCategory={addCategory}
         scanSupported={scanSupported} scanBusy={scanBusy} scanMsg={scanMsg}
         onScanDate={handleScanDate} onSave={saveEdit} onDelete={deleteFromEdit}
-      />
-
-      <BatchScanSheet
-        open={showBatch} onClose={() => setShowBatch(false)} t={t} dark={dark} zones={zones}
-        batchZone={batchZone} setBatchZone={setBatchZone} batchItems={batchItems}
-        scanBusy={scanBusy} scanMsg={scanMsg}
-        onScan={handleBatchScan} onUpdateItem={updateBatchItem} onRemoveItem={removeBatchItem}
-        onCycleZone={cycleBatchZone} onCommit={commitBatch}
       />
 
       <ShoppingSheet
@@ -516,6 +472,16 @@ export default function App() {
         onAdd={addZone} onUpdate={updateZone} onRemove={removeZoneWithReassign}
       />
     </div>
+
+    {/* Der geführte Scan-Flow liegt außerhalb des ausgeblendeten Bereichs,
+        damit während des transparenten Live-Barcode-Scans nur sein Overlay
+        über dem Kamerabild sichtbar ist. */}
+    <ScanFlowSheet
+      open={showScanFlow} onClose={() => setShowScanFlow(false)} t={t} dark={dark}
+      zones={zones} targetZone={scanZone || activeZone}
+      onCommit={commitScanFlow}
+    />
+    </>
   );
 }
 

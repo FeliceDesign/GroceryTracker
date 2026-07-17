@@ -35,6 +35,16 @@ select {
   font-size: 16px; /* verhindert Auto-Zoom auf iOS/Android beim Fokus */
 }
 
+/* Während des nativen Live-Barcode-Scans muss der WebView-Hintergrund
+   durchsichtig sein, damit das Kamerabild dahinter sichtbar wird. */
+body.gt-scanning,
+body.gt-scanning #root {
+  background: transparent !important;
+}
+body.gt-scanning .gt-hide-while-scanning {
+  visibility: hidden !important;
+}
+
 /* Schmale, dezente Scrollbalken in Sheets */
 ::-webkit-scrollbar {
   width: 8px;
