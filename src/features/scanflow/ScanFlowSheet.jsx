@@ -1,33 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Zap, ZapOff, Camera, SkipForward, Trash2 } from 'lucide-react';
+import { X, Camera, SkipForward, Trash2, ScanLine } from 'lucide-react';
 import { BarcodeIcon } from '../../components/icons.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { btnCircle, makeInputStyle, primaryButtonStyle } from '../../lib/styles.js';
 import { lookupOpenFoodFacts } from '../../scan/scan.js';
-import { startBarcodeScan, openMhdCamera, captureMhdViaPhoto } from '../../scan/camera.js';
-
-// Rahmen, in den das MHD gelegt wird – gleiche relative Werte fürs Overlay
-// und für den OCR-Ausschnitt.
-const MHD_RECT = { x: 0.06, y: 0.4, width: 0.88, height: 0.2 };
+import { startBarcodeScan, captureMhdViaPhoto } from '../../scan/camera.js';
 
 function vibrate(ms = 35) {
   try { if (navigator.vibrate) navigator.vibrate(ms); } catch { /* egal */ }
 }
 
-// Geführter Scan: Barcode live -> MHD in den Rahmen legen und tippen ->
-// nächstes Produkt. Am Ende alles gesammelt übernehmen.
+// Geführter Scan: Barcode live -> MHD-Foto -> nächstes Produkt. Am Ende alles
+// gesammelt übernehmen. Es ist immer nur eine Kamera-Pipeline aktiv (erst der
+// native Live-Scanner, dann die System-Kamera fürs MHD-Foto).
 export function ScanFlowSheet({ open, onClose, t, dark, zones, targetZone, onCommit }) {
   const [phase, setPhase] = useState('barcode'); // barcode | mhd | review
   const [collected, setCollected] = useState([]);
   const [current, setCurrent] = useState(null);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
-  const [torchOn, setTorchOn] = useState(false);
-  const [useFallback, setUseFallback] = useState(false);
+  const [scanError, setScanError] = useState('');
 
-  const videoRef = useRef(null);
   const barcodeStopRef = useRef(null);
-  const mhdCtrlRef = useRef(null);
   const detectedRef = useRef(false);
   const zoneRef = useRef(targetZone);
   zoneRef.current = targetZone;
@@ -42,8 +36,7 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, targetZone, onCom
     setCollected([]);
     setCurrent(null);
     setStatus('');
-    setUseFallback(false);
-    setTorchOn(false);
+    setScanError('');
   }, [open]);
 
   // Barcode-Phase: nativer Live-Scanner
@@ -51,6 +44,7 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, targetZone, onCom
     if (!open || phase !== 'barcode') return undefined;
     let cancelled = false;
     detectedRef.current = false;
+    setScanError('');
     setStatus('Barcode anvisieren…');
     (async () => {
       try {
@@ -58,7 +52,7 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, targetZone, onCom
         barcodeStopRef.current = stop;
         if (cancelled) { stop(); barcodeStopRef.current = null; }
       } catch (e) {
-        setStatus(e?.message || 'Scanner konnte nicht starten.');
+        setScanError(e?.message || 'Scanner konnte nicht starten.');
       }
     })();
     return () => {
@@ -68,71 +62,48 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, targetZone, onCom
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, phase]);
 
-  // MHD-Phase: eigenes Live-Kamerabild
-  useEffect(() => {
-    if (!open || phase !== 'mhd' || useFallback) return undefined;
-    let cancelled = false;
-    (async () => {
-      try {
-        const ctrl = await openMhdCamera(videoRef.current);
-        mhdCtrlRef.current = ctrl;
-        if (cancelled) { ctrl.stop(); mhdCtrlRef.current = null; }
-      } catch {
-        setUseFallback(true);
-        setStatus('Live-Kamera nicht verfügbar – tippe „Foto aufnehmen".');
-      }
-    })();
-    return () => {
-      cancelled = true;
-      if (mhdCtrlRef.current) { mhdCtrlRef.current.stop(); mhdCtrlRef.current = null; }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, phase, useFallback]);
-
-  const stopAllCameras = () => {
-    if (barcodeStopRef.current) { barcodeStopRef.current(); barcodeStopRef.current = null; }
-    if (mhdCtrlRef.current) { mhdCtrlRef.current.stop(); mhdCtrlRef.current = null; }
+  const stopBarcode = async () => {
+    if (barcodeStopRef.current) {
+      const stop = barcodeStopRef.current;
+      barcodeStopRef.current = null;
+      await stop();
+    }
   };
 
   async function handleBarcode(value) {
     if (detectedRef.current) return;
     detectedRef.current = true;
     vibrate();
-    if (barcodeStopRef.current) { await barcodeStopRef.current(); barcodeStopRef.current = null; }
+    await stopBarcode();
     setCurrent({ barcode: value, name: '', category: 'Sonstiges', qty: 1, unit: 'stk', zone: zoneRef.current, mhd: null });
     setStatus('Suche Produkt…');
+    setPhase('mhd');
     let product = null;
     try { product = await lookupOpenFoodFacts(value); } catch { product = null; }
-    setCurrent((c) => ({ ...c, ...(product ? { name: product.name, category: product.category, qty: product.qty, unit: product.unit } : {}) }));
+    setCurrent((c) => (c ? { ...c, ...(product ? { name: product.name, category: product.category, qty: product.qty, unit: product.unit } : {}) } : c));
     setStatus(product ? `✓ ${product.name}` : `Barcode ${value} – kein Treffer, Name später ergänzen`);
-    setUseFallback(false);
-    setPhase('mhd');
   }
 
   // Ohne Barcode direkt zum MHD (z.B. lose Ware)
   const skipBarcode = async () => {
     detectedRef.current = true;
-    if (barcodeStopRef.current) { await barcodeStopRef.current(); barcodeStopRef.current = null; }
+    await stopBarcode();
     setCurrent({ barcode: null, name: '', category: 'Sonstiges', qty: 1, unit: 'stk', zone: zoneRef.current, mhd: null });
     setStatus('');
-    setUseFallback(false);
     setPhase('mhd');
   };
 
   const captureMhd = async () => {
     setBusy(true);
-    setStatus('Lese Datum…');
+    setStatus('Datum fotografieren…');
     try {
-      const res = useFallback || !mhdCtrlRef.current
-        ? await captureMhdViaPhoto()
-        : await mhdCtrlRef.current.capture(MHD_RECT);
+      const res = await captureMhdViaPhoto();
       if (res.date) {
         vibrate();
-        setCurrent((c) => ({ ...c, mhd: res.date }));
         commitCurrent({ mhd: res.date });
       } else if (res.text && res.text.trim()) {
         const snippet = res.text.trim().replace(/\s+/g, ' ').slice(0, 40);
-        setStatus(`Kein Datum erkannt (gelesen: „${snippet}…"). Datum in den Rahmen legen und erneut tippen.`);
+        setStatus(`Kein Datum erkannt (gelesen: „${snippet}…"). Datum mittig ins Bild holen und erneut aufnehmen.`);
       } else {
         setStatus('Kein Text erkannt – näher ran und scharf stellen.');
       }
@@ -145,7 +116,6 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, targetZone, onCom
 
   // Aktuelles Produkt in die Sammelliste, dann weiter zum nächsten Barcode.
   const commitCurrent = (patch = {}) => {
-    if (mhdCtrlRef.current) { mhdCtrlRef.current.stop(); mhdCtrlRef.current = null; }
     const item = { key: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), ...current, ...patch };
     setCollected((prev) => [...prev, item]);
     setCurrent(null);
@@ -153,15 +123,8 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, targetZone, onCom
     setPhase('barcode');
   };
 
-  const toggleTorch = async () => {
-    if (!mhdCtrlRef.current) return;
-    const ok = await mhdCtrlRef.current.setTorch(!torchOn);
-    if (ok) setTorchOn((v) => !v);
-  };
-
-  const goReview = () => {
-    stopAllCameras();
-    // ein noch offenes current ohne MHD trotzdem mitnehmen
+  const goReview = async () => {
+    await stopBarcode();
     if (current) {
       setCollected((prev) => [...prev, { key: 'k' + Date.now().toString(36), ...current }]);
       setCurrent(null);
@@ -169,23 +132,23 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, targetZone, onCom
     setPhase('review');
   };
 
-  const close = () => {
-    stopAllCameras();
+  const close = async () => {
+    await stopBarcode();
     onClose();
   };
 
-  const commitAll = () => {
-    const valid = collected.filter((c) => c.name.trim());
-    stopAllCameras();
-    onCommit(valid);
+  const commitAll = async () => {
+    await stopBarcode();
+    onCommit(collected.filter((c) => c.name.trim()));
   };
 
   if (!open) return null;
 
-  // ----- Review-Phase: normale (undurchsichtige) Oberfläche -----------------
+  // ----- Review-Phase --------------------------------------------------------
   if (phase === 'review') {
+    const validCount = collected.filter((c) => c.name.trim()).length;
     return (
-      <FullOverlay opaque t={t}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: t.bg, display: 'flex', flexDirection: 'column' }}>
         <TopBar t={t} title={`Erfasst (${collected.length})`} onClose={close} />
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 16px' }}>
           {collected.length === 0 ? (
@@ -227,27 +190,26 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, targetZone, onCom
           <button onClick={() => setPhase('barcode')} style={{ flexShrink: 0, padding: '14px 18px', borderRadius: 14, border: `1.5px solid ${t.border}`, background: 'transparent', color: t.textMuted, fontWeight: 700, cursor: 'pointer' }}>
             Weiter scannen
           </button>
-          <button onClick={commitAll} disabled={collected.filter((c) => c.name.trim()).length === 0} style={{ ...primaryButtonStyle(t), opacity: collected.filter((c) => c.name.trim()).length === 0 ? 0.45 : 1 }}>
+          <button onClick={commitAll} disabled={validCount === 0} style={{ ...primaryButtonStyle(t), opacity: validCount === 0 ? 0.45 : 1 }}>
             Übernehmen
           </button>
         </div>
-      </FullOverlay>
+      </div>
     );
   }
 
-  const doneBar = (
-    <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '16px 16px calc(20px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 12, background: 'linear-gradient(to top, rgba(0,0,0,0.75), transparent)' }}>
+  const bottomBar = (
+    <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '16px 16px calc(20px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 12, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }}>
       {status && (
         <div style={{ textAlign: 'center', fontSize: 13.5, fontWeight: 600, color: status.startsWith('✓') ? '#8FE39A' : '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
           {status}
         </div>
       )}
-
       {phase === 'barcode' ? (
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={skipBarcode} style={ghostBtn}>Ohne Barcode</button>
           {collected.length > 0 && (
-            <button onClick={goReview} style={{ ...solidBtn(pal) }}>Fertig ({collected.length})</button>
+            <button onClick={goReview} style={solidBtn(pal)}>Fertig ({collected.length})</button>
           )}
         </div>
       ) : (
@@ -256,7 +218,7 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, targetZone, onCom
             <SkipForward size={17} /> Ohne MHD
           </button>
           <button onClick={captureMhd} disabled={busy} style={{ ...solidBtn(pal), opacity: busy ? 0.6 : 1 }}>
-            <Camera size={18} /> {busy ? 'Lese…' : (useFallback ? 'Foto aufnehmen' : 'MHD erfassen')}
+            <Camera size={18} /> {busy ? 'Lese…' : 'MHD-Foto'}
           </button>
         </div>
       )}
@@ -269,47 +231,50 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, targetZone, onCom
       <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', flexDirection: 'column' }}>
         <ScanTopBar onClose={close} title="Barcode scannen" step="1" />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: '78%', maxWidth: 320, aspectRatio: '1.6 / 1', border: `3px solid ${pal.accent}`, borderRadius: 18, boxShadow: '0 0 0 100vmax rgba(0,0,0,0.35)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.85)', gap: 8 }}>
-              <BarcodeIcon size={22} color="rgba(255,255,255,0.85)" /> anvisieren
+          {scanError ? (
+            <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px' }}>
+              <div style={{ fontSize: 14, marginBottom: 16, textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>{scanError}</div>
+              <button onClick={() => setPhase('review')} style={{ ...ghostBtn, flex: 'none', padding: '12px 20px' }}>Zur Übersicht</button>
             </div>
-          </div>
+          ) : (
+            <div style={{ width: '78%', maxWidth: 320, aspectRatio: '1.6 / 1', border: `3px solid ${pal.accent}`, borderRadius: 18, boxShadow: '0 0 0 100vmax rgba(0,0,0,0.35)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.85)', gap: 8, textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
+                <BarcodeIcon size={22} color="rgba(255,255,255,0.85)" /> anvisieren
+              </div>
+            </div>
+          )}
         </div>
-        {doneBar}
+        {bottomBar}
       </div>
     );
   }
 
-  // ----- MHD-Phase: eigenes Live-Kamerabild --------------------------------
+  // ----- MHD-Phase: Foto-Aufnahme (kein Livebild) ---------------------------
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: '#000', display: 'flex', flexDirection: 'column' }}>
-      {!useFallback && (
-        <video ref={videoRef} playsInline muted style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-      )}
-      {/* Rahmen fürs MHD */}
-      {!useFallback && (
-        <div style={{
-          position: 'absolute',
-          left: `${MHD_RECT.x * 100}%`, top: `${MHD_RECT.y * 100}%`,
-          width: `${MHD_RECT.width * 100}%`, height: `${MHD_RECT.height * 100}%`,
-          border: `3px solid ${pal.accent}`, borderRadius: 12, boxShadow: '0 0 0 100vmax rgba(0,0,0,0.45)',
-        }}>
-          <div style={{ position: 'absolute', top: -26, left: 0, right: 0, textAlign: 'center', color: '#fff', fontSize: 12.5, fontWeight: 600, textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
-            MHD in den Rahmen legen
-          </div>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: t.bg, display: 'flex', flexDirection: 'column' }}>
+      <TopBar t={t} title={current?.name ? current.name : 'MHD scannen'} step="2" onClose={close} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 28px', textAlign: 'center' }}>
+        <div style={{ width: 96, height: 96, borderRadius: 24, background: pal.accentBg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+          <ScanLine size={44} color={pal.accent} strokeWidth={1.8} />
         </div>
-      )}
-      <ScanTopBar
-        onClose={close}
-        title={current?.name ? current.name : 'MHD scannen'}
-        step="2"
-        right={!useFallback ? (
-          <button onClick={toggleTorch} style={{ ...btnCircle('rgba(0,0,0,0.4)', '#fff', 40) }} aria-label="Blitz">
-            {torchOn ? <Zap size={18} /> : <ZapOff size={18} />}
-          </button>
-        ) : null}
-      />
-      {doneBar}
+        <div style={{ fontSize: 16, fontWeight: 700, color: t.text }}>MHD fotografieren</div>
+        <div style={{ fontSize: 13.5, color: t.textMuted, marginTop: 8, lineHeight: 1.5, maxWidth: 300 }}>
+          Tippe auf „MHD-Foto", halte das Datum mittig und nah ins Bild. Der Rest wird automatisch zugeschnitten und gelesen.
+        </div>
+        {status && !status.startsWith('Datum fotografieren') && (
+          <div style={{ fontSize: 12.5, marginTop: 16, color: status.startsWith('✓') ? t.success : t.textMuted, lineHeight: 1.4 }}>
+            {status}
+          </div>
+        )}
+      </div>
+      <div style={{ padding: '12px 16px calc(16px + env(safe-area-inset-bottom))', borderTop: `1px solid ${t.border}`, display: 'flex', gap: 10 }}>
+        <button onClick={() => commitCurrent()} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 12px', borderRadius: 14, border: `1.5px solid ${t.border}`, background: 'transparent', color: t.textMuted, fontWeight: 700, cursor: 'pointer' }}>
+          <SkipForward size={17} /> Ohne MHD
+        </button>
+        <button onClick={captureMhd} disabled={busy} style={{ ...primaryButtonStyle(t), display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: busy ? 0.6 : 1 }}>
+          <Camera size={18} /> {busy ? 'Lese…' : 'MHD-Foto'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -328,7 +293,7 @@ function solidBtn(pal) {
   };
 }
 
-function ScanTopBar({ onClose, title, step, right }) {
+function ScanTopBar({ onClose, title, step }) {
   return (
     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 'calc(14px + env(safe-area-inset-top)) 16px 14px' }}>
       <button onClick={onClose} style={btnCircle('rgba(0,0,0,0.4)', '#fff', 40)} aria-label="Schließen">
@@ -338,26 +303,19 @@ function ScanTopBar({ onClose, title, step, right }) {
         <span style={{ background: 'rgba(255,255,255,0.22)', borderRadius: 8, padding: '2px 8px', fontSize: 12 }}>Schritt {step}</span>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
       </div>
-      <div style={{ width: 40, display: 'flex', justifyContent: 'flex-end' }}>{right}</div>
+      <div style={{ width: 40 }} />
     </div>
   );
 }
 
-function FullOverlay({ children, opaque, t }) {
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: opaque ? t.bg : 'transparent', display: 'flex', flexDirection: 'column' }}>
-      {children}
-    </div>
-  );
-}
-
-function TopBar({ t, title, onClose }) {
+function TopBar({ t, title, step, onClose }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 'calc(14px + env(safe-area-inset-top)) 16px 12px', borderBottom: `1px solid ${t.border}` }}>
       <button onClick={onClose} style={btnCircle(t.cardAlt, t.pillInactiveText, 38)} aria-label="Schließen">
         <X size={17} />
       </button>
-      <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: t.text }}>{title}</h2>
+      {step && <span style={{ background: t.cardAlt, color: t.textMuted, borderRadius: 8, padding: '3px 9px', fontSize: 12, fontWeight: 700 }}>Schritt {step}</span>}
+      <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: t.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</h2>
     </div>
   );
 }
