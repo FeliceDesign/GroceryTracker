@@ -1,0 +1,83 @@
+import { Plus, Check, X } from 'lucide-react';
+import { Modal } from '../../components/Modal.jsx';
+import { zonePalette } from '../../lib/colors.js';
+import { makeInputStyle, btnCircle } from '../../lib/styles.js';
+
+// Einkaufsliste. Aufgebrauchte Artikel landen automatisch hier; abhaken legt
+// sie zurück in den Bestand. Freie Einträge lassen sich manuell ergänzen.
+export function ShoppingSheet({
+  open, onClose, t, dark, zones,
+  shopping, shoppingInput, setShoppingInput, onAddManual, onCheck, onRemove, justChecked,
+}) {
+  const inputStyle = makeInputStyle(t);
+
+  return (
+    <Modal open={open} onClose={onClose} t={t} title="Einkaufsliste" subtitle={shopping.length > 0 ? `${shopping.length} offen` : 'Alles erledigt'}>
+      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+        <input
+          value={shoppingInput}
+          onChange={(e) => setShoppingInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && onAddManual()}
+          placeholder="Etwas hinzufügen…"
+          style={{ ...inputStyle, marginTop: 0 }}
+        />
+        <button
+          type="button"
+          onClick={onAddManual}
+          aria-label="Hinzufügen"
+          style={{ flexShrink: 0, border: 'none', borderRadius: 12, padding: '0 16px', background: t.btnPrimary, color: t.btnPrimaryText, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+        >
+          <Plus size={18} strokeWidth={2.6} />
+        </button>
+      </div>
+
+      {shopping.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: t.textFaint, fontSize: 14 }}>
+          Deine Einkaufsliste ist leer.
+        </div>
+      ) : (
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {shopping.map((s) => {
+            const z = s.zone ? zones.find((zz) => zz.id === s.zone) : null;
+            const pal = z ? zonePalette(z.color, dark) : null;
+            const checked = justChecked === s.id;
+            return (
+              <div
+                key={s.id}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '11px 12px',
+                  background: checked ? (pal ? pal.accentBg : t.cardAlt) : t.cardAlt,
+                  borderRadius: 12, transition: 'background 0.2s ease',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => onCheck(s)}
+                  aria-label={`${s.name} abhaken`}
+                  style={{
+                    flexShrink: 0, width: 30, height: 30, borderRadius: '50%', cursor: 'pointer',
+                    border: `2px solid ${checked ? t.success : t.border}`,
+                    background: checked ? t.success : 'transparent',
+                    color: checked ? '#fff' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <Check size={16} strokeWidth={3} />
+                </button>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14.5, color: t.text, fontWeight: 500 }}>{s.name}</div>
+                  <div style={{ fontSize: 11, color: pal ? pal.accent : t.textFaint, fontWeight: 700, marginTop: 1 }}>
+                    {z ? `${z.emoji} ${z.label}` : 'frei'}
+                  </div>
+                </div>
+                <button type="button" onClick={() => onRemove(s.id)} style={btnCircle('transparent', t.textFaint, 30)} aria-label="Von der Liste entfernen">
+                  <X size={15} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Modal>
+  );
+}
