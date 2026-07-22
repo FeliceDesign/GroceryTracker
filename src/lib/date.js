@@ -9,11 +9,20 @@ export function daysUntil(mhd) {
   return Math.round((target - today) / 86400000);
 }
 
-// Auffällig rot nur bei „läuft heute/morgen ab" oder bereits überfällig,
-// sonst dezent – damit die Warnung Signalwirkung behält.
-export function mhdColor(days, t) {
-  if (days === null) return null;
-  if (days <= 1) return t.danger;
+// Einstufung eines MHD:
+//  'expired' – bereits überfällig (rot)
+//  'soon'    – läuft innerhalb von `yellowDays` Tagen ab (gelb)
+//  'ok'      – noch genug Zeit
+export function expiryLevel(days, yellowDays = 3) {
+  if (days === null || days === undefined) return null;
+  if (days < 0) return 'expired';
+  if (days <= yellowDays) return 'soon';
+  return 'ok';
+}
+
+export function levelColor(level, t) {
+  if (level === 'expired') return t.danger;
+  if (level === 'soon') return t.warning;
   return t.textMuted;
 }
 

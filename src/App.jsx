@@ -7,8 +7,9 @@ import { useZones } from './hooks/useZones.js';
 import { useCategories } from './hooks/useCategories.js';
 import { SEED } from './lib/defaults.js';
 import { daysUntil } from './lib/date.js';
-import { isScanSupported, scanAndLookup } from './scan/scan.js';
+import { isScanSupported } from './scan/scan.js';
 import { captureMhdViaPhoto } from './scan/camera.js';
+import { ensureNotifyPermission, syncExpiryNotifications, notificationsSupported } from './lib/notify.js';
 
 import { Header } from './components/Header.jsx';
 import { ZoneTabs } from './components/ZoneTabs.jsx';
@@ -23,6 +24,7 @@ import { EditItemSheet } from './features/edit/EditItemSheet.jsx';
 import { ScanFlowSheet } from './features/scanflow/ScanFlowSheet.jsx';
 import { ShoppingSheet } from './features/shopping/ShoppingSheet.jsx';
 import { ManageZonesSheet } from './features/zones/ManageZonesSheet.jsx';
+import { ManageCategoriesSheet } from './features/categories/ManageCategoriesSheet.jsx';
 import { SettingsSheet } from './features/settings/SettingsSheet.jsx';
 
 const newId = (prefix = 'i') => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -32,9 +34,12 @@ export default function App() {
   const t = buildTheme(dark);
 
   const { zones, loaded: zonesLoaded, addZone, updateZone, setZones } = useZones();
-  const { categories, loaded: catsLoaded, addCategory, setCategories } = useCategories();
+  const { categories, loaded: catsLoaded, addCategory, removeCategory, setCategories } = useCategories();
   const [items, setItems, itemsLoaded] = useStorage('gt-items-v1', SEED);
   const [shopping, setShopping, shoppingLoaded] = useStorage('gt-shopping-v1', []);
+  const [warn, setWarn, warnLoaded] = useStorage('gt-warn-v1', {
+    yellowDays: 3, notify: false, thresholds: [7, 3, 1, 0], notifyHour: 9,
+  });
 
   const [activeZone, setActiveZone] = useState(null);
   const [search, setSearch] = useState('');
@@ -45,6 +50,7 @@ export default function App() {
   const [showShopping, setShowShopping] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showZones, setShowZones] = useState(false);
+  const [showCategories, setShowCategories] = useState(false);
 
   // Formular / Scan
   const [newItem, setNewItem] = useState({ name: '', zone: null, category: null, qty: 1, unit: 'stk', mhd: null });
@@ -52,6 +58,7 @@ export default function App() {
   const [scanMsg, setScanMsg] = useState('');
   const [showScanFlow, setShowScanFlow] = useState(false);
   const [scanZone, setScanZone] = useState(null);
+  const [scanMode, setScanMode] = useState('batch'); // 'batch' | 'single'
 
   // Toast / Feedback
   const [deletedItem, setDeletedItem] = useState(null);
@@ -64,8 +71,8 @@ export default function App() {
   const checkedTimerRef = useRef(null);
 
   const scanSupported = isScanSupported();
-  const ready = themeLoaded && zonesLoaded && catsLoaded && itemsLoaded && shoppingLoaded
-    && zones !== null && categories !== null && items !== null && shopping !== null;
+  const ready = themeLoaded && zonesLoaded && catsLoaded && itemsLoaded && shoppingLoaded && warnLoaded
+    && zones !== null && categories !== null && items !== null && shopping !== null && warn !== null;
 
   // activeZone gültig halten (z.B. nachdem ein Lagerort entfernt wurde)
   useEffect(() => {
@@ -80,6 +87,12 @@ export default function App() {
     clearTimeout(flashTimerRef.current);
     clearTimeout(checkedTimerRef.current);
   }, []);
+
+  // MHD-Erinnerungen neu planen, sobald sich Bestand oder Einstellungen ändern.
+  useEffect(() => {
+    if (!itemsLoaded || !warnLoaded || items === null || warn === null) return;
+    syncExpiryNotifications(items, warn);
+  }, [items, warn, itemsLoaded, warnLoaded]);
 
   const resolveZone = (id) => (zones ? zones.find((z) => z.id === id) : undefined);
   const countFor = (id) => (items ? items.filter((i) => i.zone === id).length : 0);
@@ -106,6 +119,10 @@ export default function App() {
     }
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, qty: next } : i)));
     flash(id);
+  };
+
+  const toggleOpened = (id) => {
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, opened: !i.opened } : i)));
   };
 
   const removeItem = (id) => {
@@ -180,31 +197,6 @@ export default function App() {
   };
 
   // -- Scannen ----------------------------------------------------------------
-  const handleScanBarcode = async () => {
-    setScanMsg('');
-    setScanBusy(true);
-    try {
-      const result = await scanAndLookup();
-      if (!result) return;
-      if (result.product) {
-        setNewItem((s) => ({
-          ...s,
-          name: result.product.name,
-          category: result.product.category || s.category,
-          unit: result.product.unit,
-          qty: result.product.qty,
-        }));
-        setScanMsg(`✓ ${result.product.name} erkannt.`);
-      } else {
-        setScanMsg(`Barcode ${result.barcode} nicht gefunden – bitte Name manuell eingeben.`);
-      }
-    } catch (e) {
-      setScanMsg(e?.message || 'Scan fehlgeschlagen.');
-    } finally {
-      setScanBusy(false);
-    }
-  };
-
   const handleScanDate = async (target) => {
     setScanMsg('');
     setScanBusy(true);
@@ -229,7 +221,8 @@ export default function App() {
   };
 
   // -- Geführter Scan-Flow (Barcode -> MHD -> nächstes) -----------------------
-  const openScanFlow = () => {
+  const openScanFlow = (mode = 'batch') => {
+    setScanMode(mode);
     setScanZone(activeZone);
     setScanMsg('');
     setShowAdd(false);
@@ -302,6 +295,29 @@ export default function App() {
   };
 
   const removeFromShopping = (id) => setShopping((prev) => prev.filter((s) => s.id !== id));
+  const clearShopping = () => setShopping([]);
+
+  // -- Kategorien -------------------------------------------------------------
+  const countForCategory = (name) => (items ? items.filter((i) => i.category === name).length : 0);
+
+  const renameCategory = (oldName, rawNew) => {
+    const name = (rawNew || '').trim();
+    if (!name || name === oldName || oldName === 'Sonstiges') return;
+    setCategories((prev) => {
+      // Ziel existiert schon -> zusammenführen (alten Namen entfernen)
+      if (prev.some((c) => c.toLowerCase() === name.toLowerCase() && c !== oldName)) {
+        return prev.filter((c) => c !== oldName);
+      }
+      return prev.map((c) => (c === oldName ? name : c));
+    });
+    setItems((prev) => prev.map((i) => (i.category === oldName ? { ...i, category: name } : i)));
+  };
+
+  const removeCategoryWithReassign = (name) => {
+    if (name === 'Sonstiges') return;
+    setItems((prev) => prev.map((i) => (i.category === name ? { ...i, category: 'Sonstiges' } : i)));
+    removeCategory(name);
+  };
 
   // -- Lagerorte --------------------------------------------------------------
   const removeZoneWithReassign = (id) => {
@@ -314,7 +330,7 @@ export default function App() {
   };
 
   // -- Backup -----------------------------------------------------------------
-  const buildBackup = () => JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), zones, categories, items, shopping }, null, 2);
+  const buildBackup = () => JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), zones, categories, items, shopping, warn }, null, 2);
 
   const restoreBackup = (text) => {
     let data;
@@ -330,7 +346,19 @@ export default function App() {
     if (Array.isArray(data.categories)) setCategories(data.categories);
     setItems(data.items);
     setShopping(Array.isArray(data.shopping) ? data.shopping : []);
+    if (data.warn && typeof data.warn === 'object') setWarn(data.warn);
     return { ok: true, message: `${data.items.length} Artikel wiederhergestellt.` };
+  };
+
+  // -- MHD-Warnungen ----------------------------------------------------------
+  const updateWarn = (patch) => setWarn((prev) => ({ ...prev, ...patch }));
+
+  // Beim Aktivieren von Push zuerst die Berechtigung anfragen.
+  const setNotifyEnabled = async (on) => {
+    if (!on) { updateWarn({ notify: false }); return false; }
+    const ok = await ensureNotifyPermission();
+    updateWarn({ notify: ok });
+    return ok;
   };
 
   // -- Ableitungen ------------------------------------------------------------
@@ -354,14 +382,15 @@ export default function App() {
       .sort((a, b) => a.name.localeCompare(b.name, 'de'));
   }, [items, search]);
 
+  const yellowDays = warn ? warn.yellowDays : 3;
   const expiringSoon = useMemo(() => {
     if (!items) return [];
     return items
       .filter((i) => i.mhd)
       .map((i) => ({ ...i, days: daysUntil(i.mhd) }))
-      .filter((i) => i.days !== null && i.days <= 1)
+      .filter((i) => i.days !== null && i.days <= yellowDays)
       .sort((a, b) => a.days - b.days);
-  }, [items]);
+  }, [items, yellowDays]);
 
   if (!ready) {
     return (
@@ -402,8 +431,8 @@ export default function App() {
             <Section t={t} title={`${searchResults.length} ${searchResults.length === 1 ? 'Treffer' : 'Treffer'}`}>
               {searchResults.map((item, idx) => (
                 <ItemRow
-                  key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark}
-                  justChanged={justChanged} onEdit={setEditItem} onChangeQty={changeQty} onRemove={removeItem}
+                  key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays}
+                  justChanged={justChanged} onEdit={setEditItem} onChangeQty={changeQty} onRemove={removeItem} onToggleOpened={toggleOpened}
                   showZoneBadge isLast={idx === searchResults.length - 1}
                 />
               ))}
@@ -416,8 +445,8 @@ export default function App() {
             <Section key={cat} t={t} title={cat}>
               {list.map((item, idx) => (
                 <ItemRow
-                  key={item.id} item={item} zone={zone} t={t} dark={dark}
-                  justChanged={justChanged} onEdit={setEditItem} onChangeQty={changeQty} onRemove={removeItem}
+                  key={item.id} item={item} zone={zone} t={t} dark={dark} yellowDays={yellowDays}
+                  justChanged={justChanged} onEdit={setEditItem} onChangeQty={changeQty} onRemove={removeItem} onToggleOpened={toggleOpened}
                   isLast={idx === list.length - 1}
                 />
               ))}
@@ -442,7 +471,7 @@ export default function App() {
         zones={zones} categories={categories} onAddCategory={addCategory}
         newItem={newItem} setNewItem={setNewItem}
         scanSupported={scanSupported} scanBusy={scanBusy} scanMsg={scanMsg}
-        onScanBarcode={handleScanBarcode} onScanDate={handleScanDate} onOpenBatch={openScanFlow} onSubmit={addItem}
+        onScanBarcode={() => openScanFlow('single')} onScanDate={handleScanDate} onOpenBatch={() => openScanFlow('batch')} onSubmit={addItem}
       />
 
       <EditItemSheet
@@ -455,13 +484,16 @@ export default function App() {
       <ShoppingSheet
         open={showShopping} onClose={() => setShowShopping(false)} t={t} dark={dark} zones={zones}
         shopping={shopping} shoppingInput={shoppingInput} setShoppingInput={setShoppingInput}
-        onAddManual={addManualShopping} onCheck={checkAndRestore} onRemove={removeFromShopping} justChecked={justChecked}
+        onAddManual={addManualShopping} onCheck={checkAndRestore} onRemove={removeFromShopping}
+        onClearAll={clearShopping} justChecked={justChecked}
       />
 
       <SettingsSheet
         open={showSettings} onClose={() => setShowSettings(false)} t={t}
         themeOverride={themeOverride} setThemeOverride={setThemeOverride}
         onManageZones={() => { setShowSettings(false); setShowZones(true); }}
+        onManageCategories={() => { setShowSettings(false); setShowCategories(true); }}
+        warn={warn} onUpdateWarn={updateWarn} onSetNotify={setNotifyEnabled} notifySupported={notificationsSupported()}
         stats={{ items: items.length, zones: zones.length, categories: categories.length }}
         buildBackup={buildBackup} restoreBackup={restoreBackup}
       />
@@ -471,6 +503,12 @@ export default function App() {
         zones={zones} countFor={countFor}
         onAdd={addZone} onUpdate={updateZone} onRemove={removeZoneWithReassign}
       />
+
+      <ManageCategoriesSheet
+        open={showCategories} onClose={() => setShowCategories(false)} t={t}
+        categories={categories} countFor={countForCategory}
+        onAdd={addCategory} onRename={renameCategory} onRemove={removeCategoryWithReassign}
+      />
     </div>
 
     {/* Der geführte Scan-Flow liegt außerhalb des ausgeblendeten Bereichs,
@@ -478,7 +516,8 @@ export default function App() {
         über dem Kamerabild sichtbar ist. */}
     <ScanFlowSheet
       open={showScanFlow} onClose={() => setShowScanFlow(false)} t={t} dark={dark}
-      zones={zones} targetZone={scanZone || activeZone}
+      zones={zones} categories={categories} onAddCategory={addCategory}
+      targetZone={scanZone || activeZone} mode={scanMode}
       onCommit={commitScanFlow}
     />
     </>

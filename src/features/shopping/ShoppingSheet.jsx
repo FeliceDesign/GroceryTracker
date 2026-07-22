@@ -1,5 +1,7 @@
-import { Plus, Check, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Plus, Check, X, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
+import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
 
@@ -7,19 +9,27 @@ import { makeInputStyle, btnCircle } from '../../lib/styles.js';
 // sie zurück in den Bestand. Freie Einträge lassen sich manuell ergänzen.
 export function ShoppingSheet({
   open, onClose, t, dark, zones,
-  shopping, shoppingInput, setShoppingInput, onAddManual, onCheck, onRemove, justChecked,
+  shopping, shoppingInput, setShoppingInput, onAddManual, onCheck, onRemove, onClearAll, justChecked,
 }) {
   const inputStyle = makeInputStyle(t);
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  // Bestätigung zurücksetzen, sobald das Sheet auf-/zugeht oder die Liste leer wird
+  useEffect(() => {
+    if (!open || shopping.length === 0) setConfirmClear(false);
+  }, [open, shopping.length]);
 
   return (
     <Modal open={open} onClose={onClose} t={t} title="Einkaufsliste" subtitle={shopping.length > 0 ? `${shopping.length} offen` : 'Alles erledigt'}>
       <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-        <input
+        <ClearableInput
+          t={t}
           value={shoppingInput}
-          onChange={(e) => setShoppingInput(e.target.value)}
+          onChange={setShoppingInput}
           onKeyDown={(e) => e.key === 'Enter' && onAddManual()}
           placeholder="Etwas hinzufügen…"
           style={{ ...inputStyle, marginTop: 0 }}
+          wrapperStyle={{ flex: 1, minWidth: 0 }}
         />
         <button
           type="button"
@@ -31,12 +41,31 @@ export function ShoppingSheet({
         </button>
       </div>
 
+      {shopping.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+          <button
+            type="button"
+            onClick={() => {
+              if (confirmClear) { onClearAll(); setConfirmClear(false); }
+              else setConfirmClear(true);
+            }}
+            onBlur={() => setConfirmClear(false)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent',
+              color: t.danger, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', padding: '4px 2px',
+            }}
+          >
+            <Trash2 size={14} /> {confirmClear ? `Wirklich alle ${shopping.length} löschen?` : 'Alle löschen'}
+          </button>
+        </div>
+      )}
+
       {shopping.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: t.textFaint, fontSize: 14 }}>
           Deine Einkaufsliste ist leer.
         </div>
       ) : (
-        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {shopping.map((s) => {
             const z = s.zone ? zones.find((zz) => zz.id === s.zone) : null;
             const pal = z ? zonePalette(z.color, dark) : null;

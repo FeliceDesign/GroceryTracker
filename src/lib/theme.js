@@ -12,6 +12,7 @@ export function buildTheme(dark) {
         pillActive: '#4A4438', pillActiveText: '#F5F2EC',
         btnPrimary: '#F5F2EC', btnPrimaryText: '#141210',
         danger: '#E08FA1', dangerBg: '#332025', dangerBorder: '#4A2E34',
+        warning: '#E3C27E', warningBg: '#332B1C', warningBorder: '#4A3F26',
         success: '#7FBB84', headerText: '#FFFFFF',
         shadow: '0 8px 24px rgba(0,0,0,0.5)',
       }
@@ -23,6 +24,7 @@ export function buildTheme(dark) {
         pillActive: '#3A362F', pillActiveText: '#FFFFFF',
         btnPrimary: '#3A362F', btnPrimaryText: '#FFFFFF',
         danger: '#B5556B', dangerBg: '#FBEFEF', dangerBorder: '#F0D5D9',
+        warning: '#A9740B', warningBg: '#FBF1DD', warningBorder: '#F0DCB4',
         success: '#4A7A4E', headerText: '#FFFFFF',
         shadow: '0 8px 24px rgba(0,0,0,0.15)',
       };

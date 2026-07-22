@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Check } from 'lucide-react';
+import { ClearableInput } from './ClearableInput.jsx';
 import { makeInputStyle } from '../lib/styles.js';
 
 // Dropdown zur Kategorieauswahl mit Möglichkeit, direkt eine neue Kategorie
@@ -62,13 +63,15 @@ export function CategoryPicker({ value, onChange, categories, onAddCategory, t }
 
             {adding ? (
               <div style={{ display: 'flex', gap: 8, padding: '10px 12px', borderTop: `1px solid ${t.border}` }}>
-                <input
+                <ClearableInput
+                  t={t}
                   autoFocus
                   value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
+                  onChange={setDraft}
                   onKeyDown={(e) => e.key === 'Enter' && confirmAdd()}
                   placeholder="Neue Kategorie"
                   style={{ ...inputStyle, marginTop: 0 }}
+                  wrapperStyle={{ flex: 1, minWidth: 0 }}
                 />
                 <button
                   type="button"

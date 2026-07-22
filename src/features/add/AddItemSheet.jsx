@@ -2,6 +2,7 @@ import { Plus, Minus, Camera, Layers } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ZonePicker } from '../../components/ZonePicker.jsx';
 import { CategoryPicker } from '../../components/CategoryPicker.jsx';
+import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { BarcodeIcon } from '../../components/icons.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { makeInputStyle, makeLabelStyle, pillStyle, btnCircle, primaryButtonStyle } from '../../lib/styles.js';
@@ -65,11 +66,13 @@ export function AddItemSheet({
   return (
     <Modal open={open} onClose={onClose} t={t} title="Neuer Artikel" footer={footer}>
       <label style={{ ...labelStyle, marginTop: 4 }}>Name</label>
-      <input
+      <ClearableInput
+        t={t}
         value={newItem.name}
-        onChange={(e) => setNewItem((s) => ({ ...s, name: e.target.value }))}
+        onChange={(v) => setNewItem((s) => ({ ...s, name: v }))}
         placeholder="z.B. Frischmilch"
         style={inputStyle}
+        wrapperStyle={{ marginTop: 6 }}
         autoFocus
       />
 

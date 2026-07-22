@@ -2,6 +2,7 @@ import { Plus, Minus, Camera, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ZonePicker } from '../../components/ZonePicker.jsx';
 import { CategoryPicker } from '../../components/CategoryPicker.jsx';
+import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { makeInputStyle, makeLabelStyle, pillStyle, btnCircle, primaryButtonStyle } from '../../lib/styles.js';
 
@@ -42,10 +43,12 @@ export function EditItemSheet({
   return (
     <Modal open={!!editItem} onClose={onClose} t={t} title="Artikel bearbeiten" footer={footer}>
       <label style={{ ...labelStyle, marginTop: 4 }}>Name</label>
-      <input
+      <ClearableInput
+        t={t}
         value={editItem.name}
-        onChange={(e) => setEditItem((s) => ({ ...s, name: e.target.value }))}
+        onChange={(v) => setEditItem((s) => ({ ...s, name: v }))}
         style={inputStyle}
+        wrapperStyle={{ marginTop: 6 }}
       />
 
       <div style={{ marginTop: 16 }}>

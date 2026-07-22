@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Trash2, Check } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
+import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { ZONE_COLOR_CHOICES, zonePalette } from '../../lib/colors.js';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
 
@@ -55,11 +56,13 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
                   aria-label="Emoji"
                   style={{ ...inputStyle, marginTop: 0, width: 52, textAlign: 'center', padding: '10px 4px', fontSize: 20, flexShrink: 0 }}
                 />
-                <input
+                <ClearableInput
+                  t={t}
                   value={z.label}
-                  onChange={(e) => onUpdate(z.id, { label: e.target.value })}
+                  onChange={(v) => onUpdate(z.id, { label: v })}
                   aria-label="Name des Lagerorts"
-                  style={{ ...inputStyle, marginTop: 0, flex: 1, minWidth: 0, borderColor: pal.accent }}
+                  style={{ ...inputStyle, marginTop: 0, borderColor: pal.accent }}
+                  wrapperStyle={{ flex: 1, minWidth: 0 }}
                 />
                 <button
                   type="button"
@@ -90,14 +93,16 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
               aria-label="Emoji"
               style={{ ...inputStyle, marginTop: 0, width: 52, textAlign: 'center', padding: '10px 4px', fontSize: 20, flexShrink: 0 }}
             />
-            <input
+            <ClearableInput
+              t={t}
               value={draft.label}
-              onChange={(e) => setDraft((s) => ({ ...s, label: e.target.value }))}
+              onChange={(v) => setDraft((s) => ({ ...s, label: v }))}
               onKeyDown={(e) => e.key === 'Enter' && submitAdd()}
               placeholder="z.B. Keller"
               autoFocus
               aria-label="Name des Lagerorts"
-              style={{ ...inputStyle, marginTop: 0, flex: 1, minWidth: 0 }}
+              style={{ ...inputStyle, marginTop: 0 }}
+              wrapperStyle={{ flex: 1, minWidth: 0 }}
             />
           </div>
           <ColorRow value={draft.color} onChange={(c) => setDraft((s) => ({ ...s, color: c }))} />

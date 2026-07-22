@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Camera, SkipForward, Trash2, ScanLine } from 'lucide-react';
+import { X, Camera, SkipForward, Trash2, ScanLine, Plus, Minus } from 'lucide-react';
 import { BarcodeIcon } from '../../components/icons.jsx';
+import { CategoryPicker } from '../../components/CategoryPicker.jsx';
+import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { zonePalette } from '../../lib/colors.js';
-import { btnCircle, makeInputStyle, primaryButtonStyle } from '../../lib/styles.js';
+import { btnCircle, makeInputStyle, pillStyle, primaryButtonStyle } from '../../lib/styles.js';
 import { lookupOpenFoodFacts } from '../../scan/scan.js';
 import { startBarcodeScan, captureMhdViaPhoto } from '../../scan/camera.js';
 
@@ -13,7 +15,9 @@ function vibrate(ms = 35) {
 // Geführter Scan: Barcode live -> MHD-Foto -> nächstes Produkt. Am Ende alles
 // gesammelt übernehmen. Es ist immer nur eine Kamera-Pipeline aktiv (erst der
 // native Live-Scanner, dann die System-Kamera fürs MHD-Foto).
-export function ScanFlowSheet({ open, onClose, t, dark, zones, targetZone, onCommit }) {
+// `mode` = 'batch' (Standard, mehrere hintereinander) | 'single' (ein Produkt,
+// danach direkt zur Übernahme-Ansicht).
+export function ScanFlowSheet({ open, onClose, t, dark, zones, categories, onAddCategory, targetZone, mode = 'batch', onCommit }) {
   const [phase, setPhase] = useState('barcode'); // barcode | mhd | review
   const [collected, setCollected] = useState([]);
   const [current, setCurrent] = useState(null);
@@ -114,13 +118,19 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, targetZone, onCom
     }
   };
 
-  // Aktuelles Produkt in die Sammelliste, dann weiter zum nächsten Barcode.
+  // Aktuelles Produkt in die Sammelliste. Im Batch-Modus geht es direkt weiter
+  // zum nächsten Barcode, im Einzel-Modus zur Übernahme-Ansicht.
   const commitCurrent = (patch = {}) => {
     const item = { key: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), ...current, ...patch };
     setCollected((prev) => [...prev, item]);
     setCurrent(null);
-    setStatus('✓ Übernommen – nächstes Produkt');
-    setPhase('barcode');
+    if (mode === 'single') {
+      setStatus('');
+      setPhase('review');
+    } else {
+      setStatus('✓ Übernommen – nächstes Produkt');
+      setPhase('barcode');
+    }
   };
 
   const goReview = async () => {
@@ -153,38 +163,24 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, targetZone, onCom
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 16px' }}>
           {collected.length === 0 ? (
             <div style={{ textAlign: 'center', color: t.textFaint, padding: '48px 12px' }}>Noch nichts erfasst.</div>
-          ) : collected.map((b) => {
-            const z = zones.find((zz) => zz.id === b.zone) || zones[0];
-            const bp = zonePalette(z.color, dark);
-            return (
-              <div key={b.key} style={{ display: 'flex', alignItems: 'center', gap: 8, background: t.cardAlt, borderRadius: 12, padding: '8px 10px', marginBottom: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setCollected((prev) => prev.map((x) => {
-                    if (x.key !== b.key) return x;
-                    const order = zones.map((zz) => zz.id);
-                    return { ...x, zone: order[(order.indexOf(x.zone) + 1) % order.length] };
-                  }))}
-                  style={{ flexShrink: 0, border: 'none', background: bp.accentBg, borderRadius: 10, width: 40, height: 40, fontSize: 18, cursor: 'pointer' }}
-                  aria-label="Lagerort wechseln"
-                >
-                  {z.emoji}
-                </button>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <input
-                    value={b.name}
-                    onChange={(e) => setCollected((prev) => prev.map((x) => (x.key === b.key ? { ...x, name: e.target.value } : x)))}
-                    placeholder="Name ergänzen…"
-                    style={{ ...makeInputStyle(t), marginTop: 0, padding: '8px 10px' }}
-                  />
-                  {b.mhd && <div style={{ fontSize: 11, color: t.textMuted, marginTop: 3 }}>MHD {b.mhd}</div>}
-                </div>
-                <button type="button" onClick={() => setCollected((prev) => prev.filter((x) => x.key !== b.key))} style={{ ...btnCircle('transparent', t.danger, 32), flexShrink: 0 }} aria-label="Entfernen">
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            );
-          })}
+          ) : collected.map((b) => (
+            <ReviewRow
+              key={b.key}
+              b={b}
+              zones={zones}
+              dark={dark}
+              t={t}
+              categories={categories}
+              onAddCategory={onAddCategory}
+              onUpdate={(patch) => setCollected((prev) => prev.map((x) => (x.key === b.key ? { ...x, ...patch } : x)))}
+              onCycleZone={() => setCollected((prev) => prev.map((x) => {
+                if (x.key !== b.key) return x;
+                const order = zones.map((zz) => zz.id);
+                return { ...x, zone: order[(order.indexOf(x.zone) + 1) % order.length] };
+              }))}
+              onRemove={() => setCollected((prev) => prev.filter((x) => x.key !== b.key))}
+            />
+          ))}
         </div>
         <div style={{ padding: '12px 16px calc(16px + env(safe-area-inset-bottom))', borderTop: `1px solid ${t.border}`, display: 'flex', gap: 10 }}>
           <button onClick={() => setPhase('barcode')} style={{ flexShrink: 0, padding: '14px 18px', borderRadius: 14, border: `1.5px solid ${t.border}`, background: 'transparent', color: t.textMuted, fontWeight: 700, cursor: 'pointer' }}>
@@ -316,6 +312,76 @@ function TopBar({ t, title, step, onClose }) {
       </button>
       {step && <span style={{ background: t.cardAlt, color: t.textMuted, borderRadius: 8, padding: '3px 9px', fontSize: 12, fontWeight: 700 }}>Schritt {step}</span>}
       <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: t.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</h2>
+    </div>
+  );
+}
+
+// Eine bearbeitbare Zeile in der Übernahme-Ansicht: Lagerort, Name, Kategorie,
+// Einheit und Menge lassen sich vor dem Übernehmen noch anpassen.
+function ReviewRow({ b, zones, dark, t, categories, onAddCategory, onUpdate, onCycleZone, onRemove }) {
+  const z = zones.find((zz) => zz.id === b.zone) || zones[0];
+  const bp = zonePalette(z.color, dark);
+  return (
+    <div style={{ background: t.cardAlt, borderRadius: 14, padding: 10, marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button
+          type="button"
+          onClick={onCycleZone}
+          style={{ flexShrink: 0, border: 'none', background: bp.accentBg, borderRadius: 10, width: 40, height: 40, fontSize: 18, cursor: 'pointer' }}
+          aria-label="Lagerort wechseln"
+        >
+          {z.emoji}
+        </button>
+        <ClearableInput
+          t={t}
+          value={b.name}
+          onChange={(v) => onUpdate({ name: v })}
+          placeholder="Name ergänzen…"
+          style={{ ...makeInputStyle(t), marginTop: 0, padding: '9px 10px' }}
+          wrapperStyle={{ flex: 1, minWidth: 0 }}
+        />
+        <button type="button" onClick={onRemove} style={{ ...btnCircle('transparent', t.danger, 34), flexShrink: 0 }} aria-label="Entfernen">
+          <Trash2 size={15} />
+        </button>
+      </div>
+
+      <div style={{ marginTop: 8 }}>
+        <CategoryPicker
+          value={b.category}
+          onChange={(c) => onUpdate({ category: c })}
+          categories={categories}
+          onAddCategory={onAddCategory}
+          t={t}
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 6, flex: 1 }}>
+          {['stk', 'g', 'ml'].map((u) => (
+            <button
+              key={u}
+              type="button"
+              onClick={() => onUpdate({ unit: u, qty: u === 'stk' ? Math.max(1, Math.round(b.qty) || 1) : (b.unit === 'stk' ? 500 : b.qty) })}
+              style={{ ...pillStyle(b.unit === u, t), padding: '8px 6px', fontSize: 13 }}
+            >
+              {u === 'stk' ? 'Stück' : u}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <button type="button" onClick={() => onUpdate({ qty: Math.max(1, (b.qty || 1) - (b.unit === 'stk' ? 1 : 50)) })} style={btnCircle(t.card, t.pillInactiveText, 32)}>
+            <Minus size={14} strokeWidth={2.5} />
+          </button>
+          <span style={{ minWidth: 42, textAlign: 'center', fontSize: 13.5, fontWeight: 700, color: t.text }}>
+            {b.unit === 'stk' ? `${b.qty}x` : `${b.qty}${b.unit}`}
+          </span>
+          <button type="button" onClick={() => onUpdate({ qty: (b.qty || 1) + (b.unit === 'stk' ? 1 : 50) })} style={btnCircle(bp.accentBg, bp.accent, 32)}>
+            <Plus size={14} strokeWidth={2.5} />
+          </button>
+        </div>
+      </div>
+
+      {b.mhd && <div style={{ fontSize: 11, color: t.textMuted, marginTop: 8 }}>MHD {b.mhd}</div>}
     </div>
   );
 }

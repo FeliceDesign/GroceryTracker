@@ -1,13 +1,17 @@
-import { Plus, Minus, Trash2 } from 'lucide-react';
+import { Plus, Minus, Trash2, Check } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
-import { daysUntil, mhdColor, mhdLabel } from '../lib/date.js';
+import { daysUntil, expiryLevel, levelColor, mhdLabel } from '../lib/date.js';
 import { btnCircle } from '../lib/styles.js';
 
 // Eine Artikelzeile. `zone` ist das aufgelöste Lagerort-Objekt (oder undefined,
 // falls der Lagerort inzwischen entfernt wurde – dann neutraler Fallback).
-export function ItemRow({ item, zone, t, dark, justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast }) {
+export function ItemRow({ item, zone, t, dark, yellowDays = 3, justChanged, onEdit, onChangeQty, onRemove, onToggleOpened, showZoneBadge, isLast }) {
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
   const days = daysUntil(item.mhd);
+  const level = expiryLevel(days, yellowDays); // null | 'expired' | 'soon' | 'ok'
+  const warn = level === 'expired' || level === 'soon';
+  const wColor = levelColor(level, t);
+  const wBg = level === 'expired' ? t.dangerBg : t.warningBg;
 
   return (
     <div
@@ -20,18 +24,49 @@ export function ItemRow({ item, zone, t, dark, justChanged, onEdit, onChangeQty,
       }}
     >
       <div onClick={() => onEdit(item)} style={{ cursor: 'pointer', minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: 15, color: t.text, fontWeight: 500 }}>{item.name}</div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 1, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          {warn && (
+            <span style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', background: wColor }} aria-hidden="true" />
+          )}
+          <span style={{ fontSize: 15, color: t.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 2, flexWrap: 'wrap', paddingLeft: warn ? 15 : 0 }}>
           {showZoneBadge && zone && (
             <span style={{ fontSize: 10.5, fontWeight: 700, color: pal.accent }}>
               {zone.emoji} {zone.label}
             </span>
           )}
           {item.mhd && (
-            <span style={{ fontSize: 11, fontWeight: 600, color: mhdColor(days, t) }}>
+            <span style={{
+              fontSize: 11, fontWeight: 700, color: wColor,
+              background: warn ? wBg : 'transparent',
+              padding: warn ? '1px 7px' : 0, borderRadius: 6,
+            }}>
               MHD {mhdLabel(days)}
             </span>
           )}
+          {/* „geöffnet"-Häkchen – eigener Klickbereich, öffnet nicht die Bearbeitung */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onToggleOpened(item.id); }}
+            aria-pressed={!!item.opened}
+            aria-label={item.opened ? `${item.name} als nicht geöffnet markieren` : `${item.name} als geöffnet markieren`}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5, border: 'none', background: 'transparent',
+              cursor: 'pointer', padding: 0, fontSize: 10.5, fontWeight: 700,
+              color: item.opened ? t.warning : t.textFaint,
+            }}
+          >
+            <span style={{
+              width: 14, height: 14, borderRadius: 4, flexShrink: 0,
+              border: `1.5px solid ${item.opened ? t.warning : t.textFaint}`,
+              background: item.opened ? t.warning : 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {item.opened && <Check size={10} strokeWidth={3.5} color={t.bg} />}
+            </span>
+            geöffnet
+          </button>
         </div>
       </div>
 
