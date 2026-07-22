@@ -6,7 +6,7 @@ import { MacroEditor } from './MacroEditor.jsx';
 import { makeInputStyle, primaryButtonStyle } from '../../lib/styles.js';
 import {
   emptyMacros, foodToMacros, macrosToFood, macroSummary, basisLabel,
-  hasMacros, normalizeName, copyMacros,
+  hasMacros, hasFoodData, normalizeName, copyMacros,
 } from '../../lib/macros.js';
 
 // Stammdaten / Makros verwalten: alle Nährwert-Datensätze durchsuchen,
@@ -149,7 +149,9 @@ export function ManageFoodsSheet({ open, onClose, t, foods, onUpsert, onRemove, 
                   {food.name}
                 </span>
                 <span style={{ display: 'block', fontSize: 11.5, color: t.textFaint, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {hasMacros(food) ? `${macroSummary(food)} · ${basisLabel(food)}` : 'keine Werte'}
+                  {hasMacros(food)
+                    ? `${macroSummary(food)} · ${basisLabel(food)}`
+                    : (hasFoodData(food) ? 'Zutaten hinterlegt' : 'keine Werte')}
                 </span>
               </button>
               {hasMacros(food) && (

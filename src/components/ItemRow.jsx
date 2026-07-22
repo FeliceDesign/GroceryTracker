@@ -1,11 +1,11 @@
-import { Plus, Minus, Trash2, Check } from 'lucide-react';
+import { Plus, Minus, Trash2 } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
 import { daysUntil, expiryLevel, levelColor, mhdLabel } from '../lib/date.js';
 import { btnCircle } from '../lib/styles.js';
 
 // Eine Artikelzeile. `zone` ist das aufgelöste Lagerort-Objekt (oder undefined,
 // falls der Lagerort inzwischen entfernt wurde – dann neutraler Fallback).
-export function ItemRow({ item, zone, t, dark, yellowDays = 3, justChanged, onEdit, onChangeQty, onRemove, onToggleOpened, showZoneBadge, isLast }) {
+export function ItemRow({ item, zone, t, dark, yellowDays = 3, justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast }) {
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
   const days = daysUntil(item.mhd);
   const level = expiryLevel(days, yellowDays); // null | 'expired' | 'soon' | 'ok'
@@ -45,28 +45,16 @@ export function ItemRow({ item, zone, t, dark, yellowDays = 3, justChanged, onEd
               MHD {mhdLabel(days)}
             </span>
           )}
-          {/* „geöffnet"-Häkchen – eigener Klickbereich, öffnet nicht die Bearbeitung */}
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onToggleOpened(item.id); }}
-            aria-pressed={!!item.opened}
-            aria-label={item.opened ? `${item.name} als nicht geöffnet markieren` : `${item.name} als geöffnet markieren`}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5, border: 'none', background: 'transparent',
-              cursor: 'pointer', padding: 0, fontSize: 10.5, fontWeight: 700,
-              color: item.opened ? t.warning : t.textFaint,
-            }}
-          >
+          {/* „geöffnet"-Badge – nur sichtbar, wenn im Bearbeiten-Menü aktiviert */}
+          {item.opened && (
             <span style={{
-              width: 14, height: 14, borderRadius: 4, flexShrink: 0,
-              border: `1.5px solid ${item.opened ? t.warning : t.textFaint}`,
-              background: item.opened ? t.warning : 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700,
+              color: t.warning, background: t.warningBg, padding: '1px 7px', borderRadius: 6,
             }}>
-              {item.opened && <Check size={10} strokeWidth={3.5} color={t.bg} />}
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: t.warning }} aria-hidden="true" />
+              geöffnet
             </span>
-            geöffnet
-          </button>
+          )}
         </div>
       </div>
 

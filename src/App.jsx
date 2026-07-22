@@ -7,7 +7,7 @@ import { useZones } from './hooks/useZones.js';
 import { useCategories } from './hooks/useCategories.js';
 import { useFoods } from './hooks/useFoods.js';
 import { SEED } from './lib/defaults.js';
-import { emptyMacros, foodToMacros, macrosToFood, hasMacros, defaultBasisForUnit } from './lib/macros.js';
+import { emptyMacros, foodToMacros, macrosToFood, hasFoodData, defaultBasisForUnit } from './lib/macros.js';
 import { daysUntil } from './lib/date.js';
 import { isScanSupported } from './scan/scan.js';
 import { captureMhdViaPhoto } from './scan/camera.js';
@@ -128,10 +128,6 @@ export default function App() {
     flash(id);
   };
 
-  const toggleOpened = (id) => {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, opened: !i.opened } : i)));
-  };
-
   const removeItem = (id) => {
     const removed = items.find((i) => i.id === id);
     if (!removed) return;
@@ -167,9 +163,9 @@ export default function App() {
     setEditItem({ ...item, macros: foodToMacros(food, defaultBasisForUnit(item.unit)) });
   };
 
-  // Nährwerte-Entwurf -> Stammdaten (nur wenn wirklich Werte gesetzt sind).
+  // Stammdaten-Entwurf -> Stammdaten (nur wenn Nährwerte ODER Zutaten gesetzt).
   const saveFoodMacros = (name, macros) => {
-    if (macros && hasMacros(macros)) upsertFood(macrosToFood(macros, name));
+    if (hasFoodData(macros)) upsertFood(macrosToFood(macros, name));
   };
 
   const closeAdd = () => {
@@ -205,7 +201,10 @@ export default function App() {
       return;
     }
     setItems((prev) => prev.map((i) => (i.id === editItem.id
-      ? { ...i, name, zone: editItem.zone, category: editItem.category, qty: editItem.qty, unit: editItem.unit, mhd: editItem.mhd || null }
+      ? {
+        ...i, name, zone: editItem.zone, category: editItem.category, qty: editItem.qty, unit: editItem.unit,
+        mhd: editItem.mhd || null, opened: !!editItem.opened, openedAt: editItem.opened ? (editItem.openedAt || null) : null,
+      }
       : i)));
     setEditItem(null);
     setScanMsg('');
@@ -460,7 +459,7 @@ export default function App() {
               {searchResults.map((item, idx) => (
                 <ItemRow
                   key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays}
-                  justChanged={justChanged} onEdit={openEdit} onChangeQty={changeQty} onRemove={removeItem} onToggleOpened={toggleOpened}
+                  justChanged={justChanged} onEdit={openEdit} onChangeQty={changeQty} onRemove={removeItem}
                   showZoneBadge isLast={idx === searchResults.length - 1}
                 />
               ))}
@@ -474,7 +473,7 @@ export default function App() {
               {list.map((item, idx) => (
                 <ItemRow
                   key={item.id} item={item} zone={zone} t={t} dark={dark} yellowDays={yellowDays}
-                  justChanged={justChanged} onEdit={openEdit} onChangeQty={changeQty} onRemove={removeItem} onToggleOpened={toggleOpened}
+                  justChanged={justChanged} onEdit={openEdit} onChangeQty={changeQty} onRemove={removeItem}
                   isLast={idx === list.length - 1}
                 />
               ))}

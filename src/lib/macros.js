@@ -51,7 +51,7 @@ export function basisLabel(food) {
 
 // Leerer Bearbeitungs-Entwurf.
 export function emptyMacros(basis = '100g') {
-  const m = { basis, portionSize: null };
+  const m = { basis, portionSize: null, ingredients: '' };
   MACRO_FIELDS.forEach((f) => { m[f.key] = null; });
   return m;
 }
@@ -61,13 +61,19 @@ export function foodToMacros(food, fallbackBasis = '100g') {
   const m = emptyMacros(food?.basis || fallbackBasis);
   if (!food) return m;
   m.portionSize = food.portionSize ?? null;
+  m.ingredients = food.ingredients || '';
   MACRO_FIELDS.forEach((f) => { m[f.key] = food[f.key] ?? null; });
   return m;
 }
 
 // Entwurf + Name -> speicherbarer Datensatz.
 export function macrosToFood(m, name) {
-  const food = { name: (name || '').trim(), basis: (m && m.basis) || '100g', portionSize: (m && m.portionSize) ?? null };
+  const food = {
+    name: (name || '').trim(),
+    basis: (m && m.basis) || '100g',
+    portionSize: (m && m.portionSize) ?? null,
+    ingredients: (m && m.ingredients ? String(m.ingredients).trim() : ''),
+  };
   MACRO_FIELDS.forEach((f) => { food[f.key] = (m && m[f.key] != null) ? m[f.key] : null; });
   return food;
 }
@@ -86,6 +92,11 @@ export function mergeScanned(draft, facts) {
 export function hasMacros(m) {
   if (!m) return false;
   return MACRO_FIELDS.some((f) => m[f.key] != null && m[f.key] !== '');
+}
+
+// Enthält der Datensatz überhaupt Nutzdaten (Nährwerte ODER Zutaten)?
+export function hasFoodData(m) {
+  return hasMacros(m) || !!(m && m.ingredients && String(m.ingredients).trim());
 }
 
 // Abgeleiteter Wert (nicht gespeichert): ungesättigte Fettsäuren = Fett −

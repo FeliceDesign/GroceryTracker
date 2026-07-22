@@ -186,3 +186,17 @@ export async function captureNutritionViaPhoto() {
   const text = await ocrTextFromBase64(full);
   return { facts: parseNutritionFacts(text), text };
 }
+
+// Allgemeiner Text-Scan (z.B. Zutatenliste): fotografiert und gibt den rohen
+// OCR-Text des ganzen Bildes zurück.
+export async function captureTextViaPhoto() {
+  await Camera.requestPermissions({ permissions: ['camera'] }).catch(() => {});
+  const photo = await Camera.takePhoto({ quality: 85, correctOrientation: true });
+  const src = photo.webPath || photo.dataUrl || (photo.uri ? Capacitor.convertFileSrc(photo.uri) : '');
+  if (!src) return { text: '' };
+
+  const img = await loadImage(src);
+  const full = drawToBase64(img, img.naturalWidth, img.naturalHeight, { x: 0, y: 0, width: 1, height: 1 });
+  const text = await ocrTextFromBase64(full);
+  return { text };
+}

@@ -1,22 +1,25 @@
 import { useState } from 'react';
-import { Camera, Copy, Check } from 'lucide-react';
+import { Camera, Copy, Check, ClipboardPaste, List } from 'lucide-react';
 import {
   MACRO_FIELDS, BASIS_OPTIONS, hasMacros, mergeScanned, copyMacros, unsaturatedFat, fmtNum,
 } from '../../lib/macros.js';
-import { captureNutritionViaPhoto } from '../../scan/camera.js';
+import { captureNutritionViaPhoto, captureTextViaPhoto } from '../../scan/camera.js';
+import { parseNutritionFacts } from '../../scan/nutrition.js';
 import { makeInputStyle } from '../../lib/styles.js';
 
-// Bearbeitungsformular für die Nährwerte eines Lebensmittels.
-// `macros` ist der Entwurf (siehe lib/macros.js), `onChange(patch)` mischt
-// Änderungen ein. Scan (Nährwerttabelle fotografieren) und Kopieren sind hier
-// gekapselt, damit alle Einbindungen (Bearbeiten/Anlegen/Stammdaten) gleich
-// funktionieren.
+// Bearbeitungsformular für die Stammdaten eines Lebensmittels (Nährwerte +
+// Zutaten). `macros` ist der Entwurf (siehe lib/macros.js), `onChange(patch)`
+// mischt Änderungen ein. Scannen, Text-Einfügen und Kopieren sind hier
+// gekapselt, damit alle Einbindungen gleich funktionieren.
 export function MacroEditor({
   name, macros, onChange, t, scanSupported, accent,
 }) {
   const [busy, setBusy] = useState(false);
+  const [ingBusy, setIngBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showPaste, setShowPaste] = useState(false);
+  const [pasteText, setPasteText] = useState('');
   const inputStyle = makeInputStyle(t);
   const showCopy = hasMacros(macros) && (name || '').trim().length > 0;
 
@@ -31,8 +34,7 @@ export function MacroEditor({
     try {
       const { facts, text } = await captureNutritionViaPhoto();
       if (hasMacros(facts)) {
-        const merged = mergeScanned(macros, facts);
-        onChange(merged);
+        onChange(mergeScanned(macros, facts));
         setMsg('✓ Nährwerte erkannt – bitte kurz prüfen.');
       } else if (text && text.trim()) {
         const snippet = text.trim().replace(/\s+/g, ' ').slice(0, 45);
@@ -47,12 +49,51 @@ export function MacroEditor({
     }
   };
 
+  // Eingefügten Nährwerttabellen-Text übernehmen (gleicher Parser wie beim Scan).
+  const applyPaste = () => {
+    const facts = parseNutritionFacts(pasteText);
+    if (hasMacros(facts)) {
+      onChange(mergeScanned(macros, facts));
+      setMsg('✓ Werte aus Text übernommen – bitte kurz prüfen.');
+      setPasteText('');
+      setShowPaste(false);
+    } else {
+      setMsg('Aus dem Text konnte ich keine Nährwerte lesen. Beispiel je Zeile: „Eiweiß 3,4 g".');
+    }
+  };
+
+  const scanIngredients = async () => {
+    setMsg('');
+    setIngBusy(true);
+    try {
+      const { text } = await captureTextViaPhoto();
+      const clean = (text || '').replace(/\s*\n\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
+      if (clean) {
+        onChange({ ingredients: clean });
+        setMsg('✓ Zutaten erkannt – bitte kurz prüfen.');
+      } else {
+        setMsg('Kein Text erkannt – Zutatenliste näher/schärfer fotografieren.');
+      }
+    } catch (e) {
+      setMsg(e?.message || 'Erkennung fehlgeschlagen.');
+    } finally {
+      setIngBusy(false);
+    }
+  };
+
   const doCopy = async () => {
     const ok = await copyMacros({ name, ...macros });
     setCopied(ok);
     setMsg(ok ? '' : 'Kopieren nicht möglich.');
     if (ok) setTimeout(() => setCopied(false), 1600);
   };
+
+  const secondaryBtn = (extra = {}) => ({
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+    padding: '12px', borderRadius: 12, border: `1.5px solid ${t.border}`,
+    background: 'transparent', color: t.textMuted, fontWeight: 700, fontSize: 13.5,
+    cursor: 'pointer', whiteSpace: 'nowrap', ...extra,
+  });
 
   return (
     <div>
@@ -116,58 +157,85 @@ export function MacroEditor({
             </div>
           );
           // Direkt hinter „davon gesättigte" die berechnete, schreibgeschützte
-          // Zeile „davon ungesättigt" (Fett − gesättigt) anzeigen.
+          // Zeile „davon ungesättigt" (Fett − gesättigt) – immer sichtbar,
+          // zeigt „—", solange nicht beide Werte vorliegen.
           if (f.key === 'satFat') {
             const u = unsaturatedFat(macros);
-            if (u != null) {
-              return [row, (
-                <div key="unsat" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ flex: 1, fontSize: 13.5, color: t.textFaint, fontWeight: 500, paddingLeft: 12, fontStyle: 'italic' }}>
-                    – davon ungesättigt
-                  </span>
-                  <span style={{ width: 96, textAlign: 'right', padding: '9px 10px', fontSize: 14.5, color: t.textFaint, fontVariantNumeric: 'tabular-nums' }}>
-                    {fmtNum(u)}
-                  </span>
-                  <span style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, width: 30 }}>g</span>
-                </div>
-              )];
-            }
+            return [row, (
+              <div key="unsat" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ flex: 1, fontSize: 13.5, color: t.textFaint, fontWeight: 500, paddingLeft: 12, fontStyle: 'italic' }}>
+                  – davon ungesättigt
+                </span>
+                <span style={{ width: 96, textAlign: 'right', padding: '9px 10px', fontSize: 14.5, color: t.textFaint, fontVariantNumeric: 'tabular-nums' }}>
+                  {u != null ? fmtNum(u) : '—'}
+                </span>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, width: 30 }}>g</span>
+              </div>
+            )];
           }
           return row;
         })}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
         {scanSupported && (
-          <button
-            type="button"
-            onClick={scan}
-            disabled={busy}
-            style={{
-              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-              padding: '12px', borderRadius: 12, border: `1.5px solid ${t.border}`,
-              background: 'transparent', color: accent || t.textMuted, fontWeight: 700, fontSize: 13.5,
-              cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1,
-            }}
-          >
+          <button type="button" onClick={scan} disabled={busy} style={secondaryBtn({ flex: 1, color: accent || t.textMuted, opacity: busy ? 0.6 : 1, cursor: busy ? 'default' : 'pointer' })}>
             <Camera size={16} /> {busy ? 'Lese…' : 'Tabelle scannen'}
           </button>
         )}
+        <button type="button" onClick={() => { setShowPaste((v) => !v); setMsg(''); }} style={secondaryBtn({ flex: 1 })}>
+          <ClipboardPaste size={16} /> Text einfügen
+        </button>
         {showCopy && (
-          <button
-            type="button"
-            onClick={doCopy}
-            style={{
-              flex: scanSupported ? 0 : 1, flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-              padding: '12px 16px', borderRadius: 12, border: `1.5px solid ${t.border}`,
-              background: 'transparent', color: copied ? t.success : t.textMuted, fontWeight: 700, fontSize: 13.5,
-              cursor: 'pointer', whiteSpace: 'nowrap',
-            }}
-          >
+          <button type="button" onClick={doCopy} style={secondaryBtn({ color: copied ? t.success : t.textMuted, padding: '12px 16px' })}>
             {copied ? <Check size={16} /> : <Copy size={15} />} {copied ? 'Kopiert' : 'Kopieren'}
           </button>
         )}
+      </div>
+
+      {showPaste && (
+        <div style={{ marginTop: 10 }}>
+          <textarea
+            value={pasteText}
+            onChange={(e) => setPasteText(e.target.value)}
+            placeholder={'Nährwerttabelle als Text einfügen…\nz.B.\nEnergie 64 kcal\nEiweiß 3,4 g\nKohlenhydrate 4,8 g\nFett 3,5 g'}
+            rows={5}
+            style={{ ...inputStyle, marginTop: 0, resize: 'vertical', fontSize: 13 }}
+          />
+          <button
+            type="button"
+            onClick={applyPaste}
+            disabled={!pasteText.trim()}
+            style={{
+              width: '100%', marginTop: 8, padding: '11px', borderRadius: 12, border: 'none',
+              background: t.btnPrimary, color: t.btnPrimaryText, fontWeight: 700, fontSize: 14,
+              cursor: pasteText.trim() ? 'pointer' : 'default', opacity: pasteText.trim() ? 1 : 0.5,
+            }}
+          >
+            Werte übernehmen
+          </button>
+        </div>
+      )}
+
+      {/* Zutatenliste */}
+      <div style={{ marginTop: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, color: t.text }}>
+            <List size={16} /> Zutaten
+          </span>
+          {scanSupported && (
+            <button type="button" onClick={scanIngredients} disabled={ingBusy} style={secondaryBtn({ padding: '8px 12px', fontSize: 12.5, color: accent || t.textMuted, opacity: ingBusy ? 0.6 : 1, cursor: ingBusy ? 'default' : 'pointer' })}>
+              <Camera size={15} /> {ingBusy ? 'Lese…' : 'Scannen'}
+            </button>
+          )}
+        </div>
+        <textarea
+          value={macros.ingredients || ''}
+          onChange={(e) => onChange({ ingredients: e.target.value })}
+          placeholder="z.B. Weizenmehl, Zucker, Palmöl, Haselnüsse (13 %), …"
+          rows={3}
+          style={{ ...inputStyle, marginTop: 8, resize: 'vertical', fontSize: 13, lineHeight: 1.45 }}
+        />
       </div>
 
       {msg && (

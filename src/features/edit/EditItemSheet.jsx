@@ -3,9 +3,11 @@ import { Modal } from '../../components/Modal.jsx';
 import { ZonePicker } from '../../components/ZonePicker.jsx';
 import { CategoryPicker } from '../../components/CategoryPicker.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
+import { PackageOpen } from 'lucide-react';
 import { MacroSection } from '../macros/MacroSection.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { emptyMacros, defaultBasisForUnit } from '../../lib/macros.js';
+import { todayISO } from '../../lib/date.js';
 import { makeInputStyle, makeLabelStyle, pillStyle, btnCircle, primaryButtonStyle } from '../../lib/styles.js';
 
 export function EditItemSheet({
@@ -136,6 +138,23 @@ export function EditItemSheet({
           </button>
         )}
       </div>
+
+      <label style={labelStyle}>Status</label>
+      <button
+        type="button"
+        onClick={() => setEditItem((s) => ({ ...s, opened: !s.opened, openedAt: !s.opened ? (s.openedAt || todayISO()) : null }))}
+        aria-pressed={!!editItem.opened}
+        style={{
+          marginTop: 6, width: '100%', display: 'flex', alignItems: 'center', gap: 9,
+          padding: '13px 14px', borderRadius: 12, cursor: 'pointer',
+          border: `1.5px solid ${editItem.opened ? t.warning : t.border}`,
+          background: editItem.opened ? t.warningBg : 'transparent',
+          color: editItem.opened ? t.warning : t.textMuted, fontWeight: 700, fontSize: 14.5,
+        }}
+      >
+        <PackageOpen size={18} />
+        {editItem.opened ? 'Geöffnet' : 'Als geöffnet markieren'}
+      </button>
 
       <MacroSection
         name={editItem.name}

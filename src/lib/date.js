@@ -1,6 +1,13 @@
 // Mindesthaltbarkeitsdatum (MHD) – Berechnung und Darstellung.
 // Ein MHD ist optional und pro Artikel im Format JJJJ-MM-TT gespeichert.
 
+// Heutiges Datum als JJJJ-MM-TT (lokale Zeitzone).
+export function todayISO() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export function daysUntil(mhd) {
   if (!mhd) return null;
   const today = new Date();
