@@ -10,9 +10,13 @@ import { makeInputStyle, btnCircle } from '../../lib/styles.js';
 export function ShoppingSheet({
   open, onClose, t, dark, zones,
   shopping, shoppingInput, setShoppingInput, onAddManual, onCheck, onRemove, onClearAll, justChecked,
+  showCount = true,
 }) {
   const inputStyle = makeInputStyle(t);
   const [confirmClear, setConfirmClear] = useState(false);
+  const subtitle = shopping.length === 0
+    ? 'Alles erledigt'
+    : (showCount ? `${shopping.length} offen` : 'offen');
 
   // Bestätigung zurücksetzen, sobald das Sheet auf-/zugeht oder die Liste leer wird
   useEffect(() => {
@@ -20,7 +24,7 @@ export function ShoppingSheet({
   }, [open, shopping.length]);
 
   return (
-    <Modal open={open} onClose={onClose} t={t} title="Einkaufsliste" subtitle={shopping.length > 0 ? `${shopping.length} offen` : 'Alles erledigt'}>
+    <Modal open={open} onClose={onClose} t={t} title="Einkaufsliste" subtitle={subtitle}>
       <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
         <ClearableInput
           t={t}

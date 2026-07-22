@@ -44,6 +44,8 @@ export default function App() {
   const [warn, setWarn, warnLoaded] = useStorage('gt-warn-v1', {
     yellowDays: 3, notify: false, thresholds: [7, 3, 1, 0], notifyHour: 9,
   });
+  // Allgemeine UI-Einstellungen (z.B. Anzeige-Optionen).
+  const [prefs, setPrefs, prefsLoaded] = useStorage('gt-prefs-v1', { shoppingCount: true });
 
   const [activeZone, setActiveZone] = useState(null);
   const [search, setSearch] = useState('');
@@ -76,8 +78,8 @@ export default function App() {
   const checkedTimerRef = useRef(null);
 
   const scanSupported = isScanSupported();
-  const ready = themeLoaded && zonesLoaded && catsLoaded && foodsLoaded && itemsLoaded && shoppingLoaded && warnLoaded
-    && zones !== null && categories !== null && foods !== null && items !== null && shopping !== null && warn !== null;
+  const ready = themeLoaded && zonesLoaded && catsLoaded && foodsLoaded && itemsLoaded && shoppingLoaded && warnLoaded && prefsLoaded
+    && zones !== null && categories !== null && foods !== null && items !== null && shopping !== null && warn !== null && prefs !== null;
 
   // activeZone gültig halten (z.B. nachdem ein Lagerort entfernt wurde)
   useEffect(() => {
@@ -350,7 +352,11 @@ export default function App() {
   };
 
   // -- Backup -----------------------------------------------------------------
-  const buildBackup = () => JSON.stringify({ version: 2, exportedAt: new Date().toISOString(), zones, categories, foods, items, shopping, warn }, null, 2);
+  // includeMacros=false lässt die Nährwert-Stammdaten (foods) aus dem Backup weg.
+  const buildBackup = (includeMacros = true) => JSON.stringify(
+    { version: 2, exportedAt: new Date().toISOString(), zones, categories, foods: includeMacros ? foods : undefined, items, shopping, warn },
+    null, 2,
+  );
 
   const restoreBackup = (text) => {
     let data;
@@ -433,6 +439,7 @@ export default function App() {
           zone={zone} dark={dark} t={t}
           totalInZone={totalInZone}
           shoppingCount={shopping.length}
+          showShoppingCount={prefs.shoppingCount}
           onShopping={() => setShowShopping(true)}
           onSettings={() => setShowSettings(true)}
         />
@@ -506,7 +513,7 @@ export default function App() {
         open={showShopping} onClose={() => setShowShopping(false)} t={t} dark={dark} zones={zones}
         shopping={shopping} shoppingInput={shoppingInput} setShoppingInput={setShoppingInput}
         onAddManual={addManualShopping} onCheck={checkAndRestore} onRemove={removeFromShopping}
-        onClearAll={clearShopping} justChecked={justChecked}
+        onClearAll={clearShopping} justChecked={justChecked} showCount={prefs.shoppingCount}
       />
 
       <SettingsSheet
@@ -515,6 +522,8 @@ export default function App() {
         onManageZones={() => { setShowSettings(false); setShowZones(true); }}
         onManageCategories={() => { setShowSettings(false); setShowCategories(true); }}
         onManageFoods={() => { setShowSettings(false); setShowFoods(true); }}
+        showShoppingCount={prefs.shoppingCount}
+        onToggleShoppingCount={(on) => setPrefs((p) => ({ ...p, shoppingCount: on }))}
         warn={warn} onUpdateWarn={updateWarn} onSetNotify={setNotifyEnabled} notifySupported={notificationsSupported()}
         stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
         buildBackup={buildBackup} restoreBackup={restoreBackup}

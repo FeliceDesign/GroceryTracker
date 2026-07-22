@@ -106,16 +106,18 @@ const ALL_THRESHOLDS = [14, 7, 3, 1, 0];
 export function SettingsSheet({
   open, onClose, t, themeOverride, setThemeOverride,
   onManageZones, onManageCategories, onManageFoods,
+  showShoppingCount, onToggleShoppingCount,
   warn, onUpdateWarn, onSetNotify, notifySupported,
   stats, buildBackup, restoreBackup,
 }) {
   const [importing, setImporting] = useState(false);
   const [importText, setImportText] = useState('');
   const [msg, setMsg] = useState('');
+  const [exportMacros, setExportMacros] = useState(true);
   const inputStyle = makeInputStyle(t);
 
   const doExport = async () => {
-    const json = buildBackup();
+    const json = buildBackup(exportMacros);
     let copied = false;
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -165,6 +167,14 @@ export function SettingsSheet({
           { value: 'dark', label: 'Dunkel', icon: <Moon size={15} /> },
         ]}
       />
+      <div style={{ marginTop: 10 }}>
+        <SettingRow
+          t={t}
+          label="Artikelzahl auf Einkaufsliste"
+          sub="Zahl-Badge am Einkaufs-Symbol. Aus: nur ein Punkt bei offenen Artikeln."
+          control={<Toggle t={t} on={showShoppingCount !== false} onChange={onToggleShoppingCount} />}
+        />
+      </div>
 
       <div style={sectionLabel(t)}>MHD-Warnungen</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -251,7 +261,13 @@ export function SettingsSheet({
 
       <div style={sectionLabel(t)}>Daten</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <Row t={t} icon={<Download size={19} />} label="Backup exportieren" sub={`${stats.items} Artikel als JSON`} onClick={doExport} />
+        <SettingRow
+          t={t}
+          label="Makros mit exportieren"
+          sub={`Nährwerte von ${stats.foods} Lebensmitteln ins Backup aufnehmen.`}
+          control={<Toggle t={t} on={exportMacros} onChange={setExportMacros} />}
+        />
+        <Row t={t} icon={<Download size={19} />} label="Backup exportieren" sub={`${stats.items} Artikel als JSON${exportMacros ? ' inkl. Makros' : ' ohne Makros'}`} onClick={doExport} />
         <Row t={t} icon={<Upload size={19} />} label="Backup importieren" sub="Aus JSON wiederherstellen" onClick={() => setImporting((v) => !v)} />
       </div>
 

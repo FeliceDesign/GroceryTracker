@@ -1,7 +1,7 @@
 import { ShoppingCart, Settings } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
 
-export function Header({ zone, dark, t, totalInZone, shoppingCount, onShopping, onSettings }) {
+export function Header({ zone, dark, t, totalInZone, shoppingCount, showShoppingCount = true, onShopping, onSettings }) {
   const pal = zonePalette(zone.color, dark);
   const iconBtn = {
     background: 'rgba(255,255,255,0.18)', border: 'none', borderRadius: 12,
@@ -40,14 +40,22 @@ export function Header({ zone, dark, t, totalInZone, shoppingCount, onShopping, 
             <button onClick={onShopping} style={iconBtn} aria-label={`Einkaufsliste öffnen${shoppingCount > 0 ? ` (${shoppingCount})` : ''}`}>
               <ShoppingCart size={20} strokeWidth={2.2} />
               {shoppingCount > 0 && (
-                <span style={{
-                  position: 'absolute', top: -4, right: -4, minWidth: 19, height: 19,
-                  borderRadius: 10, background: t.headerText, color: pal.headerBg,
-                  fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', padding: '0 5px', boxSizing: 'border-box',
-                }}>
-                  {shoppingCount}
-                </span>
+                showShoppingCount ? (
+                  <span style={{
+                    position: 'absolute', top: -4, right: -4, minWidth: 19, height: 19,
+                    borderRadius: 10, background: t.headerText, color: pal.headerBg,
+                    fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', padding: '0 5px', boxSizing: 'border-box',
+                  }}>
+                    {shoppingCount}
+                  </span>
+                ) : (
+                  <span style={{
+                    position: 'absolute', top: -2, right: -2, width: 11, height: 11,
+                    borderRadius: '50%', background: t.headerText,
+                    border: `2px solid ${pal.headerBg}`, boxSizing: 'border-box',
+                  }} />
+                )
               )}
             </button>
             <button onClick={onSettings} style={iconBtn} aria-label="Einstellungen öffnen">
