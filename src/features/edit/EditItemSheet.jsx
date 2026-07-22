@@ -3,7 +3,9 @@ import { Modal } from '../../components/Modal.jsx';
 import { ZonePicker } from '../../components/ZonePicker.jsx';
 import { CategoryPicker } from '../../components/CategoryPicker.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
+import { MacroSection } from '../macros/MacroSection.jsx';
 import { zonePalette } from '../../lib/colors.js';
+import { emptyMacros, defaultBasisForUnit } from '../../lib/macros.js';
 import { makeInputStyle, makeLabelStyle, pillStyle, btnCircle, primaryButtonStyle } from '../../lib/styles.js';
 
 export function EditItemSheet({
@@ -134,6 +136,15 @@ export function EditItemSheet({
           </button>
         )}
       </div>
+
+      <MacroSection
+        name={editItem.name}
+        macros={editItem.macros || emptyMacros(defaultBasisForUnit(editItem.unit))}
+        onChange={(patch) => setEditItem((s) => ({ ...s, macros: { ...(s.macros || emptyMacros(defaultBasisForUnit(s.unit))), ...patch } }))}
+        t={t}
+        scanSupported={scanSupported}
+        accent={pal.accent}
+      />
     </Modal>
   );
 }

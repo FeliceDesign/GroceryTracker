@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Boxes, Tags, Download, Upload, Sun, Moon, SunMoon, ChevronRight, Plus, Minus, Bell } from 'lucide-react';
+import { Boxes, Tags, Utensils, Download, Upload, Sun, Moon, SunMoon, ChevronRight, Plus, Minus, Bell } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
 
@@ -105,7 +105,7 @@ const ALL_THRESHOLDS = [14, 7, 3, 1, 0];
 
 export function SettingsSheet({
   open, onClose, t, themeOverride, setThemeOverride,
-  onManageZones, onManageCategories,
+  onManageZones, onManageCategories, onManageFoods,
   warn, onUpdateWarn, onSetNotify, notifySupported,
   stats, buildBackup, restoreBackup,
 }) {
@@ -239,6 +239,13 @@ export function SettingsSheet({
           label="Kategorien verwalten"
           sub={`${stats.categories} Kategorien`}
           onClick={onManageCategories}
+        />
+        <Row
+          t={t}
+          icon={<Utensils size={19} />}
+          label="Stammdaten / Makros"
+          sub={`Nährwerte für ${stats.foods} Lebensmittel`}
+          onClick={onManageFoods}
         />
       </div>
 

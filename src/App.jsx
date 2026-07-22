@@ -5,7 +5,9 @@ import { useSystemTheme, buildTheme } from './lib/theme.js';
 import { useStorage } from './hooks/useStorage.js';
 import { useZones } from './hooks/useZones.js';
 import { useCategories } from './hooks/useCategories.js';
+import { useFoods } from './hooks/useFoods.js';
 import { SEED } from './lib/defaults.js';
+import { emptyMacros, foodToMacros, macrosToFood, hasMacros, defaultBasisForUnit } from './lib/macros.js';
 import { daysUntil } from './lib/date.js';
 import { isScanSupported } from './scan/scan.js';
 import { captureMhdViaPhoto } from './scan/camera.js';
@@ -26,6 +28,7 @@ import { ShoppingSheet } from './features/shopping/ShoppingSheet.jsx';
 import { ManageZonesSheet } from './features/zones/ManageZonesSheet.jsx';
 import { ManageCategoriesSheet } from './features/categories/ManageCategoriesSheet.jsx';
 import { SettingsSheet } from './features/settings/SettingsSheet.jsx';
+import { ManageFoodsSheet } from './features/macros/ManageFoodsSheet.jsx';
 
 const newId = (prefix = 'i') => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
@@ -35,6 +38,7 @@ export default function App() {
 
   const { zones, loaded: zonesLoaded, addZone, updateZone, setZones } = useZones();
   const { categories, loaded: catsLoaded, addCategory, removeCategory, setCategories } = useCategories();
+  const { foods, setFoods, loaded: foodsLoaded, getFood, upsertFood, removeFood } = useFoods();
   const [items, setItems, itemsLoaded] = useStorage('gt-items-v1', SEED);
   const [shopping, setShopping, shoppingLoaded] = useStorage('gt-shopping-v1', []);
   const [warn, setWarn, warnLoaded] = useStorage('gt-warn-v1', {
@@ -51,6 +55,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showZones, setShowZones] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
+  const [showFoods, setShowFoods] = useState(false);
 
   // Formular / Scan
   const [newItem, setNewItem] = useState({ name: '', zone: null, category: null, qty: 1, unit: 'stk', mhd: null });
@@ -71,8 +76,8 @@ export default function App() {
   const checkedTimerRef = useRef(null);
 
   const scanSupported = isScanSupported();
-  const ready = themeLoaded && zonesLoaded && catsLoaded && itemsLoaded && shoppingLoaded && warnLoaded
-    && zones !== null && categories !== null && items !== null && shopping !== null && warn !== null;
+  const ready = themeLoaded && zonesLoaded && catsLoaded && foodsLoaded && itemsLoaded && shoppingLoaded && warnLoaded
+    && zones !== null && categories !== null && foods !== null && items !== null && shopping !== null && warn !== null;
 
   // activeZone gültig halten (z.B. nachdem ein Lagerort entfernt wurde)
   useEffect(() => {
@@ -149,9 +154,20 @@ export default function App() {
 
   // -- Hinzufügen -------------------------------------------------------------
   const openAdd = () => {
-    setNewItem({ name: '', zone: activeZone, category: categories[0], qty: 1, unit: 'stk', mhd: null });
+    setNewItem({ name: '', zone: activeZone, category: categories[0], qty: 1, unit: 'stk', mhd: null, macros: emptyMacros('100g') });
     setScanMsg('');
     setShowAdd(true);
+  };
+
+  // Bearbeiten öffnen und dabei die vorhandenen Nährwerte (Stammdaten) laden.
+  const openEdit = (item) => {
+    const food = getFood(item.name);
+    setEditItem({ ...item, macros: foodToMacros(food, defaultBasisForUnit(item.unit)) });
+  };
+
+  // Nährwerte-Entwurf -> Stammdaten (nur wenn wirklich Werte gesetzt sind).
+  const saveFoodMacros = (name, macros) => {
+    if (macros && hasMacros(macros)) upsertFood(macrosToFood(macros, name));
   };
 
   const closeAdd = () => {
@@ -167,6 +183,7 @@ export default function App() {
       id: newId(), zone: zoneId, category: newItem.category || categories[0],
       name, qty: newItem.qty, unit: newItem.unit, mhd: newItem.mhd || null,
     }]);
+    saveFoodMacros(name, newItem.macros);
     setShopping((prev) => prev.filter((s) =>
       !(s.name.toLowerCase() === name.toLowerCase() && (s.zone === zoneId || s.zone === null))));
     setActiveZone(zoneId);
@@ -179,6 +196,7 @@ export default function App() {
     if (!editItem) return;
     const name = editItem.name.trim();
     if (!name) return;
+    saveFoodMacros(name, editItem.macros);
     if (editItem.qty <= 0) {
       removeItem(editItem.id);
       setEditItem(null);
@@ -238,6 +256,8 @@ export default function App() {
       name: b.name.trim(), qty: b.qty > 0 ? b.qty : 1, unit: b.unit || 'stk', mhd: b.mhd || null,
     }));
     setItems((prev) => [...prev, ...newOnes]);
+    // Gescannte Nährwerte in die Stammdaten übernehmen (per Name).
+    valid.forEach((b) => saveFoodMacros(b.name.trim(), b.macros));
     setShopping((prev) => prev.filter((s) =>
       !newOnes.some((n) => n.name.toLowerCase() === s.name.toLowerCase() && (s.zone === n.zone || s.zone === null))));
     if (newOnes[0]) setActiveZone(newOnes[0].zone);
@@ -261,7 +281,7 @@ export default function App() {
   const restoreFromShopping = (entry) => {
     if (!entry.zone) {
       // Freier Eintrag ohne Lagerort -> Add-Formular mit vorbelegtem Namen
-      setNewItem({ name: entry.name, zone: activeZone, category: categories[0], qty: 1, unit: 'stk', mhd: null });
+      setNewItem({ name: entry.name, zone: activeZone, category: categories[0], qty: 1, unit: 'stk', mhd: null, macros: foodToMacros(getFood(entry.name), '100g') });
       setShowShopping(false);
       setScanMsg('');
       setShowAdd(true);
@@ -330,7 +350,7 @@ export default function App() {
   };
 
   // -- Backup -----------------------------------------------------------------
-  const buildBackup = () => JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), zones, categories, items, shopping, warn }, null, 2);
+  const buildBackup = () => JSON.stringify({ version: 2, exportedAt: new Date().toISOString(), zones, categories, foods, items, shopping, warn }, null, 2);
 
   const restoreBackup = (text) => {
     let data;
@@ -344,6 +364,7 @@ export default function App() {
     }
     setZones(data.zones);
     if (Array.isArray(data.categories)) setCategories(data.categories);
+    if (Array.isArray(data.foods)) setFoods(data.foods);
     setItems(data.items);
     setShopping(Array.isArray(data.shopping) ? data.shopping : []);
     if (data.warn && typeof data.warn === 'object') setWarn(data.warn);
@@ -432,7 +453,7 @@ export default function App() {
               {searchResults.map((item, idx) => (
                 <ItemRow
                   key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays}
-                  justChanged={justChanged} onEdit={setEditItem} onChangeQty={changeQty} onRemove={removeItem} onToggleOpened={toggleOpened}
+                  justChanged={justChanged} onEdit={openEdit} onChangeQty={changeQty} onRemove={removeItem} onToggleOpened={toggleOpened}
                   showZoneBadge isLast={idx === searchResults.length - 1}
                 />
               ))}
@@ -446,7 +467,7 @@ export default function App() {
               {list.map((item, idx) => (
                 <ItemRow
                   key={item.id} item={item} zone={zone} t={t} dark={dark} yellowDays={yellowDays}
-                  justChanged={justChanged} onEdit={setEditItem} onChangeQty={changeQty} onRemove={removeItem} onToggleOpened={toggleOpened}
+                  justChanged={justChanged} onEdit={openEdit} onChangeQty={changeQty} onRemove={removeItem} onToggleOpened={toggleOpened}
                   isLast={idx === list.length - 1}
                 />
               ))}
@@ -493,8 +514,9 @@ export default function App() {
         themeOverride={themeOverride} setThemeOverride={setThemeOverride}
         onManageZones={() => { setShowSettings(false); setShowZones(true); }}
         onManageCategories={() => { setShowSettings(false); setShowCategories(true); }}
+        onManageFoods={() => { setShowSettings(false); setShowFoods(true); }}
         warn={warn} onUpdateWarn={updateWarn} onSetNotify={setNotifyEnabled} notifySupported={notificationsSupported()}
-        stats={{ items: items.length, zones: zones.length, categories: categories.length }}
+        stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
         buildBackup={buildBackup} restoreBackup={restoreBackup}
       />
 
@@ -508,6 +530,12 @@ export default function App() {
         open={showCategories} onClose={() => setShowCategories(false)} t={t}
         categories={categories} countFor={countForCategory}
         onAdd={addCategory} onRename={renameCategory} onRemove={removeCategoryWithReassign}
+      />
+
+      <ManageFoodsSheet
+        open={showFoods} onClose={() => setShowFoods(false)} t={t}
+        foods={foods} onUpsert={upsertFood} onRemove={removeFood}
+        scanSupported={scanSupported}
       />
     </div>
 

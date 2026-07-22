@@ -4,7 +4,9 @@ import { ZonePicker } from '../../components/ZonePicker.jsx';
 import { CategoryPicker } from '../../components/CategoryPicker.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { BarcodeIcon } from '../../components/icons.jsx';
+import { MacroSection } from '../macros/MacroSection.jsx';
 import { zonePalette } from '../../lib/colors.js';
+import { emptyMacros, defaultBasisForUnit } from '../../lib/macros.js';
 import { makeInputStyle, makeLabelStyle, pillStyle, btnCircle, primaryButtonStyle } from '../../lib/styles.js';
 
 // Erfassungs-Formular. Bewusst so aufgebaut, dass die häufig genutzten
@@ -159,6 +161,15 @@ export function AddItemSheet({
           </button>
         )}
       </div>
+
+      <MacroSection
+        name={newItem.name}
+        macros={newItem.macros || emptyMacros(defaultBasisForUnit(newItem.unit))}
+        onChange={(patch) => setNewItem((s) => ({ ...s, macros: { ...(s.macros || emptyMacros(defaultBasisForUnit(s.unit))), ...patch } }))}
+        t={t}
+        scanSupported={scanSupported}
+        accent={pal.accent}
+      />
     </Modal>
   );
 }

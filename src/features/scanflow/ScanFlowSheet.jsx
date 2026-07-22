@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Camera, SkipForward, Trash2, ScanLine, Plus, Minus } from 'lucide-react';
+import { X, Camera, SkipForward, Trash2, ScanLine, Utensils, Plus, Minus } from 'lucide-react';
 import { BarcodeIcon } from '../../components/icons.jsx';
 import { CategoryPicker } from '../../components/CategoryPicker.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { btnCircle, makeInputStyle, pillStyle, primaryButtonStyle } from '../../lib/styles.js';
+import { hasMacros } from '../../lib/macros.js';
 import { lookupOpenFoodFacts } from '../../scan/scan.js';
-import { startBarcodeScan, captureMhdViaPhoto } from '../../scan/camera.js';
+import { startBarcodeScan, captureMhdViaPhoto, captureNutritionViaPhoto } from '../../scan/camera.js';
 
 function vibrate(ms = 35) {
   try { if (navigator.vibrate) navigator.vibrate(ms); } catch { /* egal */ }
@@ -18,7 +19,7 @@ function vibrate(ms = 35) {
 // `mode` = 'batch' (Standard, mehrere hintereinander) | 'single' (ein Produkt,
 // danach direkt zur Übernahme-Ansicht).
 export function ScanFlowSheet({ open, onClose, t, dark, zones, categories, onAddCategory, targetZone, mode = 'batch', onCommit }) {
-  const [phase, setPhase] = useState('barcode'); // barcode | mhd | review
+  const [phase, setPhase] = useState('barcode'); // barcode | mhd | nutrition | review
   const [collected, setCollected] = useState([]);
   const [current, setCurrent] = useState(null);
   const [status, setStatus] = useState('');
@@ -79,7 +80,7 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, categories, onAdd
     detectedRef.current = true;
     vibrate();
     await stopBarcode();
-    setCurrent({ barcode: value, name: '', category: 'Sonstiges', qty: 1, unit: 'stk', zone: zoneRef.current, mhd: null });
+    setCurrent({ barcode: value, name: '', category: 'Sonstiges', qty: 1, unit: 'stk', zone: zoneRef.current, mhd: null, macros: null });
     setStatus('Suche Produkt…');
     setPhase('mhd');
     let product = null;
@@ -92,7 +93,7 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, categories, onAdd
   const skipBarcode = async () => {
     detectedRef.current = true;
     await stopBarcode();
-    setCurrent({ barcode: null, name: '', category: 'Sonstiges', qty: 1, unit: 'stk', zone: zoneRef.current, mhd: null });
+    setCurrent({ barcode: null, name: '', category: 'Sonstiges', qty: 1, unit: 'stk', zone: zoneRef.current, mhd: null, macros: null });
     setStatus('');
     setPhase('mhd');
   };
@@ -104,10 +105,33 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, categories, onAdd
       const res = await captureMhdViaPhoto();
       if (res.date) {
         vibrate();
-        commitCurrent({ mhd: res.date });
+        setCurrent((c) => (c ? { ...c, mhd: res.date } : c));
+        setStatus('');
+        setPhase('nutrition');
       } else if (res.text && res.text.trim()) {
         const snippet = res.text.trim().replace(/\s+/g, ' ').slice(0, 40);
         setStatus(`Kein Datum erkannt (gelesen: „${snippet}…"). Datum mittig ins Bild holen und erneut aufnehmen.`);
+      } else {
+        setStatus('Kein Text erkannt – näher ran und scharf stellen.');
+      }
+    } catch (e) {
+      setStatus(e?.message || 'Erkennung fehlgeschlagen.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const captureNutrition = async () => {
+    setBusy(true);
+    setStatus('Nährwerttabelle fotografieren…');
+    try {
+      const { facts, text } = await captureNutritionViaPhoto();
+      if (hasMacros(facts)) {
+        vibrate();
+        commitCurrent({ macros: facts });
+      } else if (text && text.trim()) {
+        const snippet = text.trim().replace(/\s+/g, ' ').slice(0, 40);
+        setStatus(`Keine Nährwerte erkannt (gelesen: „${snippet}…"). Tabelle formatfüllend und scharf aufnehmen.`);
       } else {
         setStatus('Kein Text erkannt – näher ran und scharf stellen.');
       }
@@ -246,18 +270,49 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, categories, onAdd
   }
 
   // ----- MHD-Phase: Foto-Aufnahme (kein Livebild) ---------------------------
+  if (phase === 'mhd') {
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: t.bg, display: 'flex', flexDirection: 'column' }}>
+        <TopBar t={t} title={current?.name ? current.name : 'MHD scannen'} step="2" onClose={close} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 28px', textAlign: 'center' }}>
+          <div style={{ width: 96, height: 96, borderRadius: 24, background: pal.accentBg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+            <ScanLine size={44} color={pal.accent} strokeWidth={1.8} />
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: t.text }}>MHD fotografieren</div>
+          <div style={{ fontSize: 13.5, color: t.textMuted, marginTop: 8, lineHeight: 1.5, maxWidth: 300 }}>
+            Tippe auf „MHD-Foto", halte das Datum mittig und nah ins Bild. Der Rest wird automatisch zugeschnitten und gelesen.
+          </div>
+          {status && !status.startsWith('Datum fotografieren') && (
+            <div style={{ fontSize: 12.5, marginTop: 16, color: status.startsWith('✓') ? t.success : t.textMuted, lineHeight: 1.4 }}>
+              {status}
+            </div>
+          )}
+        </div>
+        <div style={{ padding: '12px 16px calc(16px + env(safe-area-inset-bottom))', borderTop: `1px solid ${t.border}`, display: 'flex', gap: 10 }}>
+          <button onClick={() => { setStatus(''); setPhase('nutrition'); }} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 12px', borderRadius: 14, border: `1.5px solid ${t.border}`, background: 'transparent', color: t.textMuted, fontWeight: 700, cursor: 'pointer' }}>
+            <SkipForward size={17} /> Ohne MHD
+          </button>
+          <button onClick={captureMhd} disabled={busy} style={{ ...primaryButtonStyle(t), display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: busy ? 0.6 : 1 }}>
+            <Camera size={18} /> {busy ? 'Lese…' : 'MHD-Foto'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ----- Nährwerte-Phase: Foto der Nährwerttabelle + OCR --------------------
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: t.bg, display: 'flex', flexDirection: 'column' }}>
-      <TopBar t={t} title={current?.name ? current.name : 'MHD scannen'} step="2" onClose={close} />
+      <TopBar t={t} title={current?.name ? current.name : 'Nährwerte scannen'} step="3" onClose={close} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 28px', textAlign: 'center' }}>
         <div style={{ width: 96, height: 96, borderRadius: 24, background: pal.accentBg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-          <ScanLine size={44} color={pal.accent} strokeWidth={1.8} />
+          <Utensils size={42} color={pal.accent} strokeWidth={1.8} />
         </div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: t.text }}>MHD fotografieren</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: t.text }}>Nährwerttabelle fotografieren</div>
         <div style={{ fontSize: 13.5, color: t.textMuted, marginTop: 8, lineHeight: 1.5, maxWidth: 300 }}>
-          Tippe auf „MHD-Foto", halte das Datum mittig und nah ins Bild. Der Rest wird automatisch zugeschnitten und gelesen.
+          Tippe auf „Tabelle scannen" und halte die Nährwerttabelle formatfüllend und scharf ins Bild. Die Werte werden automatisch ausgelesen.
         </div>
-        {status && !status.startsWith('Datum fotografieren') && (
+        {status && !status.startsWith('Nährwerttabelle fotografieren') && (
           <div style={{ fontSize: 12.5, marginTop: 16, color: status.startsWith('✓') ? t.success : t.textMuted, lineHeight: 1.4 }}>
             {status}
           </div>
@@ -265,10 +320,10 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, categories, onAdd
       </div>
       <div style={{ padding: '12px 16px calc(16px + env(safe-area-inset-bottom))', borderTop: `1px solid ${t.border}`, display: 'flex', gap: 10 }}>
         <button onClick={() => commitCurrent()} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 12px', borderRadius: 14, border: `1.5px solid ${t.border}`, background: 'transparent', color: t.textMuted, fontWeight: 700, cursor: 'pointer' }}>
-          <SkipForward size={17} /> Ohne MHD
+          <SkipForward size={17} /> Ohne Nährwerte
         </button>
-        <button onClick={captureMhd} disabled={busy} style={{ ...primaryButtonStyle(t), display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: busy ? 0.6 : 1 }}>
-          <Camera size={18} /> {busy ? 'Lese…' : 'MHD-Foto'}
+        <button onClick={captureNutrition} disabled={busy} style={{ ...primaryButtonStyle(t), display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: busy ? 0.6 : 1 }}>
+          <Camera size={18} /> {busy ? 'Lese…' : 'Tabelle scannen'}
         </button>
       </div>
     </div>
@@ -381,7 +436,12 @@ function ReviewRow({ b, zones, dark, t, categories, onAddCategory, onUpdate, onC
         </div>
       </div>
 
-      {b.mhd && <div style={{ fontSize: 11, color: t.textMuted, marginTop: 8 }}>MHD {b.mhd}</div>}
+      {(b.mhd || hasMacros(b.macros)) && (
+        <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: 11, color: t.textMuted }}>
+          {b.mhd && <span>MHD {b.mhd}</span>}
+          {hasMacros(b.macros) && <span style={{ color: t.success, fontWeight: 700 }}>Nährwerte ✓</span>}
+        </div>
+      )}
     </div>
   );
 }
