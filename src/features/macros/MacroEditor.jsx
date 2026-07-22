@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Camera, Copy, Check } from 'lucide-react';
 import {
-  MACRO_FIELDS, BASIS_OPTIONS, hasMacros, mergeScanned, copyMacros,
+  MACRO_FIELDS, BASIS_OPTIONS, hasMacros, mergeScanned, copyMacros, unsaturatedFat, fmtNum,
 } from '../../lib/macros.js';
 import { captureNutritionViaPhoto } from '../../scan/camera.js';
 import { makeInputStyle } from '../../lib/styles.js';
@@ -94,25 +94,47 @@ export function MacroEditor({
       )}
 
       <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {MACRO_FIELDS.map((f) => (
-          <div key={f.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{
-              flex: 1, fontSize: 13.5, color: f.indent ? t.textFaint : t.text,
-              fontWeight: f.indent ? 500 : 600, paddingLeft: f.indent ? 12 : 0,
-            }}>
-              {f.indent ? '– ' : ''}{f.label}
-            </span>
-            <input
-              type="number"
-              inputMode="decimal"
-              value={macros[f.key] ?? ''}
-              onChange={(e) => setField(f.key, e.target.value)}
-              placeholder="—"
-              style={{ ...inputStyle, marginTop: 0, width: 96, textAlign: 'right', padding: '9px 10px' }}
-            />
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, width: 30 }}>{f.unit}</span>
-          </div>
-        ))}
+        {MACRO_FIELDS.map((f) => {
+          const row = (
+            <div key={f.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{
+                flex: 1, fontSize: 13.5, color: f.indent ? t.textFaint : t.text,
+                fontWeight: f.indent ? 500 : 600, paddingLeft: f.indent ? 12 : 0,
+                fontStyle: f.indent ? 'italic' : 'normal',
+              }}>
+                {f.indent ? '– ' : ''}{f.label}
+              </span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={macros[f.key] ?? ''}
+                onChange={(e) => setField(f.key, e.target.value)}
+                placeholder="—"
+                style={{ ...inputStyle, marginTop: 0, width: 96, textAlign: 'right', padding: '9px 10px' }}
+              />
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, width: 30 }}>{f.unit}</span>
+            </div>
+          );
+          // Direkt hinter „davon gesättigte" die berechnete, schreibgeschützte
+          // Zeile „davon ungesättigt" (Fett − gesättigt) anzeigen.
+          if (f.key === 'satFat') {
+            const u = unsaturatedFat(macros);
+            if (u != null) {
+              return [row, (
+                <div key="unsat" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ flex: 1, fontSize: 13.5, color: t.textFaint, fontWeight: 500, paddingLeft: 12, fontStyle: 'italic' }}>
+                    – davon ungesättigt
+                  </span>
+                  <span style={{ width: 96, textAlign: 'right', padding: '9px 10px', fontSize: 14.5, color: t.textFaint, fontVariantNumeric: 'tabular-nums' }}>
+                    {fmtNum(u)}
+                  </span>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, width: 30 }}>g</span>
+                </div>
+              )];
+            }
+          }
+          return row;
+        })}
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>

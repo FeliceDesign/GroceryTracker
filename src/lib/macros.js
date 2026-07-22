@@ -7,13 +7,13 @@
 
 // Reihenfolge = Anzeige-/Kopier-Reihenfolge. `indent` markiert „davon"-Zeilen.
 export const MACRO_FIELDS = [
-  { key: 'kcal', label: 'Energie', unit: 'kcal', decimals: 0 },
-  { key: 'protein', label: 'Eiweiß', unit: 'g' },
+  { key: 'kcal', label: 'Kalorien', unit: 'kcal', decimals: 0 },
+  { key: 'protein', label: 'Protein', unit: 'g' },
   { key: 'carbs', label: 'Kohlenhydrate', unit: 'g' },
   { key: 'sugar', label: 'davon Zucker', unit: 'g', indent: true },
+  { key: 'fiber', label: 'Ballaststoffe', unit: 'g' },
   { key: 'fat', label: 'Fett', unit: 'g' },
   { key: 'satFat', label: 'davon gesättigte', tableLabel: 'davon gesättigt', unit: 'g', indent: true },
-  { key: 'fiber', label: 'Ballaststoffe', unit: 'g' },
   { key: 'salt', label: 'Salz', unit: 'g' },
 ];
 
@@ -88,12 +88,20 @@ export function hasMacros(m) {
   return MACRO_FIELDS.some((f) => m[f.key] != null && m[f.key] !== '');
 }
 
+// Abgeleiteter Wert (nicht gespeichert): ungesättigte Fettsäuren = Fett −
+// gesättigt. Nur wenn beide Werte vorliegen und das Ergebnis ≥ 0 ist.
+export function unsaturatedFat(m) {
+  if (!m || m.fat == null || m.satFat == null) return null;
+  const v = Math.round((Number(m.fat) - Number(m.satFat)) * 100) / 100;
+  return v >= 0 ? v : null;
+}
+
 // Kompakte Zusammenfassung für Listen (z.B. „64 kcal · 3,4 g EW · …").
 export function macroSummary(food) {
   if (!food) return '';
   const parts = [];
   if (food.kcal != null) parts.push(`${fmtNum(food.kcal)} kcal`);
-  if (food.protein != null) parts.push(`${fmtNum(food.protein)} g EW`);
+  if (food.protein != null) parts.push(`${fmtNum(food.protein)} g P`);
   if (food.carbs != null) parts.push(`${fmtNum(food.carbs)} g KH`);
   if (food.fat != null) parts.push(`${fmtNum(food.fat)} g F`);
   return parts.join(' · ');
@@ -102,12 +110,20 @@ export function macroSummary(food) {
 // Mehrzeilige Nährwerttabelle zum Kopieren (an „:" ausgerichtet).
 export function formatMacroTable(food) {
   const name = (food.name || '').trim();
-  const rows = MACRO_FIELDS
-    .filter((f) => food[f.key] != null && food[f.key] !== '')
-    .map((f) => ({
-      label: (f.indent ? ' – ' : '') + (f.tableLabel || f.label) + ':',
-      value: `${fmtNum(food[f.key])} ${f.unit}`,
-    }));
+  const rows = [];
+  MACRO_FIELDS.forEach((f) => {
+    if (food[f.key] != null && food[f.key] !== '') {
+      rows.push({
+        label: (f.indent ? ' – ' : '') + (f.tableLabel || f.label) + ':',
+        value: `${fmtNum(food[f.key])} ${f.unit}`,
+      });
+    }
+    // Abgeleitete „davon ungesättigt"-Zeile direkt hinter „davon gesättigt".
+    if (f.key === 'satFat') {
+      const u = unsaturatedFat(food);
+      if (u != null) rows.push({ label: ' – davon ungesättigt:', value: `${fmtNum(u)} g` });
+    }
+  });
   const header = `${name} — ${basisLabel(food)}`;
   if (rows.length === 0) return header;
   const width = Math.max(...rows.map((r) => r.label.length)) + 2;
