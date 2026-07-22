@@ -40,11 +40,11 @@ export function ItemRow({ item, zone, t, dark, yellowDays = 3, openedShelfDays =
       }}
     >
       <div onClick={() => onEdit(item)} style={{ cursor: 'pointer', minWidth: 0, flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
           {warn && (
-            <span style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', background: wColor }} aria-hidden="true" />
+            <span style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', background: wColor, marginTop: 6 }} aria-hidden="true" />
           )}
-          <span style={{ fontSize: 15, color: t.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+          <span style={{ fontSize: 15, color: t.text, fontWeight: 500, overflowWrap: 'anywhere', lineHeight: 1.3 }}>{item.name}</span>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 2, flexWrap: 'wrap', paddingLeft: warn ? 15 : 0 }}>
           {showZoneBadge && zone && (

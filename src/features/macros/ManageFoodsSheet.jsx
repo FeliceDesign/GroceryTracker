@@ -145,7 +145,7 @@ export function ManageFoodsSheet({ open, onClose, t, foods, onUpsert, onRemove, 
                 onClick={() => startEdit(food)}
                 style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0 }}
               >
-                <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: t.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere', lineHeight: 1.3 }}>
                   {food.name}
                 </span>
                 <span style={{ display: 'block', fontSize: 11.5, color: t.textFaint, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

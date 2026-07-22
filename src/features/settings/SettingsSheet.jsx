@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Boxes, Tags, Utensils, Download, Upload, Sun, Moon, SunMoon, ChevronRight, Plus, Minus, Bell } from 'lucide-react';
+import { Boxes, Tags, Utensils, Clock, Download, Upload, Sun, Moon, SunMoon, ChevronRight, Plus, Minus, Bell } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
 
@@ -105,31 +105,41 @@ const ALL_THRESHOLDS = [14, 7, 3, 1, 0];
 
 export function SettingsSheet({
   open, onClose, t, themeOverride, setThemeOverride,
-  onManageZones, onManageCategories, onManageFoods,
-  showShoppingCount, onToggleShoppingCount,
+  onManageZones, onManageCategories, onManageFoods, onOpenShelfLife,
+  showShoppingCount, onToggleShoppingCount, stepGml, onSetStepGml,
   warn, onUpdateWarn, onSetNotify, notifySupported,
-  stats, buildBackup, restoreBackup,
+  stats, buildBackup, restoreBackup, previewBackup,
 }) {
   const [importing, setImporting] = useState(false);
   const [importText, setImportText] = useState('');
   const [msg, setMsg] = useState('');
   const [exportMacros, setExportMacros] = useState(true);
+  const [pending, setPending] = useState(null); // { text, summary } – wartet auf Bestätigung
   const fileRef = useRef(null);
   const inputStyle = makeInputStyle(t);
 
-  const applyImport = (text) => {
-    const res = restoreBackup(text);
+  // Prüfen und zur Bestätigung vormerken (noch NICHT anwenden).
+  const preview = (text) => {
+    const res = previewBackup(text);
+    if (res.ok) { setPending({ text, summary: res.summary }); setMsg(''); }
+    else { setPending(null); setMsg(res.message); setTimeout(() => setMsg(''), 4000); }
+  };
+
+  const confirmImport = () => {
+    if (!pending) return;
+    const res = restoreBackup(pending.text);
     setMsg(res.ok ? '✓ ' + res.message : res.message);
     if (res.ok) { setImportText(''); setImporting(false); }
+    setPending(null);
     setTimeout(() => setMsg(''), 4000);
   };
 
-  // Backup aus einer ausgewählten .json-Datei einlesen.
+  // Backup aus einer ausgewählten .json-Datei einlesen (nur prüfen).
   const onPickFile = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => applyImport(String(reader.result || ''));
+    reader.onload = () => preview(String(reader.result || ''));
     reader.onerror = () => { setMsg('Datei konnte nicht gelesen werden.'); };
     reader.readAsText(file);
     e.target.value = ''; // gleiche Datei erneut wählbar machen
@@ -163,7 +173,7 @@ export function SettingsSheet({
     setTimeout(() => setMsg(''), 3000);
   };
 
-  const doImport = () => applyImport(importText);
+  const doImport = () => preview(importText);
 
   return (
     <Modal open={open} onClose={onClose} t={t} title="Einstellungen">
@@ -185,6 +195,30 @@ export function SettingsSheet({
           sub="Zahl-Badge am Einkaufs-Symbol. Aus: nur ein Punkt bei offenen Artikeln."
           control={<Toggle t={t} on={showShoppingCount !== false} onChange={onToggleShoppingCount} />}
         />
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px', marginTop: 10 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Schrittweite (g/ml)</div>
+          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
+            Wie viel die +/−-Knöpfe bei Gramm/Milliliter ändern. „Auto" = 10 bis 100, danach 50.
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {[['auto', 'Auto'], [5, '5'], [10, '10'], [25, '25'], [50, '50'], [100, '100']].map(([val, lbl]) => {
+              const active = String(stepGml ?? 'auto') === String(val);
+              return (
+                <button
+                  key={String(val)}
+                  type="button"
+                  onClick={() => onSetStepGml(val)}
+                  style={{
+                    padding: '8px 14px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                    background: active ? t.pillActive : t.card, color: active ? t.pillActiveText : t.textMuted,
+                  }}
+                >
+                  {lbl}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       <div style={sectionLabel(t)}>MHD-Warnungen</div>
@@ -268,6 +302,13 @@ export function SettingsSheet({
           sub={`Nährwerte für ${stats.foods} Lebensmittel`}
           onClick={onManageFoods}
         />
+        <Row
+          t={t}
+          icon={<Clock size={19} />}
+          label="Haltbarkeits-Ratgeber"
+          sub="Richtwerte nach dem Öffnen inkl. Lagerung"
+          onClick={onOpenShelfLife}
+        />
       </div>
 
       <div style={sectionLabel(t)}>Daten</div>
@@ -279,7 +320,7 @@ export function SettingsSheet({
           control={<Toggle t={t} on={exportMacros} onChange={setExportMacros} />}
         />
         <Row t={t} icon={<Download size={19} />} label="Backup exportieren" sub={`${stats.items} Artikel als JSON${exportMacros ? ' inkl. Makros' : ' ohne Makros'}`} onClick={doExport} />
-        <Row t={t} icon={<Upload size={19} />} label="Backup importieren" sub="Aus JSON wiederherstellen" onClick={() => setImporting((v) => !v)} />
+        <Row t={t} icon={<Upload size={19} />} label="Backup importieren" sub="Aus Datei oder JSON – mit Bestätigung" onClick={() => { setImporting((v) => !v); setPending(null); }} />
       </div>
 
       {importing && (
@@ -312,13 +353,42 @@ export function SettingsSheet({
             onClick={doImport}
             disabled={!importText.trim()}
             style={{
-              width: '100%', marginTop: 8, padding: '12px', borderRadius: 12, border: 'none',
-              background: t.btnPrimary, color: t.btnPrimaryText, fontWeight: 700,
+              width: '100%', marginTop: 8, padding: '12px', borderRadius: 12, border: `1.5px solid ${t.border}`,
+              background: 'transparent', color: t.text, fontWeight: 700,
               cursor: importText.trim() ? 'pointer' : 'default', opacity: importText.trim() ? 1 : 0.5,
             }}
           >
-            Wiederherstellen (ersetzt aktuellen Bestand)
+            Text prüfen
           </button>
+        </div>
+      )}
+
+      {pending && (
+        <div style={{ marginTop: 12, background: t.cardAlt, borderRadius: 14, padding: 14, border: `1.5px solid ${t.dangerBorder}` }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: t.text, marginBottom: 6 }}>Backup wirklich übernehmen?</div>
+          <div style={{ fontSize: 12.5, color: t.textMuted, lineHeight: 1.5 }}>
+            {pending.summary.exportedAt ? `Stand: ${new Date(pending.summary.exportedAt).toLocaleString('de-DE')}` : 'Ohne Datum'}<br />
+            <b>{pending.summary.items}</b> Artikel · <b>{pending.summary.foods}</b> Lebensmittel (Makros) · <b>{pending.summary.zones}</b> Lagerorte · <b>{pending.summary.categories}</b> Kategorien
+          </div>
+          <div style={{ fontSize: 12, color: t.danger, marginTop: 8, lineHeight: 1.4 }}>
+            ⚠️ Ersetzt deinen aktuellen Bestand vollständig.
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button
+              type="button"
+              onClick={() => setPending(null)}
+              style={{ flex: 1, padding: '12px', borderRadius: 12, border: `1.5px solid ${t.border}`, background: 'transparent', color: t.textMuted, fontWeight: 700, cursor: 'pointer' }}
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              onClick={confirmImport}
+              style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: t.danger, color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+            >
+              Ersetzen
+            </button>
+          </div>
         </div>
       )}
 

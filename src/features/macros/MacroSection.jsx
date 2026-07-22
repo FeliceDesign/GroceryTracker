@@ -24,7 +24,7 @@ export function MacroSection({ name, macros, onChange, t, scanSupported, accent 
       >
         <Utensils size={17} color={filled ? (accent || t.text) : t.textMuted} />
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.text }}>Nährwerte & Zutaten</span>
+          <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.text }}>Nährwerte, Zutaten und Haltbarkeit</span>
           <span style={{
             display: 'block', fontSize: 11.5, color: t.textFaint, marginTop: 1,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',

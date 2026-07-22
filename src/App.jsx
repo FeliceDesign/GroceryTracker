@@ -30,6 +30,8 @@ import { ManageZonesSheet } from './features/zones/ManageZonesSheet.jsx';
 import { ManageCategoriesSheet } from './features/categories/ManageCategoriesSheet.jsx';
 import { SettingsSheet } from './features/settings/SettingsSheet.jsx';
 import { ManageFoodsSheet } from './features/macros/ManageFoodsSheet.jsx';
+import { ShelfLifeSheet } from './features/macros/ShelfLifeSheet.jsx';
+import { DetailItemSheet } from './features/detail/DetailItemSheet.jsx';
 
 const newId = (prefix = 'i') => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
@@ -46,7 +48,8 @@ export default function App() {
     yellowDays: 3, notify: false, thresholds: [7, 3, 1, 0], notifyHour: 9,
   });
   // Allgemeine UI-Einstellungen (z.B. Anzeige-Optionen).
-  const [prefs, setPrefs, prefsLoaded] = useStorage('gt-prefs-v1', { shoppingCount: true });
+  // stepGml: Schrittweite der +/−-Knöpfe für g/ml ('auto' = adaptiv).
+  const [prefs, setPrefs, prefsLoaded] = useStorage('gt-prefs-v1', { shoppingCount: true, stepGml: 'auto' });
 
   const [activeZone, setActiveZone] = useState(null);
   const [search, setSearch] = useState('');
@@ -59,6 +62,8 @@ export default function App() {
   const [showZones, setShowZones] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
   const [showFoods, setShowFoods] = useState(false);
+  const [showShelfLife, setShowShelfLife] = useState(false);
+  const [detailItem, setDetailItem] = useState(null);
 
   // Formular / Scan
   const [newItem, setNewItem] = useState({ name: '', zone: null, category: null, qty: 1, unit: 'stk', mhd: null });
@@ -110,6 +115,8 @@ export default function App() {
   // -- Menge / Bearbeiten -----------------------------------------------------
   const stepFor = (unit, qty) => {
     if (unit !== 'g' && unit !== 'ml') return 1;
+    const s = prefs && prefs.stepGml;
+    if (s && s !== 'auto') return Number(s);
     return qty <= 100 ? 10 : 50;
   };
 
@@ -159,6 +166,9 @@ export default function App() {
     setScanMsg('');
     setShowAdd(true);
   };
+
+  // Antippen öffnet die (schreibgeschützte) Detail-Ansicht.
+  const openDetail = (item) => setDetailItem(item);
 
   // Bearbeiten öffnen und dabei die vorhandenen Nährwerte (Stammdaten) laden.
   const openEdit = (item) => {
@@ -360,6 +370,29 @@ export default function App() {
     null, 2,
   );
 
+  // Backup nur prüfen (ohne anzuwenden) für die Import-Bestätigung.
+  const previewBackup = (text) => {
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return { ok: false, message: 'Ungültiges JSON – bitte den kompletten Backup-Text einfügen.' };
+    }
+    if (!data || !Array.isArray(data.items) || !Array.isArray(data.zones)) {
+      return { ok: false, message: 'Backup unvollständig (zones/items fehlen).' };
+    }
+    return {
+      ok: true,
+      summary: {
+        items: data.items.length,
+        foods: Array.isArray(data.foods) ? data.foods.length : 0,
+        zones: data.zones.length,
+        categories: Array.isArray(data.categories) ? data.categories.length : 0,
+        exportedAt: data.exportedAt || null,
+      },
+    };
+  };
+
   const restoreBackup = (text) => {
     let data;
     try {
@@ -433,6 +466,8 @@ export default function App() {
 
   const zone = resolveZone(activeZone) || zones[0];
   const totalInZone = grouped.reduce((sum, [, list]) => sum + list.length, 0);
+  // Live-Objekt für die Detail-Ansicht (wird ausgeblendet, wenn der Artikel weg ist).
+  const detailLive = detailItem ? items.find((i) => i.id === detailItem.id) || null : null;
 
   return (
     <>
@@ -464,7 +499,7 @@ export default function App() {
               {searchResults.map((item, idx) => (
                 <ItemRow
                   key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays}
-                  justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openEdit} onChangeQty={changeQty} onRemove={removeItem}
+                  justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                   showZoneBadge isLast={idx === searchResults.length - 1}
                 />
               ))}
@@ -478,7 +513,7 @@ export default function App() {
               {list.map((item, idx) => (
                 <ItemRow
                   key={item.id} item={item} zone={zone} t={t} dark={dark} yellowDays={yellowDays}
-                  justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openEdit} onChangeQty={changeQty} onRemove={removeItem}
+                  justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                   isLast={idx === list.length - 1}
                 />
               ))}
@@ -509,7 +544,7 @@ export default function App() {
       <EditItemSheet
         editItem={editItem} setEditItem={setEditItem} onClose={() => { setEditItem(null); setScanMsg(''); }}
         t={t} dark={dark} zones={zones} categories={categories} onAddCategory={addCategory}
-        scanSupported={scanSupported} scanBusy={scanBusy} scanMsg={scanMsg}
+        scanSupported={scanSupported} scanBusy={scanBusy} scanMsg={scanMsg} stepGml={prefs.stepGml}
         onScanDate={handleScanDate} onSave={saveEdit} onDelete={deleteFromEdit}
       />
 
@@ -528,9 +563,12 @@ export default function App() {
         onManageFoods={() => { setShowSettings(false); setShowFoods(true); }}
         showShoppingCount={prefs.shoppingCount}
         onToggleShoppingCount={(on) => setPrefs((p) => ({ ...p, shoppingCount: on }))}
+        stepGml={prefs.stepGml}
+        onSetStepGml={(v) => setPrefs((p) => ({ ...p, stepGml: v }))}
         warn={warn} onUpdateWarn={updateWarn} onSetNotify={setNotifyEnabled} notifySupported={notificationsSupported()}
         stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
-        buildBackup={buildBackup} restoreBackup={restoreBackup}
+        buildBackup={buildBackup} restoreBackup={restoreBackup} previewBackup={previewBackup}
+        onOpenShelfLife={() => { setShowSettings(false); setShowShelfLife(true); }}
       />
 
       <ManageZonesSheet
@@ -549,6 +587,19 @@ export default function App() {
         open={showFoods} onClose={() => setShowFoods(false)} t={t}
         foods={foods} onUpsert={upsertFood} onRemove={removeFood}
         scanSupported={scanSupported}
+      />
+
+      <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} />
+
+      <DetailItemSheet
+        open={!!detailLive} item={detailLive}
+        zone={detailLive ? resolveZone(detailLive.zone) : null}
+        food={detailLive ? getFood(detailLive.name) : null}
+        t={t} dark={dark} yellowDays={yellowDays}
+        onClose={() => setDetailItem(null)}
+        onEdit={(it) => { setDetailItem(null); openEdit(it); }}
+        onChangeQty={changeQty}
+        onRemove={(id) => { setDetailItem(null); removeItem(id); }}
       />
     </div>
 

@@ -1,9 +1,30 @@
 import { useState } from 'react';
-import { Plus, Trash2, Check } from 'lucide-react';
+import { Plus, Trash2, Check, Snowflake } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { ZONE_COLOR_CHOICES, zonePalette } from '../../lib/colors.js';
+import { zoneIsCooled } from '../../lib/openedShelfLife.js';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
+
+// Kleiner „gekühlt"-Umschalter (für Lager-Hinweise bei geöffneten Artikeln).
+function CooledToggle({ on, onChange, t }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!on)}
+      aria-pressed={on}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10,
+        padding: '7px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
+        border: `1.5px solid ${on ? t.info || '#3B7A9E' : t.border}`,
+        background: on ? (t.infoBg || 'rgba(59,122,158,0.14)') : 'transparent',
+        color: on ? (t.info || '#3B7A9E') : t.textMuted,
+      }}
+    >
+      <Snowflake size={14} /> {on ? 'Gekühlt' : 'Nicht gekühlt'}
+    </button>
+  );
+}
 
 function ColorRow({ value, onChange }) {
   return (
@@ -31,13 +52,13 @@ function ColorRow({ value, onChange }) {
 // Lagerorte verwalten: umbenennen, Emoji/Farbe ändern, hinzufügen, entfernen.
 export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAdd, onUpdate, onRemove }) {
   const inputStyle = makeInputStyle(t);
-  const [draft, setDraft] = useState({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0] });
+  const [draft, setDraft] = useState({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], cooled: false });
   const [showAdd, setShowAdd] = useState(false);
 
   const submitAdd = () => {
     if (!draft.label.trim()) return;
-    onAdd({ label: draft.label, emoji: draft.emoji || '📦', color: draft.color });
-    setDraft({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0] });
+    onAdd({ label: draft.label, emoji: draft.emoji || '📦', color: draft.color, cooled: draft.cooled });
+    setDraft({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], cooled: false });
     setShowAdd(false);
   };
 
@@ -75,6 +96,7 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
                 </button>
               </div>
               <ColorRow value={z.color} onChange={(c) => onUpdate(z.id, { color: c })} />
+              <CooledToggle t={t} on={zoneIsCooled(z)} onChange={(v) => onUpdate(z.id, { cooled: v })} />
               <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 8 }}>
                 {count} {count === 1 ? 'Artikel' : 'Artikel'}{zones.length > 1 ? ' · beim Entfernen wandern sie in den ersten Lagerort' : ''}
               </div>
@@ -106,6 +128,7 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
             />
           </div>
           <ColorRow value={draft.color} onChange={(c) => setDraft((s) => ({ ...s, color: c }))} />
+          <CooledToggle t={t} on={draft.cooled} onChange={(v) => setDraft((s) => ({ ...s, cooled: v }))} />
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <button
               type="button"

@@ -4,109 +4,117 @@
 // Statt einer echten KI (die einen Server + API-Schlüssel bräuchte und offline
 // nicht ginge) nutzen wir eine eingebaute Stichwort-Tabelle. Pro Lebensmittel
 // lässt sich der Wert in den Stammdaten (`openedDays`) manuell überschreiben.
+//
+// Jede Regel: { keys, days, storage, reason, label }.
+//  storage: 'fridge' (Kühlschrank) | 'room' (Raumtemperatur) | 'both'
+// Reihenfolge ist wichtig: der ERSTE Treffer (Teilstring im kleingeschriebenen
+// Namen) gewinnt, deshalb Spezifisches vor Allgemeinem („Frischkäse" vor
+// „Käse", „Fleischwurst" vor „Fleisch").
 
 import { daysUntil } from './date.js';
 
-// [Stichwörter, Tage] – Reihenfolge ist wichtig: der ERSTE Treffer (Teilstring
-// im kleingeschriebenen Namen) gewinnt, deshalb Spezifisches vor Allgemeinem
-// (z.B. „Frischkäse" vor „Käse", „Fleischwurst" vor „Fleisch").
 export const OPENED_SHELF_RULES = [
-  // — Feinkost-/Mayo-Salate & streichfähige Rohwurst: sehr leicht verderblich —
-  [['fleischsalat', 'wurstsalat', 'kartoffelsalat', 'nudelsalat', 'eiersalat', 'feinkostsalat', 'heringssalat', 'geflügelsalat'], 2],
-  [['leberwurst', 'teewurst', 'mettwurst', 'streichwurst', 'zwiebelmett', 'pastete', 'pâté', 'rillette'], 3],
-  // — Rohes Hackfleisch / Tatar: am Kauftag verbrauchen —
-  [['hackfleisch', 'hackepeter', 'schabefleisch', 'tatar', 'mett'], 1],
-  // — Rohe Bratwurst —
-  [['bratwurst', 'rostbratwurst', 'grillwurst'], 2],
-  // — Räucherfisch (haltbarer als roher Fisch) / roher Fisch —
-  [['räucherlachs', 'raeucherlachs', 'räucherforelle', 'räucherfisch', 'raeucherfisch', 'matjes', 'graved'], 3],
-  [['sushi', 'sashimi'], 1],
-  [['lachs', 'thunfisch', 'thun', 'forelle', 'garnele', 'shrimp', 'scampi', 'muschel', 'meeresfrüchte', 'fisch'], 2],
-  [['burrata'], 2],
-  [['guacamole'], 2],
-  // — Rohwurst / Dauerwurst (luftgetrocknet, haltbar) —
-  [['salami', 'dauerwurst', 'cervelat', 'landjäger', 'landjaeger', 'chorizo', 'pepperoni', 'kaminwurz'], 21],
-  [['speck', 'bacon', 'rohschinken', 'serrano', 'parma', 'prosciutto', 'katenschinken', 'schwarzwälder'], 14],
-  // — Aufschnitt / Brühwurst / Kochschinken (vor rohem Fleisch, damit
-  //   „Fleischwurst" hier landet und nicht bei „Fleisch") —
-  [['aufschnitt', 'lyoner', 'mortadella', 'fleischwurst', 'bierschinken', 'kochschinken', 'gelbwurst', 'wiener', 'würstchen', 'wuerstchen', 'frankfurter', 'saitenwurst', 'schinken', 'wurst'], 4],
-  // — Rohes Geflügel / Fleisch / Fisch-Filet —
-  [['hähnchen', 'haehnchen', 'hühner', 'huhn', 'pute', 'geflügel', 'gefluegel', 'schnitzel', 'gulasch', 'steak', 'filet', 'kotelett', 'fleisch'], 2],
+  // — Feinkost-/Mayo-Salate & streichfähige Rohwurst —
+  { keys: ['fleischsalat', 'wurstsalat', 'kartoffelsalat', 'nudelsalat', 'eiersalat', 'feinkostsalat', 'heringssalat', 'geflügelsalat'], days: 2, storage: 'fridge', label: 'Feinkost-/Mayo-Salat', reason: 'Mayonnaise + eiweißreich, oft schon länger verarbeitet → schnell verderblich.' },
+  { keys: ['leberwurst', 'teewurst', 'mettwurst', 'streichwurst', 'zwiebelmett', 'pastete', 'pâté', 'rillette'], days: 3, storage: 'fridge', label: 'Streichwurst', reason: 'Streichfähige Rohwurst, feucht → schneller verderblich als Aufschnitt.' },
+  { keys: ['hackfleisch', 'hackepeter', 'schabefleisch', 'tatar', 'mett'], days: 1, storage: 'fridge', label: 'Rohes Hack / Mett', reason: 'Riesige Oberfläche + roh → extrem schnelle Keimvermehrung; am Kauftag verbrauchen.' },
+  { keys: ['bratwurst', 'rostbratwurst', 'grillwurst'], days: 2, storage: 'fridge', label: 'Rohe Bratwurst', reason: 'Rohes Brät, hohe Keimlast.' },
+  { keys: ['räucherlachs', 'raeucherlachs', 'räucherforelle', 'räucherfisch', 'raeucherfisch', 'matjes', 'graved'], days: 3, storage: 'fridge', label: 'Räucherfisch', reason: 'Räuchern/Salzen hemmt Keime → etwas länger haltbar als roher Fisch.' },
+  { keys: ['sushi', 'sashimi'], days: 1, storage: 'fridge', label: 'Sushi / Sashimi', reason: 'Roher Fisch + Reis → höchstes Risiko, am selben Tag essen.' },
+  { keys: ['lachs', 'thunfisch', 'thun', 'forelle', 'garnele', 'shrimp', 'scampi', 'muschel', 'meeresfrüchte', 'fisch'], days: 2, storage: 'fridge', label: 'Roher Fisch / Meeresfrüchte', reason: 'Sehr verderblich; schnelle Histamin-/Keimbildung.' },
+  { keys: ['burrata'], days: 2, storage: 'fridge', label: 'Burrata', reason: 'Ultra-frisch, sehr feucht.' },
+  { keys: ['guacamole'], days: 2, storage: 'fridge', label: 'Guacamole', reason: 'Oxidiert und verdirbt schnell.' },
+  // — Rohwurst / Dauerwurst (haltbarer) —
+  { keys: ['salami', 'dauerwurst', 'cervelat', 'landjäger', 'landjaeger', 'chorizo', 'pepperoni', 'kaminwurz'], days: 21, storage: 'fridge', label: 'Rohwurst / Salami', reason: 'Luftgetrocknet, niedrige Wasseraktivität → deutlich haltbarer.' },
+  { keys: ['speck', 'bacon', 'rohschinken', 'serrano', 'parma', 'prosciutto', 'katenschinken', 'schwarzwälder'], days: 14, storage: 'fridge', label: 'Speck / Rohschinken', reason: 'Gepökelt/luftgetrocknet, salzhaltig → deutlich haltbarer.' },
+  { keys: ['aufschnitt', 'lyoner', 'mortadella', 'fleischwurst', 'bierschinken', 'kochschinken', 'gelbwurst', 'wiener', 'würstchen', 'wuerstchen', 'frankfurter', 'saitenwurst', 'schinken', 'wurst'], days: 4, storage: 'fridge', label: 'Aufschnitt / Brühwurst', reason: 'Angeschnitten und offen; Verbraucherzentrale nennt 3–4 Tage.' },
+  { keys: ['hähnchen', 'haehnchen', 'hühner', 'huhn', 'pute', 'geflügel', 'gefluegel', 'schnitzel', 'gulasch', 'steak', 'filet', 'kotelett', 'fleisch'], days: 2, storage: 'fridge', label: 'Rohes Fleisch / Geflügel', reason: 'Salmonellen/Campylobacter-Risiko; Geflügel besonders heikel.' },
 
-  // — Milch & Milchprodukte (Milchreis/Pudding vor „Milch") —
-  [['milchreis', 'pudding', 'grießbrei', 'griessbrei', 'dessert', 'mousse'], 3],
-  [['buttermilch'], 7],
-  [['hafermilch', 'haferdrink', 'sojamilch', 'sojadrink', 'mandelmilch', 'mandeldrink', 'reisdrink', 'kokosmilch', 'pflanzendrink', 'pflanzenmilch'], 5],
-  [['frischmilch', 'vollmilch', 'h-milch', 'milch'], 5],
-  [['joghurt', 'skyr', 'quark', 'kefir', 'ayran'], 7],
-  [['crème fraîche', 'creme fraiche', 'crème fraiche', 'schmand', 'saure sahne', 'sauerrahm'], 7],
-  [['schlagsahne', 'kochsahne', 'sahne', 'obers'], 4],
+  // — Milch & Milchprodukte —
+  { keys: ['milchreis', 'pudding', 'grießbrei', 'griessbrei', 'dessert', 'mousse'], days: 3, storage: 'fridge', label: 'Milchdessert', reason: 'Offene Milchdesserts verderben schnell.' },
+  { keys: ['buttermilch'], days: 7, storage: 'fridge', label: 'Buttermilch', reason: 'Säuerlich → etwas stabiler als Milch.' },
+  { keys: ['hafermilch', 'haferdrink', 'sojamilch', 'sojadrink', 'mandelmilch', 'mandeldrink', 'reisdrink', 'kokosmilch', 'pflanzendrink', 'pflanzenmilch'], days: 5, storage: 'fridge', label: 'Pflanzendrink', reason: 'Nach dem Öffnen wie Milch verderblich.' },
+  { keys: ['frischmilch', 'vollmilch', 'h-milch', 'milch'], days: 5, storage: 'fridge', label: 'Milch', reason: 'Frischmilch offen 3–5 Tage, H-Milch bis ~7 → 5 als Mittelwert.' },
+  { keys: ['joghurt', 'skyr', 'quark', 'kefir', 'ayran'], days: 7, storage: 'fridge', label: 'Joghurt / Skyr / Quark', reason: 'Säuerlich; Milchsäurekulturen hemmen Keime.' },
+  { keys: ['crème fraîche', 'creme fraiche', 'crème fraiche', 'schmand', 'saure sahne', 'sauerrahm'], days: 7, storage: 'fridge', label: 'Crème fraîche / Schmand', reason: 'Hoher Fett- und Säureanteil.' },
+  { keys: ['schlagsahne', 'kochsahne', 'sahne', 'obers'], days: 4, storage: 'fridge', label: 'Sahne', reason: 'Fettreich, pasteurisiert; offen 3–5 Tage.' },
 
-  // — Käse (nach Frischegrad; alle spezifischen vor „Käse") —
-  [['frischkäse', 'streichkäse', 'philadelphia', 'doppelrahm'], 10],
-  [['feta', 'hirtenkäse', 'schafskäse'], 14],
-  [['mozzarella', 'ricotta', 'hüttenkäse', 'huettenkaese', 'cottage', 'mascarpone'], 5],
-  [['grillkäse', 'halloumi'], 7],
-  [['schmelzkäse', 'scheibletten'], 14],
-  [['gerieben', 'reibekäse', 'pizzakäse'], 5],
-  [['parmesan', 'grana', 'pecorino', 'bergkäse', 'hartkäse'], 21],
-  [['emmentaler', 'gouda', 'cheddar', 'edamer', 'tilsiter', 'butterkäse', 'maasdamer', 'appenzeller', 'raclette', 'käse', 'kaese'], 14],
+  // — Käse (nach Frischegrad) —
+  { keys: ['frischkäse', 'streichkäse', 'philadelphia', 'doppelrahm'], days: 10, storage: 'fridge', label: 'Frischkäse (streichfähig)', reason: 'Durch Säure/Salz konserviert; offen 1–2 Wochen.' },
+  { keys: ['feta', 'hirtenkäse', 'schafskäse'], days: 14, storage: 'fridge', label: 'Feta / Schafskäse', reason: 'Salzlake konserviert.' },
+  { keys: ['mozzarella', 'ricotta', 'hüttenkäse', 'huettenkaese', 'cottage', 'mascarpone'], days: 5, storage: 'fridge', label: 'Mozzarella / Ricotta', reason: 'Frischkäse mit hohem Wassergehalt.' },
+  { keys: ['grillkäse', 'halloumi'], days: 7, storage: 'fridge', label: 'Grillkäse / Halloumi', reason: 'Fester und salzhaltig.' },
+  { keys: ['schmelzkäse', 'scheibletten'], days: 14, storage: 'fridge', label: 'Schmelzkäse', reason: 'Verarbeitet und stabilisiert.' },
+  { keys: ['gerieben', 'reibekäse', 'pizzakäse'], days: 5, storage: 'fridge', label: 'Geriebener Käse', reason: 'Große Oberfläche → schimmelt/trocknet schneller.' },
+  { keys: ['parmesan', 'grana', 'pecorino', 'bergkäse', 'hartkäse'], days: 21, storage: 'fridge', label: 'Hartkäse', reason: 'Sehr trocken und gereift → lange haltbar.' },
+  { keys: ['emmentaler', 'gouda', 'cheddar', 'edamer', 'tilsiter', 'butterkäse', 'maasdamer', 'appenzeller', 'raclette', 'käse', 'kaese'], days: 14, storage: 'fridge', label: 'Schnittkäse', reason: 'Fester, niedrigere Wasseraktivität.' },
 
   // — Nussmus/Schokocreme VOR „Butter" (sonst landet „Erdnussbutter" bei Butter) —
-  [['erdnussbutter', 'erdnussmus', 'mandelmus', 'nussmus', 'nutella', 'schokocreme', 'nougatcreme'], 60],
-  // — Fette / Eier (nach den *milch/*käse-Regeln, sonst würde „Buttermilch"
-  //   bzw. „Butterkäse" hier hängenbleiben) —
-  [['butter', 'margarine'], 30],
-  [['eier', 'eierkarton'], 21],
+  { keys: ['erdnussbutter', 'erdnussmus', 'mandelmus', 'nussmus', 'nutella', 'schokocreme', 'nougatcreme'], days: 60, storage: 'room', label: 'Nussmus / Schokocreme', reason: 'Fett + wenig Wasser; Kühlung macht nur hart, ist nicht nötig.' },
+  { keys: ['butter', 'margarine'], days: 30, storage: 'fridge', label: 'Butter / Margarine', reason: 'Fett, wenig Wasser; offen mehrere Wochen.' },
+  { keys: ['eier', 'eierkarton'], days: 21, storage: 'fridge', label: 'Eier', reason: 'Halten gekühlt etwa 3 Wochen.' },
 
   // — Pflanzlich / frische Feinkost —
-  [['räuchertofu', 'raeuchertofu'], 7],
-  [['tofu', 'tempeh', 'seitan'], 4],
-  [['hummus'], 5],
-  [['tzatziki', 'zaziki', 'kräuterquark', 'kraeuterquark', 'dip'], 4],
-  [['tortellini', 'ravioli', 'gnocchi', 'frische pasta', 'frische nudeln'], 3],
+  { keys: ['räuchertofu', 'raeuchertofu'], days: 7, storage: 'fridge', label: 'Räuchertofu', reason: 'Geräuchert → stabiler als frischer Tofu.' },
+  { keys: ['tofu', 'tempeh', 'seitan'], days: 4, storage: 'fridge', label: 'Tofu / Tempeh', reason: 'Offen (in Wasser) empfindlich.' },
+  { keys: ['hummus'], days: 5, storage: 'fridge', label: 'Hummus', reason: 'Kichererbsenpüree, empfindlich.' },
+  { keys: ['tzatziki', 'zaziki', 'kräuterquark', 'kraeuterquark', 'dip'], days: 4, storage: 'fridge', label: 'Tzatziki / Dip', reason: 'Joghurt-/Quark-basiert.' },
+  { keys: ['tortellini', 'ravioli', 'gnocchi', 'frische pasta', 'frische nudeln'], days: 3, storage: 'fridge', label: 'Frische Pasta', reason: 'Frisch, teils mit Ei/Füllung.' },
 
-  // — Aufstriche & haltbare Gläser (viel Zucker/Salz/Säure/Fett) —
-  [['marmelade', 'konfitüre', 'konfiture', 'fruchtaufstrich', 'gelee'], 30],
-  [['honig'], 180],
-  [['pesto'], 7],
-  [['tomatenmark'], 7],
-  [['passata', 'passierte tomaten'], 4],
-  [['oliven', 'antipasti', 'eingelegt', 'in öl', 'getrocknete tomaten'], 14],
+  // — Aufstriche & haltbare Gläser —
+  { keys: ['marmelade', 'konfitüre', 'konfiture', 'fruchtaufstrich', 'gelee'], days: 30, storage: 'fridge', label: 'Marmelade / Konfitüre', reason: 'Hoher Zuckergehalt konserviert; offen üblicherweise gekühlt.' },
+  { keys: ['honig'], days: 180, storage: 'room', label: 'Honig', reason: 'Praktisch unbegrenzt haltbar; Kühlung fördert Kristallisation → nicht kühlen.' },
+  { keys: ['pesto'], days: 7, storage: 'fridge', label: 'Pesto', reason: 'Öl-Schutzschicht, aber frische Zutaten.' },
+  { keys: ['tomatenmark'], days: 7, storage: 'fridge', label: 'Tomatenmark', reason: 'Konzentriert; schimmelt an der Oberfläche.' },
+  { keys: ['passata', 'passierte tomaten'], days: 4, storage: 'fridge', label: 'Passata', reason: 'Kaum konserviert, schimmelt schnell.' },
+  { keys: ['oliven', 'antipasti', 'eingelegt', 'in öl', 'getrocknete tomaten'], days: 14, storage: 'fridge', label: 'Oliven / Antipasti', reason: 'Öl/Salz/Säure konservieren.' },
 
-  // — Saucen & Würzmittel (spezifische Kondimente vor generischer „Sauce") —
-  [['ketchup'], 30],
-  [['mayonnaise', 'remoulade', 'mayo'], 60],
-  [['senf'], 60],
-  [['sojasauce', 'sojasoße', 'fischsauce', 'austernsauce'], 90],
-  [['sriracha', 'tabasco', 'hot sauce', 'chilisauce', 'chili sauce'], 60],
-  [['teriyaki', 'barbecue', 'bbq', 'grillsauce', 'taco', 'worcester', 'hoisin'], 30],
-  [['salsa'], 5],
-  [['salatdressing', 'dressing', 'vinaigrette'], 21],
-  [['sauce', 'soße', 'sosse'], 5],
+  // — Saucen & Würzmittel —
+  { keys: ['ketchup'], days: 30, storage: 'both', label: 'Ketchup', reason: 'Säure + Zucker; hält auch ungekühlt Wochen, gekühlt länger.' },
+  { keys: ['mayonnaise', 'remoulade', 'mayo'], days: 60, storage: 'fridge', label: 'Mayonnaise / Remoulade', reason: 'Industriell säurestabilisiert; nach dem Öffnen kühlen.' },
+  { keys: ['senf'], days: 60, storage: 'both', label: 'Senf', reason: 'Säure/Senföle konservieren stark; gekühlt aromastabiler.' },
+  { keys: ['sojasauce', 'sojasoße', 'fischsauce', 'austernsauce'], days: 90, storage: 'both', label: 'Soja-/Fischsauce', reason: 'Extrem salzig; ungekühlt haltbar, gekühlt aromastabiler.' },
+  { keys: ['sriracha', 'tabasco', 'hot sauce', 'chilisauce', 'chili sauce'], days: 60, storage: 'both', label: 'Chili- / Hot Sauce', reason: 'Sehr sauer und scharf; ungekühlt haltbar.' },
+  { keys: ['teriyaki', 'barbecue', 'bbq', 'grillsauce', 'taco', 'worcester', 'hoisin'], days: 30, storage: 'both', label: 'BBQ-/Teriyaki-Sauce', reason: 'Zucker/Salz/Säure-Kondimente; Kühlung verlängert.' },
+  { keys: ['salsa'], days: 5, storage: 'fridge', label: 'Salsa (frisch)', reason: 'Frische Tomaten/Zwiebel.' },
+  { keys: ['salatdressing', 'dressing', 'vinaigrette'], days: 21, storage: 'fridge', label: 'Salatdressing', reason: 'Säure + Öl hemmen Keime.' },
+  { keys: ['sauce', 'soße', 'sosse'], days: 5, storage: 'fridge', label: 'Sauce / Soße', reason: 'Sicherheitshalber kurz – frische Kühl-Saucen verderben schnell.' },
 
   // — Getränke —
-  [['smoothie'], 2],
-  [['saft', 'direktsaft', 'nektar', 'schorle'], 5],
-  [['limonade', 'cola', 'softdrink', 'eistee'], 5],
-  [['likör', 'likoer', 'spirituose', 'schnaps'], 365],
-  [['wein', 'sekt', 'prosecco'], 5],
+  { keys: ['smoothie'], days: 2, storage: 'fridge', label: 'Smoothie', reason: 'Frisches Obst/Gemüse ohne Schutz.' },
+  { keys: ['saft', 'direktsaft', 'nektar', 'schorle'], days: 5, storage: 'fridge', label: 'Saft', reason: 'Offen gekühlt etwa 5–7 Tage.' },
+  { keys: ['limonade', 'cola', 'softdrink', 'eistee'], days: 5, storage: 'fridge', label: 'Limonade', reason: 'Verliert Kohlensäure; mikrobiell unkritisch.' },
+  { keys: ['likör', 'likoer', 'spirituose', 'schnaps'], days: 365, storage: 'room', label: 'Likör / Spirituose', reason: 'Alkohol/Zucker konservieren fast unbegrenzt; Kühlung irrelevant.' },
+  { keys: ['wein', 'sekt', 'prosecco'], days: 5, storage: 'fridge', label: 'Wein / Sekt', reason: 'Oxidation (Geschmack), keine Sicherheitsfrage.' },
 
   // — Backwaren —
-  [['brot', 'toast', 'brötchen', 'broetchen', 'wrap', 'baguette'], 4],
+  { keys: ['brot', 'toast', 'brötchen', 'broetchen', 'wrap', 'baguette'], days: 4, storage: 'room', label: 'Brot / Backwaren', reason: 'Brotkasten; im Kühlschrank altert Brot schneller (Retrogradation) → nicht kühlen.' },
 
-  // — Konserven/Gläser nach dem Öffnen bzw. Umfüllen —
-  [['konserve', 'dose', 'bohnen', 'mais', 'erbsen', 'linsen', 'kichererbsen', 'möhr', 'moehr', 'karotten', 'tomaten'], 3],
+  // — Konserven/Gläser nach dem Öffnen/Umfüllen —
+  { keys: ['konserve', 'dose', 'bohnen', 'mais', 'erbsen', 'linsen', 'kichererbsen', 'möhr', 'moehr', 'karotten', 'tomaten'], days: 3, storage: 'fridge', label: 'Konserve (offen)', reason: 'Nach dem Öffnen/Umfüllen wie frisch gekocht behandeln.' },
 ];
+
+// Passende Regel zum Artikelnamen (oder null).
+export function shelfLifeRule(name) {
+  const n = (name || '').toLowerCase();
+  if (!n) return null;
+  for (const r of OPENED_SHELF_RULES) {
+    if (r.keys.some((k) => n.includes(k))) return r;
+  }
+  return null;
+}
 
 // Regelbasierter Standardwert anhand des Artikelnamens (oder null).
 export function shelfLifeAfterOpening(name) {
-  const n = (name || '').toLowerCase();
-  if (!n) return null;
-  for (const [keys, days] of OPENED_SHELF_RULES) {
-    if (keys.some((k) => n.includes(k))) return days;
-  }
-  return null;
+  const r = shelfLifeRule(name);
+  return r ? r.days : null;
+}
+
+// Info-Objekt für die „Warum?"-Anzeige: { days, storage, reason, label } | null.
+export function shelfLifeInfo(name) {
+  const r = shelfLifeRule(name);
+  if (!r) return null;
+  return { days: r.days, storage: r.storage, reason: r.reason, label: r.label };
 }
 
 // Aufgelöste Öffnungs-Haltbarkeit: manueller Override (food.openedDays) hat
@@ -117,6 +125,28 @@ export function openedDaysFor(name, food) {
     return Number.isFinite(v) ? v : null;
   }
   return shelfLifeAfterOpening(name);
+}
+
+export function storageLabel(storage) {
+  if (storage === 'room') return 'Raumtemperatur';
+  if (storage === 'both') return 'Raumtemp. oder Kühlschrank';
+  return 'Kühlschrank';
+}
+
+// Ist ein Lagerort „kalt"? Nutzt das Flag `cooled`, sonst eine Namens-Heuristik.
+export function zoneIsCooled(zone) {
+  if (!zone) return false;
+  if (zone.cooled != null) return !!zone.cooled;
+  return /kühl|kuehl|gefrier|kalt|fridge|freezer|frost/i.test(zone.label || '');
+}
+
+// Passt der Lagerort zur Empfehlung? Gibt einen Hinweistext zurück oder null.
+export function storageMismatch(storage, zone) {
+  if (!storage || !zone) return null;
+  const cooled = zoneIsCooled(zone);
+  if (storage === 'room' && cooled) return 'Gehört eigentlich nicht in den Kühlschrank.';
+  if (storage === 'fridge' && !cooled) return 'Sollte gekühlt gelagert werden.';
+  return null;
 }
 
 function addDaysISO(iso, days) {

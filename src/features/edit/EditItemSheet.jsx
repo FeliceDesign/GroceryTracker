@@ -13,7 +13,7 @@ import { makeInputStyle, makeLabelStyle, pillStyle, btnCircle, primaryButtonStyl
 export function EditItemSheet({
   editItem, setEditItem, onClose, t, dark,
   zones, categories, onAddCategory,
-  scanSupported, scanBusy, scanMsg, onScanDate, onSave, onDelete,
+  scanSupported, scanBusy, scanMsg, stepGml, onScanDate, onSave, onDelete,
 }) {
   const labelStyle = makeLabelStyle(t);
   const inputStyle = makeInputStyle(t);
@@ -101,16 +101,34 @@ export function EditItemSheet({
           </button>
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
-          <input
-            type="number"
-            inputMode="numeric"
-            value={editItem.qty}
-            onChange={(e) => setEditItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
-            style={{ ...inputStyle, marginTop: 0 }}
-          />
-          <span style={{ fontSize: 15, fontWeight: 700, color: t.textMuted }}>{editItem.unit}</span>
-        </div>
+        (() => {
+          const step = stepGml && stepGml !== 'auto' ? Number(stepGml) : 10;
+          const sliderMax = Math.max(1000, Math.ceil((Math.max(editItem.qty, 1) * 2) / step) * step);
+          return (
+            <div style={{ marginTop: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={editItem.qty}
+                  onChange={(e) => setEditItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
+                  style={{ ...inputStyle, marginTop: 0 }}
+                />
+                <span style={{ fontSize: 15, fontWeight: 700, color: t.textMuted }}>{editItem.unit}</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={sliderMax}
+                step={step}
+                value={Math.min(editItem.qty, sliderMax)}
+                onChange={(e) => setEditItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
+                aria-label="Menge per Schieberegler"
+                style={{ width: '100%', marginTop: 12, accentColor: pal.accent }}
+              />
+            </div>
+          );
+        })()
       )}
 
       <label style={labelStyle}>Mindesthaltbarkeitsdatum</label>
