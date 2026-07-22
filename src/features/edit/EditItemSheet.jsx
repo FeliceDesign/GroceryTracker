@@ -156,6 +156,19 @@ export function EditItemSheet({
         {editItem.opened ? 'Geöffnet' : 'Als geöffnet markieren'}
       </button>
 
+      {editItem.opened && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+          <span style={{ fontSize: 13, color: t.textMuted, flexShrink: 0 }}>Geöffnet am</span>
+          <input
+            type="date"
+            value={editItem.openedAt || todayISO()}
+            max={todayISO()}
+            onChange={(e) => setEditItem((s) => ({ ...s, openedAt: e.target.value || todayISO() }))}
+            style={{ ...inputStyle, marginTop: 0 }}
+          />
+        </div>
+      )}
+
       <MacroSection
         name={editItem.name}
         macros={editItem.macros || emptyMacros(defaultBasisForUnit(editItem.unit))}

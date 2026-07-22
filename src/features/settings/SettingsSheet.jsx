@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Boxes, Tags, Utensils, Download, Upload, Sun, Moon, SunMoon, ChevronRight, Plus, Minus, Bell } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
@@ -114,7 +114,26 @@ export function SettingsSheet({
   const [importText, setImportText] = useState('');
   const [msg, setMsg] = useState('');
   const [exportMacros, setExportMacros] = useState(true);
+  const fileRef = useRef(null);
   const inputStyle = makeInputStyle(t);
+
+  const applyImport = (text) => {
+    const res = restoreBackup(text);
+    setMsg(res.ok ? '✓ ' + res.message : res.message);
+    if (res.ok) { setImportText(''); setImporting(false); }
+    setTimeout(() => setMsg(''), 4000);
+  };
+
+  // Backup aus einer ausgewählten .json-Datei einlesen.
+  const onPickFile = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => applyImport(String(reader.result || ''));
+    reader.onerror = () => { setMsg('Datei konnte nicht gelesen werden.'); };
+    reader.readAsText(file);
+    e.target.value = ''; // gleiche Datei erneut wählbar machen
+  };
 
   const doExport = async () => {
     const json = buildBackup(exportMacros);
@@ -144,15 +163,7 @@ export function SettingsSheet({
     setTimeout(() => setMsg(''), 3000);
   };
 
-  const doImport = () => {
-    const res = restoreBackup(importText);
-    setMsg(res.ok ? '✓ ' + res.message : res.message);
-    if (res.ok) {
-      setImportText('');
-      setImporting(false);
-    }
-    setTimeout(() => setMsg(''), 3000);
-  };
+  const doImport = () => applyImport(importText);
 
   return (
     <Modal open={open} onClose={onClose} t={t} title="Einstellungen">
@@ -273,6 +284,22 @@ export function SettingsSheet({
 
       {importing && (
         <div style={{ marginTop: 10 }}>
+          <input ref={fileRef} type="file" accept=".json,application/json" onChange={onPickFile} style={{ display: 'none' }} />
+          <button
+            type="button"
+            onClick={() => fileRef.current && fileRef.current.click()}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '12px', borderRadius: 12, border: `1.5px solid ${t.border}`,
+              background: 'transparent', color: t.text, fontWeight: 700, fontSize: 14, cursor: 'pointer',
+              marginBottom: 10,
+            }}
+          >
+            <Upload size={17} /> Datei auswählen (.json)
+          </button>
+          <div style={{ fontSize: 11.5, color: t.textFaint, marginBottom: 10, textAlign: 'center' }}>
+            oder JSON-Text einfügen:
+          </div>
           <textarea
             value={importText}
             onChange={(e) => setImportText(e.target.value)}
