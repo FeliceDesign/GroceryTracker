@@ -122,10 +122,16 @@ function drawToBase64(source, sw, sh, rect) {
   const sy = Math.round(rect.y * sh);
   const cw = Math.round(rect.width * sw);
   const ch = Math.round(rect.height * sh);
-  const scale = 2; // hochskalieren hilft der Texterkennung bei kleiner Schrift
+  // 2x hochskalieren hilft der OCR bei kleiner Schrift. Aber die Ausgabe darf
+  // nicht zu groß werden: ein ganzes Kamerabild (z.B. 3000x4000) x2 sprengt in
+  // der Android-WebView das Canvas-Limit und liefert ein LEERES Bild – dann
+  // erkennt die OCR nichts. Deshalb die längste Seite auf ein sicheres Maß
+  // begrenzen (kleine Ausschnitte werden weiterhin hochskaliert).
+  const MAX_SIDE = 2600;
+  const scale = Math.min(2, MAX_SIDE / Math.max(cw, ch, 1));
   const canvas = document.createElement('canvas');
-  canvas.width = cw * scale;
-  canvas.height = ch * scale;
+  canvas.width = Math.max(1, Math.round(cw * scale));
+  canvas.height = Math.max(1, Math.round(ch * scale));
   const ctx = canvas.getContext('2d');
   ctx.drawImage(source, sx, sy, cw, ch, 0, 0, canvas.width, canvas.height);
   return canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
