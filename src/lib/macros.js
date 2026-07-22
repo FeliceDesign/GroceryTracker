@@ -51,7 +51,7 @@ export function basisLabel(food) {
 
 // Leerer Bearbeitungs-Entwurf.
 export function emptyMacros(basis = '100g') {
-  const m = { basis, portionSize: null, ingredients: '' };
+  const m = { basis, portionSize: null, ingredients: '', openedDays: null };
   MACRO_FIELDS.forEach((f) => { m[f.key] = null; });
   return m;
 }
@@ -62,6 +62,7 @@ export function foodToMacros(food, fallbackBasis = '100g') {
   if (!food) return m;
   m.portionSize = food.portionSize ?? null;
   m.ingredients = food.ingredients || '';
+  m.openedDays = food.openedDays ?? null;
   MACRO_FIELDS.forEach((f) => { m[f.key] = food[f.key] ?? null; });
   return m;
 }
@@ -73,6 +74,7 @@ export function macrosToFood(m, name) {
     basis: (m && m.basis) || '100g',
     portionSize: (m && m.portionSize) ?? null,
     ingredients: (m && m.ingredients ? String(m.ingredients).trim() : ''),
+    openedDays: (m && m.openedDays != null && m.openedDays !== '') ? Number(m.openedDays) : null,
   };
   MACRO_FIELDS.forEach((f) => { food[f.key] = (m && m[f.key] != null) ? m[f.key] : null; });
   return food;
@@ -94,9 +96,12 @@ export function hasMacros(m) {
   return MACRO_FIELDS.some((f) => m[f.key] != null && m[f.key] !== '');
 }
 
-// Enthält der Datensatz überhaupt Nutzdaten (Nährwerte ODER Zutaten)?
+// Enthält der Datensatz überhaupt Nutzdaten (Nährwerte, Zutaten oder eine
+// eigene Öffnungs-Haltbarkeit)?
 export function hasFoodData(m) {
-  return hasMacros(m) || !!(m && m.ingredients && String(m.ingredients).trim());
+  return hasMacros(m)
+    || !!(m && m.ingredients && String(m.ingredients).trim())
+    || !!(m && m.openedDays != null && m.openedDays !== '');
 }
 
 // Abgeleiteter Wert (nicht gespeichert): ungesättigte Fettsäuren = Fett −

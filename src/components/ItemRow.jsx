@@ -1,17 +1,33 @@
 import { Plus, Minus, Trash2 } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
 import { daysUntil, expiryLevel, levelColor, mhdLabel } from '../lib/date.js';
+import { openedUntil } from '../lib/openedShelfLife.js';
 import { btnCircle } from '../lib/styles.js';
 
 // Eine Artikelzeile. `zone` ist das aufgelöste Lagerort-Objekt (oder undefined,
 // falls der Lagerort inzwischen entfernt wurde – dann neutraler Fallback).
-export function ItemRow({ item, zone, t, dark, yellowDays = 3, justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast }) {
+// `openedShelfDays` = aufgelöste Haltbarkeit nach dem Öffnen (oder null).
+export function ItemRow({ item, zone, t, dark, yellowDays = 3, openedShelfDays = null, justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast }) {
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
-  const days = daysUntil(item.mhd);
-  const level = expiryLevel(days, yellowDays); // null | 'expired' | 'soon' | 'ok'
+  const days = daysUntil(item.mhd); // gedrucktes MHD
+  const mhdLevel = expiryLevel(days, yellowDays);
+  const mhdColor = levelColor(mhdLevel, t);
+  const mhdBg = mhdLevel === 'expired' ? t.dangerBg : t.warningBg;
+  const mhdWarn = mhdLevel === 'expired' || mhdLevel === 'soon';
+
+  // Rest-Haltbarkeit nach dem Öffnen
+  const openUntil = openedUntil(item, openedShelfDays);
+  const openDays = openUntil ? daysUntil(openUntil) : null;
+  const openLevel = openDays != null ? expiryLevel(openDays, yellowDays) : null;
+  const openColor = openLevel ? levelColor(openLevel, t) : t.warning;
+  const openBg = openLevel === 'expired' ? t.dangerBg : t.warningBg;
+  const remLabel = openDays == null ? '' : openDays < 0 ? `${Math.abs(openDays)}T überfällig` : openDays === 0 ? 'heute' : openDays === 1 ? 'morgen' : `noch ${openDays}T`;
+
+  // Warn-Punkt vor dem Namen richtet sich nach dem frühesten (effektiven) Datum.
+  const effDays = [days, openDays].filter((d) => d != null);
+  const level = effDays.length ? expiryLevel(Math.min(...effDays), yellowDays) : null;
   const warn = level === 'expired' || level === 'soon';
   const wColor = levelColor(level, t);
-  const wBg = level === 'expired' ? t.dangerBg : t.warningBg;
 
   return (
     <div
@@ -38,21 +54,24 @@ export function ItemRow({ item, zone, t, dark, yellowDays = 3, justChanged, onEd
           )}
           {item.mhd && (
             <span style={{
-              fontSize: 11, fontWeight: 700, color: wColor,
-              background: warn ? wBg : 'transparent',
-              padding: warn ? '1px 7px' : 0, borderRadius: 6,
+              fontSize: 11, fontWeight: 700, color: mhdColor,
+              background: mhdWarn ? mhdBg : 'transparent',
+              padding: mhdWarn ? '1px 7px' : 0, borderRadius: 6,
             }}>
               MHD {mhdLabel(days)}
             </span>
           )}
-          {/* „geöffnet"-Badge – nur sichtbar, wenn im Bearbeiten-Menü aktiviert */}
+          {/* „geöffnet"-Badge – nur sichtbar, wenn im Bearbeiten-Menü aktiviert;
+              zeigt die Rest-Haltbarkeit nach dem Öffnen, wenn bekannt. */}
           {item.opened && (
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700,
-              color: t.warning, background: t.warningBg, padding: '1px 7px', borderRadius: 6,
+              color: openDays != null ? openColor : t.warning,
+              background: openDays != null ? openBg : t.warningBg,
+              padding: '1px 7px', borderRadius: 6,
             }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: t.warning }} aria-hidden="true" />
-              geöffnet
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: openDays != null ? openColor : t.warning }} aria-hidden="true" />
+              {openDays != null ? `geöffnet · ${remLabel}` : 'geöffnet'}
             </span>
           )}
         </div>

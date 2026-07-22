@@ -8,6 +8,7 @@ import { useCategories } from './hooks/useCategories.js';
 import { useFoods } from './hooks/useFoods.js';
 import { SEED } from './lib/defaults.js';
 import { emptyMacros, foodToMacros, macrosToFood, hasFoodData, defaultBasisForUnit } from './lib/macros.js';
+import { openedDaysFor, effectiveExpiry } from './lib/openedShelfLife.js';
 import { daysUntil } from './lib/date.js';
 import { isScanSupported } from './scan/scan.js';
 import { captureMhdViaPhoto } from './scan/camera.js';
@@ -98,8 +99,10 @@ export default function App() {
   // MHD-Erinnerungen neu planen, sobald sich Bestand oder Einstellungen ändern.
   useEffect(() => {
     if (!itemsLoaded || !warnLoaded || items === null || warn === null) return;
-    syncExpiryNotifications(items, warn);
-  }, [items, warn, itemsLoaded, warnLoaded]);
+    // Für Erinnerungen zählt die effektive Rest-Haltbarkeit (geöffnet ggf. früher).
+    const effItems = items.map((i) => ({ ...i, mhd: effectiveExpiry(i, openedDaysFor(i.name, getFood(i.name))).date }));
+    syncExpiryNotifications(effItems, warn);
+  }, [items, warn, itemsLoaded, warnLoaded, getFood]);
 
   const resolveZone = (id) => (zones ? zones.find((z) => z.id === id) : undefined);
   const countFor = (id) => (items ? items.filter((i) => i.zone === id).length : 0);
@@ -412,11 +415,13 @@ export default function App() {
   const expiringSoon = useMemo(() => {
     if (!items) return [];
     return items
-      .filter((i) => i.mhd)
-      .map((i) => ({ ...i, days: daysUntil(i.mhd) }))
+      .map((i) => {
+        const eff = effectiveExpiry(i, openedDaysFor(i.name, getFood(i.name)));
+        return { ...i, days: eff.date ? daysUntil(eff.date) : null };
+      })
       .filter((i) => i.days !== null && i.days <= yellowDays)
       .sort((a, b) => a.days - b.days);
-  }, [items, yellowDays]);
+  }, [items, yellowDays, getFood]);
 
   if (!ready) {
     return (
@@ -459,7 +464,7 @@ export default function App() {
               {searchResults.map((item, idx) => (
                 <ItemRow
                   key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays}
-                  justChanged={justChanged} onEdit={openEdit} onChangeQty={changeQty} onRemove={removeItem}
+                  justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openEdit} onChangeQty={changeQty} onRemove={removeItem}
                   showZoneBadge isLast={idx === searchResults.length - 1}
                 />
               ))}
@@ -473,7 +478,7 @@ export default function App() {
               {list.map((item, idx) => (
                 <ItemRow
                   key={item.id} item={item} zone={zone} t={t} dark={dark} yellowDays={yellowDays}
-                  justChanged={justChanged} onEdit={openEdit} onChangeQty={changeQty} onRemove={removeItem}
+                  justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openEdit} onChangeQty={changeQty} onRemove={removeItem}
                   isLast={idx === list.length - 1}
                 />
               ))}

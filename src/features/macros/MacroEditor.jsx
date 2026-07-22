@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Camera, Copy, Check, ClipboardPaste, List } from 'lucide-react';
+import { Camera, Copy, Check, ClipboardPaste, List, Clock } from 'lucide-react';
 import {
   MACRO_FIELDS, BASIS_OPTIONS, hasMacros, mergeScanned, copyMacros, unsaturatedFat, fmtNum,
 } from '../../lib/macros.js';
+import { shelfLifeAfterOpening } from '../../lib/openedShelfLife.js';
 import { captureNutritionViaPhoto, captureTextViaPhoto } from '../../scan/camera.js';
 import { parseNutritionFacts } from '../../scan/nutrition.js';
 import { makeInputStyle } from '../../lib/styles.js';
@@ -22,6 +23,7 @@ export function MacroEditor({
   const [pasteText, setPasteText] = useState('');
   const inputStyle = makeInputStyle(t);
   const showCopy = hasMacros(macros) && (name || '').trim().length > 0;
+  const ruleDays = shelfLifeAfterOpening(name);
 
   const setField = (key, raw) => {
     const v = raw === '' ? null : parseFloat(String(raw).replace(',', '.'));
@@ -236,6 +238,29 @@ export function MacroEditor({
           rows={3}
           style={{ ...inputStyle, marginTop: 8, resize: 'vertical', fontSize: 13, lineHeight: 1.45 }}
         />
+      </div>
+
+      {/* Haltbarkeit nach dem Öffnen (Override der Regel-Tabelle) */}
+      <div style={{ marginTop: 18 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, color: t.text }}>
+          <Clock size={16} /> Haltbar nach dem Öffnen
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={macros.openedDays ?? ''}
+            onChange={(e) => onChange({ openedDays: e.target.value === '' ? null : Math.max(0, parseInt(e.target.value, 10) || 0) })}
+            placeholder={ruleDays != null ? `Standard: ${ruleDays}` : 'z.B. 5'}
+            style={{ ...inputStyle, marginTop: 0, width: 120, textAlign: 'right' }}
+          />
+          <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>Tage</span>
+        </div>
+        <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 6, lineHeight: 1.4 }}>
+          {ruleDays != null
+            ? `Ohne eigene Angabe gelten automatisch ${ruleDays} Tage (nach Name). Ab dem Öffnen wird entsprechend früher gewarnt.`
+            : 'Für diesen Namen gibt es keinen Automatik-Wert – hier optional eintragen.'}
+        </div>
       </div>
 
       {msg && (
