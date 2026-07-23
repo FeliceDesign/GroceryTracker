@@ -45,6 +45,14 @@ body.gt-scanning .gt-hide-while-scanning {
   visibility: hidden !important;
 }
 
+/* Natives Kalender-Icon bei Datumsfeldern ausblenden – wir haben einen
+   eigenen Clear-Button (ClearableInput), das native Icon schimmert sonst
+   dahinter durch. Ein Tap aufs Feld öffnet den Picker weiterhin. */
+input[type='date']::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
 /* Schmale, dezente Scrollbalken in Sheets */
 ::-webkit-scrollbar {
   width: 8px;

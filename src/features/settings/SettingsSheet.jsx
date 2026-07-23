@@ -7,6 +7,7 @@ import { Modal } from '../../components/Modal.jsx';
 import { ColorSwatches } from '../../components/ColorSwatches.jsx';
 import { MHD_COLOR_CHOICES } from '../../lib/colors.js';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
+import { DownloadsSaver } from '../../lib/downloadsSaver.js';
 
 function Stepper({ value, onChange, min = 0, max = 60, suffix, t }) {
   return (
@@ -156,18 +157,19 @@ export function SettingsSheet({
 
   const flashMsg = (m) => { setMsg(m); setTimeout(() => setMsg(''), 3000); };
 
-  // Schreibt eine echte, über jede Dateien-App auffindbare Datei ins
-  // öffentliche Dokumente-Verzeichnis – ohne Auswahldialog (den gibt es unter
-  // Capacitor/Android nicht ohne eigenes natives Plugin), aber garantiert
-  // eine echte Datei statt nur eines (im WebView wirkungslosen) Web-Downloads.
+  // Schreibt eine echte, über jede Dateien-App auffindbare Datei in den
+  // öffentlichen Downloads-Ordner – ohne Auswahldialog. @capacitor/filesystem
+  // scheitert dabei auf Android 11+ (Scoped Storage blockiert den direkten
+  // Datei-Zugriff auf öffentliche Verzeichnisse), daher übers eigene
+  // DownloadsSaver-Plugin, das ab Android 10 die MediaStore-API nutzt.
   const doExport = async () => {
     const json = buildBackup(exportMacros);
     const filename = backupFilename();
 
     if (Capacitor.isNativePlatform()) {
       try {
-        await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Documents, encoding: Encoding.UTF8 });
-        flashMsg(`✓ Gespeichert: Dokumente/${filename}`);
+        await DownloadsSaver.save({ filename, content: json });
+        flashMsg(`✓ Gespeichert: Downloads/${filename}`);
       } catch {
         flashMsg('Backup konnte nicht gespeichert werden.');
       }
