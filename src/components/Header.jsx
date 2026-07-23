@@ -1,10 +1,10 @@
-import { ShoppingCart, Settings } from 'lucide-react';
+import { ShoppingCart, Settings, Plus } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
 import { CountBadge } from './CountBadge.jsx';
 
 export function Header({
   zone, dark, t, totalInZone, shoppingCount, showShoppingCount = true, align = 'left', title,
-  onShopping, onSettings, onZoneClick, showShoppingButton = true, showSettingsButton = true,
+  onShopping, onSettings, onAdd, onZoneClick, showShoppingButton = true, showSettingsButton = true, showAddButton = false,
 }) {
   const pal = zonePalette(zone.color, dark);
   const center = align === 'center';
@@ -13,7 +13,7 @@ export function Header({
     width: 44, height: 44, color: t.headerText, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
   };
-  const buttonCount = (showShoppingButton ? 1 : 0) + (showSettingsButton ? 1 : 0);
+  const buttonCount = (showShoppingButton ? 1 : 0) + (showSettingsButton ? 1 : 0) + (showAddButton ? 1 : 0);
   // Breite der Buttons-Gruppe – im „zentriert"-Modus als Gegengewicht links,
   // damit der Zonenname wirklich mittig sitzt statt vom Buttons-Platz nach
   // links verschoben zu wirken. Passt sich an, wenn Buttons nach unten
@@ -60,6 +60,11 @@ export function Header({
               {showSettingsButton && (
                 <button onClick={onSettings} style={iconBtn} aria-label="Einstellungen öffnen">
                   <Settings size={20} strokeWidth={2.2} />
+                </button>
+              )}
+              {showAddButton && (
+                <button onClick={onAdd} style={iconBtn} aria-label="Neuen Artikel hinzufügen">
+                  <Plus size={22} strokeWidth={2.4} />
                 </button>
               )}
             </div>

@@ -1,58 +1,45 @@
-import { Plus } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
 
-const ADD_SIZE = 60;
-const ADD_BOTTOM = 22;
-const EXTRA_SIZE = 48;
+const BASE_BOTTOM = 22;
 const GAP = 14;
+const CENTER_OFFSET = 50; // horizontaler Mittelpunkt aller Buttons, von rechts gemessen
 
-// +-Button (immer unten rechts, Ankerpunkt) plus optionale weitere Buttons
-// (Einkaufsliste/Einstellungen), die sich in fester Reihenfolge darüber
-// stapeln, wenn der Nutzer sie in den Einstellungen nach unten verschoben
-// hat. `extras` ist von unten nach oben sortiert (am nächsten am +-Button
-// zuerst).
-export function FloatingActions({ zone, dark, t, onAdd, extras = [] }) {
+// Stapel schwebender Buttons unten rechts. `items` ist von unten (Anker)
+// nach oben sortiert – jeder Eintrag: { key, size, primary, onClick,
+// ariaLabel, icon, badge }. Welche Buttons hier überhaupt landen (Add,
+// Einkaufsliste, Einstellungen) und in welcher Reihenfolge, entscheidet der
+// Aufrufer anhand der Nutzer-Einstellungen; diese Komponente kümmert sich
+// nur ums Stapeln, ohne eine Position für „Add" fest anzunehmen.
+export function FloatingActions({ zone, dark, t, items = [] }) {
   const pal = zonePalette(zone.color, dark);
+  let bottom = BASE_BOTTOM;
 
   return (
     <>
-      {extras.map((ex, i) => (
-        <button
-          key={ex.key}
-          onClick={ex.onClick}
-          aria-label={ex.ariaLabel}
-          style={{
-            position: 'fixed',
-            right: 26,
-            bottom: `calc(${ADD_BOTTOM + ADD_SIZE + GAP + i * (EXTRA_SIZE + GAP)}px + env(safe-area-inset-bottom))`,
-            width: EXTRA_SIZE, height: EXTRA_SIZE, borderRadius: '50%', border: 'none',
-            background: pal.headerBg, color: t.headerText,
-            boxShadow: '0 4px 14px rgba(0,0,0,0.26)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', zIndex: 30,
-          }}
-        >
-          {ex.icon}
-          {ex.badge}
-        </button>
-      ))}
-
-      <button
-        onClick={onAdd}
-        aria-label="Neuen Artikel hinzufügen"
-        style={{
-          position: 'fixed',
-          right: 20,
-          bottom: `calc(${ADD_BOTTOM}px + env(safe-area-inset-bottom))`,
-          width: ADD_SIZE, height: ADD_SIZE, borderRadius: '50%', border: 'none',
-          background: pal.headerBg, color: t.headerText,
-          boxShadow: '0 6px 18px rgba(0,0,0,0.28)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', zIndex: 30,
-        }}
-      >
-        <Plus size={28} strokeWidth={2.6} />
-      </button>
+      {items.map((it) => {
+        const el = (
+          <button
+            key={it.key}
+            onClick={it.onClick}
+            aria-label={it.ariaLabel}
+            style={{
+              position: 'fixed',
+              right: CENTER_OFFSET - it.size / 2,
+              bottom: `calc(${bottom}px + env(safe-area-inset-bottom))`,
+              width: it.size, height: it.size, borderRadius: '50%', border: 'none',
+              background: pal.headerBg, color: t.headerText,
+              boxShadow: it.primary ? '0 6px 18px rgba(0,0,0,0.28)' : '0 4px 14px rgba(0,0,0,0.26)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', zIndex: 30,
+            }}
+          >
+            {it.icon}
+            {it.badge}
+          </button>
+        );
+        bottom += it.size + GAP;
+        return el;
+      })}
     </>
   );
 }
