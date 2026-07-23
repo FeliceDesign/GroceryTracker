@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Plus, Minus, Camera, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ZonePicker } from '../../components/ZonePicker.jsx';
@@ -19,24 +19,46 @@ export function EditItemSheet({
   const labelStyle = makeLabelStyle(t);
   const inputStyle = makeInputStyle(t);
   // Roh-Text während der Eingabe bei g/ml (statt jeden Tastendruck sofort zu
-  // übernehmen) – so kann man z.B. "-40" eintippen, ohne dass es zwischendurch
-  // schon als 0 interpretiert wird. Erst bei Verlassen des Felds/Enter wird
-  // ausgewertet: beginnt der Text mit +/-, zählt er als Delta auf die
-  // aktuelle Menge, sonst als neuer Absolutwert.
+  // übernehmen) – so kann man z.B. "40" nach Antippen von "−" eintippen, ohne
+  // dass zwischendurch schon ein falscher Wert übernommen wird. Erst bei
+  // Verlassen des Felds/Enter wird ausgewertet.
   const [qtyDraft, setQtyDraft] = useState(null);
+  // Vorzeichen-Umschalter für Delta-Eingabe (z.B. "−" antippen, dann "40"
+  // eintippen -> 40 wird von der aktuellen Menge abgezogen). Nötig, weil die
+  // numerische Handy-Tastatur kein +/- anbietet.
+  const [qtySign, setQtySign] = useState(null);
+  const qtyInputRef = useRef(null);
+  // Verhindert, dass der onFocus-Handler (der beim normalen Antippen des
+  // Felds den Ist-Wert vorbelegt) den gerade von armSign() geleerten Entwurf
+  // überschreibt – der programmatische .focus()-Aufruf feuert onFocus noch
+  // im selben Tick mit dem alten qtySign-Stand (Ref statt State, da sofort
+  // aktuell).
+  const armingRef = useRef(false);
   if (!editItem) return null;
 
+  const armSign = (sign) => {
+    const next = qtySign === sign ? null : sign;
+    setQtySign(next);
+    setQtyDraft(next ? '' : String(editItem.qty));
+    armingRef.current = true;
+    qtyInputRef.current?.focus();
+  };
+
   const commitQtyDraft = () => {
-    if (qtyDraft === null) return;
-    const raw = qtyDraft.trim();
-    let next;
-    if (/^[+-]\d+$/.test(raw)) {
-      next = Math.max(0, editItem.qty + parseInt(raw, 10));
-    } else {
-      const parsed = parseInt(raw, 10);
-      next = Math.max(0, Number.isFinite(parsed) ? parsed : editItem.qty);
+    if (qtyDraft !== null) {
+      const raw = qtyDraft.trim();
+      if (qtySign) {
+        const magnitude = Math.abs(parseInt(raw, 10) || 0);
+        const delta = qtySign === '-' ? -magnitude : magnitude;
+        setEditItem((s) => ({ ...s, qty: Math.max(0, s.qty + delta) }));
+      } else if (/^[+-]\d+$/.test(raw)) {
+        setEditItem((s) => ({ ...s, qty: Math.max(0, editItem.qty + parseInt(raw, 10)) }));
+      } else {
+        const parsed = parseInt(raw, 10);
+        setEditItem((s) => ({ ...s, qty: Math.max(0, Number.isFinite(parsed) ? parsed : s.qty) }));
+      }
     }
-    setEditItem((s) => ({ ...s, qty: next }));
+    setQtySign(null);
     setQtyDraft(null);
   };
   const zone = zones.find((z) => z.id === editItem.zone) || zones[0];
@@ -136,16 +158,41 @@ export function EditItemSheet({
           const sliderMax = 1000;
           return (
             <div style={{ marginTop: 6 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => armSign('-')}
+                  aria-pressed={qtySign === '-'}
+                  aria-label="Menge abziehen (Delta)"
+                  style={btnCircle(qtySign === '-' ? pal.accentBg : t.cardAlt, qtySign === '-' ? pal.accent : t.pillInactiveText, 34)}
+                >
+                  <Minus size={15} strokeWidth={2.5} />
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => armSign('+')}
+                  aria-pressed={qtySign === '+'}
+                  aria-label="Menge addieren (Delta)"
+                  style={btnCircle(qtySign === '+' ? pal.accentBg : t.cardAlt, qtySign === '+' ? pal.accent : t.pillInactiveText, 34)}
+                >
+                  <Plus size={15} strokeWidth={2.5} />
+                </button>
                 <input
+                  ref={qtyInputRef}
                   type="text"
                   inputMode="numeric"
                   value={qtyDraft !== null ? qtyDraft : String(editItem.qty)}
-                  onFocus={() => setQtyDraft(String(editItem.qty))}
+                  onFocus={() => {
+                    if (armingRef.current) { armingRef.current = false; return; }
+                    setQtyDraft(String(editItem.qty));
+                  }}
                   onChange={(e) => setQtyDraft(e.target.value)}
                   onBlur={commitQtyDraft}
                   onKeyDown={(e) => { if (e.key === 'Enter') { commitQtyDraft(); e.target.blur(); } }}
-                  aria-label="Menge (auch als +/-Delta eingebbar, z.B. -40)"
+                  placeholder={qtySign ? 'Betrag' : undefined}
+                  aria-label={qtySign ? `Betrag zum ${qtySign === '-' ? 'Abziehen' : 'Addieren'}` : 'Menge'}
                   style={{ ...inputStyle, marginTop: 0 }}
                 />
                 <span style={{ fontSize: 15, fontWeight: 700, color: t.textMuted }}>{editItem.unit}</span>
