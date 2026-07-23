@@ -202,11 +202,16 @@ export function MacroEditor({
         <button type="button" onClick={() => { setShowPaste((v) => !v); setMsg(''); }} style={secondaryBtn({ flex: 1 })}>
           <ClipboardPaste size={16} /> Text einfügen
         </button>
-        {showCopy && (
-          <button type="button" onClick={doCopy} aria-label="Nährwerttabelle kopieren" title="Nährwerttabelle kopieren" style={secondaryBtn({ color: copied ? t.success : t.textMuted, padding: '12px', width: 46, flexShrink: 0 })}>
-            {copied ? <Check size={17} /> : <Copy size={16} />}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={doCopy}
+          disabled={!showCopy}
+          aria-label="Nährwerttabelle kopieren"
+          title={showCopy ? 'Nährwerttabelle kopieren' : 'Keine Nährwerte zum Kopieren'}
+          style={secondaryBtn({ color: copied ? t.success : t.textMuted, padding: '12px', width: 46, flexShrink: 0, opacity: showCopy ? 1 : 0.4, cursor: showCopy ? 'pointer' : 'default' })}
+        >
+          {copied ? <Check size={17} /> : <Copy size={16} />}
+        </button>
       </div>
 
       {showPaste && (
@@ -260,22 +265,27 @@ export function MacroEditor({
             rows={3}
             style={{ ...inputStyle, marginTop: 0, resize: 'vertical', fontSize: 13, lineHeight: 1.45, paddingRight: 42 }}
           />
-          {macros.ingredients && String(macros.ingredients).trim() && (
-            <button
-              type="button"
-              onClick={doCopyIngredients}
-              aria-label="Zutaten kopieren"
-              title="Zutaten kopieren"
-              style={{
-                position: 'absolute', right: 8, bottom: 8,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 30, height: 30, borderRadius: 8, border: `1.5px solid ${t.border}`,
-                background: t.card, color: copiedIng ? t.success : t.textMuted, cursor: 'pointer',
-              }}
-            >
-              {copiedIng ? <Check size={14} /> : <Copy size={13} />}
-            </button>
-          )}
+          {(() => {
+            const hasIngredients = !!(macros.ingredients && String(macros.ingredients).trim());
+            return (
+              <button
+                type="button"
+                onClick={doCopyIngredients}
+                disabled={!hasIngredients}
+                aria-label="Zutaten kopieren"
+                title={hasIngredients ? 'Zutaten kopieren' : 'Keine Zutaten zum Kopieren'}
+                style={{
+                  position: 'absolute', right: 8, bottom: 8,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 30, height: 30, borderRadius: 8, border: `1.5px solid ${t.border}`,
+                  background: t.card, color: copiedIng ? t.success : t.textMuted,
+                  opacity: hasIngredients ? 1 : 0.4, cursor: hasIngredients ? 'pointer' : 'default',
+                }}
+              >
+                {copiedIng ? <Check size={14} /> : <Copy size={13} />}
+              </button>
+            );
+          })()}
         </div>
       </div>
 
