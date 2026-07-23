@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Boxes, Tags, Utensils, Clock, ListOrdered, Download, Upload, Sun, Moon, SunMoon, ChevronRight, Plus, Minus, Bell } from 'lucide-react';
+import { Boxes, Tags, Utensils, Clock, ListOrdered, Download, Upload, Share2, ClipboardCopy, Sun, Moon, SunMoon, ChevronRight, Plus, Minus, Bell } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -152,37 +152,29 @@ export function SettingsSheet({
     e.target.value = ''; // gleiche Datei erneut wählbar machen
   };
 
+  const backupFilename = () => `grocerytracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
+
+  const flashMsg = (m) => { setMsg(m); setTimeout(() => setMsg(''), 3000); };
+
+  // Schreibt eine echte, über jede Dateien-App auffindbare Datei ins
+  // öffentliche Dokumente-Verzeichnis – ohne Auswahldialog (den gibt es unter
+  // Capacitor/Android nicht ohne eigenes natives Plugin), aber garantiert
+  // eine echte Datei statt nur eines (im WebView wirkungslosen) Web-Downloads.
   const doExport = async () => {
     const json = buildBackup(exportMacros);
-    const filename = `grocerytracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    const filename = backupFilename();
 
-    // In der Android-App löst ein simulierter <a download>-Klick im
-    // WebView keinen echten Download aus. Stattdessen: Datei im Cache
-    // ablegen und den nativen "Speichern unter/Teilen"-Dialog öffnen,
-    // über den ein echter Speicherort gewählt werden kann.
     if (Capacitor.isNativePlatform()) {
       try {
-        await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Cache, encoding: Encoding.UTF8 });
-        const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
-        await Share.share({ title: 'Backup speichern', url: uri, dialogTitle: 'Backup speichern unter…' });
-        setMsg('✓ Speichern-Dialog geöffnet.');
-      } catch (e) {
-        setMsg(e?.message?.includes('cancel') ? '' : 'Backup konnte nicht erstellt werden.');
+        await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Documents, encoding: Encoding.UTF8 });
+        flashMsg(`✓ Gespeichert: Dokumente/${filename}`);
+      } catch {
+        flashMsg('Backup konnte nicht gespeichert werden.');
       }
-      setTimeout(() => setMsg(''), 3000);
       return;
     }
 
-    // Browser/Vorschau: Zwischenablage + Web-Download wie bisher.
-    let copied = false;
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(json);
-        copied = true;
-      }
-    } catch {
-      copied = false;
-    }
+    // Browser/Vorschau: kein Dokumente-Verzeichnis, daher Web-Download.
     try {
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -193,11 +185,50 @@ export function SettingsSheet({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      flashMsg('✓ Backup heruntergeladen.');
     } catch {
-      // Download nicht möglich – Clipboard reicht als Fallback
+      flashMsg('Backup konnte nicht erstellt werden.');
     }
-    setMsg(copied ? '✓ Backup in Zwischenablage kopiert und heruntergeladen.' : '✓ Backup heruntergeladen.');
-    setTimeout(() => setMsg(''), 3000);
+  };
+
+  // Eigenständige "Teilen"-Aktion (z.B. um das Backup direkt per Mail/Drive/
+  // Messenger zu verschicken) statt an den Export gekoppelt.
+  const doShareExport = async () => {
+    const json = buildBackup(exportMacros);
+    const filename = backupFilename();
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Cache, encoding: Encoding.UTF8 });
+        const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
+        await Share.share({ title: 'Backup teilen', url: uri, dialogTitle: 'Backup teilen…' });
+      } catch (e) {
+        if (!e?.message?.includes('cancel')) flashMsg('Teilen fehlgeschlagen.');
+      }
+      return;
+    }
+
+    if (navigator.share) {
+      try {
+        const file = new File([json], filename, { type: 'application/json' });
+        await navigator.share({ files: [file], title: 'Backup teilen' });
+      } catch {
+        // Abgebrochen oder nicht unterstützt – keine Fehlermeldung nötig
+      }
+    } else {
+      flashMsg('Teilen ist in der Browser-Vorschau nicht verfügbar.');
+    }
+  };
+
+  // Eigenständige Zwischenablage-Aktion, unabhängig vom Datei-Export.
+  const doCopyExport = async () => {
+    const json = buildBackup(exportMacros);
+    try {
+      await navigator.clipboard.writeText(json);
+      flashMsg('✓ Backup in Zwischenablage kopiert.');
+    } catch {
+      flashMsg('Kopieren nicht möglich.');
+    }
   };
 
   const doImport = () => preview(importText);
@@ -495,7 +526,9 @@ export function SettingsSheet({
           sub={`Nährwerte von ${stats.foods} Lebensmitteln ins Backup aufnehmen.`}
           control={<Toggle t={t} on={exportMacros} onChange={setExportMacros} />}
         />
-        <Row t={t} icon={<Download size={19} />} label="Backup exportieren" sub={`${stats.items} Artikel als JSON${exportMacros ? ' inkl. Makros' : ' ohne Makros'}`} onClick={doExport} />
+        <Row t={t} icon={<Download size={19} />} label="Backup exportieren" sub={`${stats.items} Artikel als JSON${exportMacros ? ' inkl. Makros' : ' ohne Makros'} · als Datei speichern`} onClick={doExport} />
+        <Row t={t} icon={<Share2 size={19} />} label="Backup teilen" sub="An eine App senden (Mail, Drive, Messenger, …)" onClick={doShareExport} />
+        <Row t={t} icon={<ClipboardCopy size={19} />} label="In Zwischenablage kopieren" sub="Zum Einfügen beim Import" onClick={doCopyExport} />
         <Row t={t} icon={<Upload size={19} />} label="Backup importieren" sub="Aus Datei oder JSON – mit Bestätigung" onClick={() => { setImporting((v) => !v); setPending(null); }} />
       </div>
 
