@@ -7,6 +7,7 @@ import { shelfLifeAfterOpening } from '../../lib/openedShelfLife.js';
 import { captureNutritionViaPhoto, captureTextViaPhoto } from '../../scan/camera.js';
 import { parseNutritionFacts } from '../../scan/nutrition.js';
 import { makeInputStyle } from '../../lib/styles.js';
+import { ShelfLifeDetails } from './ShelfLifeDetails.jsx';
 
 // Bearbeitungsformular für die Stammdaten eines Lebensmittels (Nährwerte +
 // Zutaten). `macros` ist der Entwurf (siehe lib/macros.js), `onChange(patch)`
@@ -292,7 +293,7 @@ export function MacroEditor({
       {/* Haltbarkeit nach dem Öffnen (Override der Regel-Tabelle) */}
       <div style={{ marginTop: 18 }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, color: t.text }}>
-          <Clock size={16} /> Haltbar nach dem Öffnen
+          <Clock size={16} /> Haltbarkeit nach dem Öffnen
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
           <input
@@ -305,10 +306,8 @@ export function MacroEditor({
           />
           <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>Tage</span>
         </div>
-        <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 6, lineHeight: 1.4 }}>
-          {ruleDays != null
-            ? `Ohne eigene Angabe gelten automatisch ${ruleDays} Tage (nach Name). Ab dem Öffnen wird entsprechend früher gewarnt.`
-            : 'Für diesen Namen gibt es keinen Automatik-Wert – hier optional eintragen.'}
+        <div style={{ marginTop: 10 }}>
+          <ShelfLifeDetails name={name} food={macros} zone={null} t={t} defaultOpen />
         </div>
       </div>
 
