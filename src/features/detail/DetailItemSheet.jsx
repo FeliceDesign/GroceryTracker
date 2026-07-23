@@ -3,6 +3,7 @@ import { Plus, Minus, Trash2, Pencil, Copy, Check, Utensils, List, PackageOpen }
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { ShelfLifeDetails } from '../macros/ShelfLifeDetails.jsx';
+import { ProduceStorageDetails } from '../macros/ProduceStorageDetails.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel, formatDateDisplay } from '../../lib/date.js';
 import { MACRO_FIELDS, fmtNum, unsaturatedFat, hasMacros, basisLabel, copyMacros } from '../../lib/macros.js';
@@ -177,6 +178,15 @@ export function DetailItemSheet({
           <div style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.5, background: t.cardAlt, borderRadius: 12, padding: '10px 14px' }}>
             {food.ingredients}
           </div>
+        </div>
+      )}
+
+      {/* Obst-&-Gemüse-Lagerhinweise – nur bei passender Kategorie und
+          vorhandenem Regel-Treffer (die Komponente rendert sonst nichts). */}
+      {(item.category === 'Obst' || item.category === 'Gemüse') && (
+        <div style={section}>
+          <div style={secLabel}>Lagerung (Obst &amp; Gemüse)</div>
+          <ProduceStorageDetails name={item.name} zone={zone} t={t} />
         </div>
       )}
 

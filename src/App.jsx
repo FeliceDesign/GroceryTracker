@@ -34,6 +34,7 @@ import { ManageCategoriesSheet } from './features/categories/ManageCategoriesShe
 import { SettingsSheet } from './features/settings/SettingsSheet.jsx';
 import { ManageFoodsSheet } from './features/macros/ManageFoodsSheet.jsx';
 import { ShelfLifeSheet } from './features/macros/ShelfLifeSheet.jsx';
+import { ProduceStorageSheet } from './features/macros/ProduceStorageSheet.jsx';
 import { DetailItemSheet } from './features/detail/DetailItemSheet.jsx';
 
 const newId = (prefix = 'i') => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -75,6 +76,7 @@ export default function App() {
   const [showCategories, setShowCategories] = useState(false);
   const [showFoods, setShowFoods] = useState(false);
   const [showShelfLife, setShowShelfLife] = useState(false);
+  const [showProduceStorage, setShowProduceStorage] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
 
   // Formular / Scan
@@ -737,6 +739,7 @@ export default function App() {
         buildBackup={buildBackup} restoreBackup={restoreBackup} previewBackup={previewBackup}
         onOpenShelfLife={() => { setShowSettings(false); setShowShelfLife(true); }}
         onOpenExpiringView={() => { setShowSettings(false); setExpiringView(true); setSearch(''); }}
+        onOpenProduceStorage={() => { setShowSettings(false); setShowProduceStorage(true); }}
       />
 
       <ManageZonesSheet
@@ -758,6 +761,7 @@ export default function App() {
       />
 
       <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} />
+      <ProduceStorageSheet open={showProduceStorage} onClose={() => setShowProduceStorage(false)} t={t} />
 
       <DetailItemSheet
         open={!!detailLive} item={detailLive}
