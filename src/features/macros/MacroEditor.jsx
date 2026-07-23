@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Camera, Copy, Check, ClipboardPaste, List, Clock } from 'lucide-react';
 import {
-  MACRO_FIELDS, BASIS_OPTIONS, hasMacros, mergeScanned, copyMacros, unsaturatedFat, fmtNum,
+  MACRO_FIELDS, BASIS_OPTIONS, hasMacros, mergeScanned, copyMacros, copyToClipboard, unsaturatedFat, fmtNum,
 } from '../../lib/macros.js';
 import { shelfLifeAfterOpening } from '../../lib/openedShelfLife.js';
 import { captureNutritionViaPhoto, captureTextViaPhoto } from '../../scan/camera.js';
@@ -19,6 +19,7 @@ export function MacroEditor({
   const [ingBusy, setIngBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [copied, setCopied] = useState(false);
+  const [copiedIng, setCopiedIng] = useState(false);
   const [showPaste, setShowPaste] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const inputStyle = makeInputStyle(t);
@@ -88,6 +89,12 @@ export function MacroEditor({
     setCopied(ok);
     setMsg(ok ? '' : 'Kopieren nicht möglich.');
     if (ok) setTimeout(() => setCopied(false), 1600);
+  };
+
+  const doCopyIngredients = async () => {
+    const ok = await copyToClipboard(String(macros.ingredients || '').trim());
+    setCopiedIng(ok);
+    if (ok) setTimeout(() => setCopiedIng(false), 1600);
   };
 
   const secondaryBtn = (extra = {}) => ({
@@ -179,7 +186,7 @@ export function MacroEditor({
         })}
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 16, paddingTop: 16, borderTop: `1px solid ${t.border}` }}>
         {scanSupported && (
           <button type="button" onClick={scan} disabled={busy} style={secondaryBtn({ flex: 1, color: accent || t.textMuted, opacity: busy ? 0.6 : 1, cursor: busy ? 'default' : 'pointer' })}>
             <Camera size={16} /> {busy ? 'Lese…' : 'Tabelle scannen'}
@@ -189,8 +196,8 @@ export function MacroEditor({
           <ClipboardPaste size={16} /> Text einfügen
         </button>
         {showCopy && (
-          <button type="button" onClick={doCopy} style={secondaryBtn({ color: copied ? t.success : t.textMuted, padding: '12px 16px' })}>
-            {copied ? <Check size={16} /> : <Copy size={15} />} {copied ? 'Kopiert' : 'Kopieren'}
+          <button type="button" onClick={doCopy} aria-label="Nährwerttabelle kopieren" style={secondaryBtn({ color: copied ? t.success : t.textMuted, padding: '12px', width: 46, flexShrink: 0 })}>
+            {copied ? <Check size={17} /> : <Copy size={16} />}
           </button>
         )}
       </div>
@@ -225,11 +232,18 @@ export function MacroEditor({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, color: t.text }}>
             <List size={16} /> Zutaten
           </span>
-          {scanSupported && (
-            <button type="button" onClick={scanIngredients} disabled={ingBusy} style={secondaryBtn({ padding: '8px 12px', fontSize: 12.5, color: accent || t.textMuted, opacity: ingBusy ? 0.6 : 1, cursor: ingBusy ? 'default' : 'pointer' })}>
-              <Camera size={15} /> {ingBusy ? 'Lese…' : 'Scannen'}
-            </button>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {macros.ingredients && String(macros.ingredients).trim() && (
+              <button type="button" onClick={doCopyIngredients} aria-label="Zutaten kopieren" style={secondaryBtn({ padding: '8px', width: 38, color: copiedIng ? t.success : t.textMuted })}>
+                {copiedIng ? <Check size={15} /> : <Copy size={14} />}
+              </button>
+            )}
+            {scanSupported && (
+              <button type="button" onClick={scanIngredients} disabled={ingBusy} style={secondaryBtn({ padding: '8px 12px', fontSize: 12.5, color: accent || t.textMuted, opacity: ingBusy ? 0.6 : 1, cursor: ingBusy ? 'default' : 'pointer' })}>
+                <Camera size={15} /> {ingBusy ? 'Lese…' : 'Scannen'}
+              </button>
+            )}
+          </div>
         </div>
         <textarea
           value={macros.ingredients || ''}

@@ -97,8 +97,8 @@ function Row({ icon, label, sub, onClick, t }) {
 }
 
 const sectionLabel = (t) => ({
-  fontSize: 11.5, fontWeight: 700, color: t.textFaint, textTransform: 'uppercase',
-  letterSpacing: '0.05em', margin: '18px 2px 8px',
+  fontSize: 12, fontWeight: 800, color: t.textMuted, textTransform: 'uppercase',
+  letterSpacing: '0.06em', margin: '30px 2px 10px',
 });
 
 const ALL_THRESHOLDS = [14, 7, 3, 1, 0];
@@ -107,6 +107,7 @@ export function SettingsSheet({
   open, onClose, t, themeOverride, setThemeOverride,
   onManageZones, onManageCategories, onManageFoods, onOpenShelfLife,
   showShoppingCount, onToggleShoppingCount, stepGml, onSetStepGml,
+  showSlider, onToggleShowSlider, headerAlign, onSetHeaderAlign, appTitle, onSetAppTitle,
   warn, onUpdateWarn, onSetNotify, notifySupported,
   stats, buildBackup, restoreBackup, previewBackup,
 }) {
@@ -220,6 +221,36 @@ export function SettingsSheet({
           </div>
         </div>
       </div>
+
+        <div style={{ marginTop: 10 }}>
+          <SettingRow
+            t={t}
+            label="Schieberegler für Menge"
+            sub="Im Bearbeiten-Dialog bei g/ml zusätzlich zum Zahlenfeld."
+            control={<Toggle t={t} on={showSlider !== false} onChange={onToggleShowSlider} />}
+          />
+        </div>
+
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px', marginTop: 10 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Kopfzeile</div>
+          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10 }}>Eigener Titel und Ausrichtung von Titel, Zone und Artikelzahl.</div>
+          <input
+            value={appTitle || ''}
+            onChange={(e) => onSetAppTitle(e.target.value)}
+            placeholder="GroceryTracker"
+            maxLength={28}
+            style={{ ...inputStyle, marginTop: 0, marginBottom: 10 }}
+          />
+          <Segmented
+            t={t}
+            value={headerAlign || 'left'}
+            onChange={onSetHeaderAlign}
+            options={[
+              { value: 'left', label: 'Links' },
+              { value: 'center', label: 'Mittig' },
+            ]}
+          />
+        </div>
 
       <div style={sectionLabel(t)}>MHD-Warnungen</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -368,7 +399,7 @@ export function SettingsSheet({
           <div style={{ fontSize: 14, fontWeight: 800, color: t.text, marginBottom: 6 }}>Backup wirklich übernehmen?</div>
           <div style={{ fontSize: 12.5, color: t.textMuted, lineHeight: 1.5 }}>
             {pending.summary.exportedAt ? `Stand: ${new Date(pending.summary.exportedAt).toLocaleString('de-DE')}` : 'Ohne Datum'}<br />
-            <b>{pending.summary.items}</b> Artikel · <b>{pending.summary.foods}</b> Lebensmittel (Makros) · <b>{pending.summary.zones}</b> Lagerorte · <b>{pending.summary.categories}</b> Kategorien
+            <b>{pending.summary.items}</b> Artikel · <b>{pending.summary.foods}</b> Makro-Datensätze · <b>{pending.summary.zones}</b> Lagerorte · <b>{pending.summary.categories}</b> Kategorien
           </div>
           <div style={{ fontSize: 12, color: t.danger, marginTop: 8, lineHeight: 1.4 }}>
             ⚠️ Ersetzt deinen aktuellen Bestand vollständig.

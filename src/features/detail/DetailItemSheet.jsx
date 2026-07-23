@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Minus, Trash2, Pencil, Copy, Check, Utensils, List } from 'lucide-react';
+import { Plus, Minus, Trash2, Pencil, Copy, Check, Utensils, List, PackageOpen } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ShelfLifeDetails } from '../macros/ShelfLifeDetails.jsx';
 import { zonePalette } from '../../lib/colors.js';
@@ -10,7 +10,7 @@ import { btnCircle, primaryButtonStyle } from '../../lib/styles.js';
 
 // Schreibgeschützte Detail-Ansicht eines Artikels (Nährwerte, Zutaten,
 // Haltbarkeit). „Bearbeiten" öffnet das Formular.
-export function DetailItemSheet({ open, item, zone, food, t, dark, yellowDays = 3, onClose, onEdit, onChangeQty, onRemove }) {
+export function DetailItemSheet({ open, item, zone, food, t, dark, yellowDays = 3, onClose, onEdit, onChangeQty, onRemove, onToggleOpened }) {
   const [copied, setCopied] = useState(false);
   if (!open || !item) return null;
 
@@ -81,10 +81,28 @@ export function DetailItemSheet({ open, item, zone, food, t, dark, yellowDays = 
         {item.opened && (
           <span style={{ fontSize: 12.5, fontWeight: 700, color: t.warning, background: t.warningBg, padding: '5px 11px', borderRadius: 8 }}>
             Geöffnet{item.openedAt ? ` seit ${item.openedAt}` : ''}
-            {openUntil ? ` · verbrauchen bis ${openUntil}${openDays != null ? ` (${openDays < 0 ? `${Math.abs(openDays)}T überfällig` : openDays === 0 ? 'heute' : openDays === 1 ? 'morgen' : `noch ${openDays}T`})` : ''}` : ''}
+            {openUntil ? ` · verbrauchen bis ${openUntil}${openDays != null ? ` · ${openDays < 0 ? `${Math.abs(openDays)}T überfällig` : openDays === 0 ? 'heute' : openDays === 1 ? 'morgen' : `noch ${openDays}T`}` : ''}` : ''}
           </span>
         )}
       </div>
+
+      {/* Schnell als geöffnet markieren – ohne ins Bearbeiten zu wechseln */}
+      {onToggleOpened && (
+        <button
+          type="button"
+          onClick={() => onToggleOpened(item.id)}
+          aria-pressed={!!item.opened}
+          style={{
+            marginTop: 10, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '11px 14px', borderRadius: 12, cursor: 'pointer', fontWeight: 700, fontSize: 14,
+            border: `1.5px solid ${item.opened ? t.warning : t.border}`,
+            background: item.opened ? t.warningBg : 'transparent',
+            color: item.opened ? t.warning : t.textMuted,
+          }}
+        >
+          <PackageOpen size={17} /> {item.opened ? 'Als ungeöffnet markieren' : 'Als geöffnet markieren'}
+        </button>
+      )}
 
       {/* Nährwerte */}
       {showMacros && (
@@ -141,7 +159,7 @@ export function DetailItemSheet({ open, item, zone, food, t, dark, yellowDays = 
       {/* Haltbarkeit */}
       <div style={section}>
         <div style={secLabel}>Haltbarkeit nach dem Öffnen</div>
-        <ShelfLifeDetails name={item.name} food={food} zone={zone} t={t} defaultOpen />
+        <ShelfLifeDetails name={item.name} food={food} zone={zone} t={t} />
       </div>
     </Modal>
   );

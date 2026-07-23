@@ -1,19 +1,29 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight, Utensils } from 'lucide-react';
 import { MacroEditor } from './MacroEditor.jsx';
 import { hasMacros, hasFoodData, macroSummary, basisLabel } from '../../lib/macros.js';
 
-// Aufklappbarer „Nährwerte & Zutaten"-Abschnitt für das Bearbeiten-/Anlegen-
-// Sheet. Zeigt zugeklappt eine Kurz-Zusammenfassung, aufgeklappt den Editor.
+// Aufklappbarer „Nährwerte, Zutaten und Haltbarkeit"-Abschnitt für das
+// Bearbeiten-/Anlegen-Sheet. Zeigt zugeklappt eine Kurz-Zusammenfassung,
+// aufgeklappt den Editor – sanft animiert und beim Öffnen ins Bild gescrollt.
 export function MacroSection({ name, macros, onChange, t, scanSupported, accent }) {
   const filled = hasFoodData(macros);
   const [open, setOpen] = useState(filled);
+  const ref = useRef(null);
   const summary = hasMacros(macros)
     ? `${macroSummary({ ...macros })} · ${basisLabel(macros)}`
     : (filled ? 'Zutaten hinterlegt' : 'noch keine – tippen zum Erfassen');
 
+  useEffect(() => {
+    if (!open || !ref.current) return undefined;
+    const id = setTimeout(() => {
+      try { ref.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch { /* egal */ }
+    }, 260);
+    return () => clearTimeout(id);
+  }, [open]);
+
   return (
-    <div style={{ marginTop: 18, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }}>
+    <div ref={ref} style={{ marginTop: 18, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -35,18 +45,21 @@ export function MacroSection({ name, macros, onChange, t, scanSupported, accent 
         {open ? <ChevronDown size={18} color={t.textFaint} /> : <ChevronRight size={18} color={t.textFaint} />}
       </button>
 
-      {open && (
-        <div style={{ padding: '14px' }}>
-          <MacroEditor
-            name={name}
-            macros={macros}
-            onChange={onChange}
-            t={t}
-            scanSupported={scanSupported}
-            accent={accent}
-          />
+      {/* Grid-Trick: gridTemplateRows 0fr -> 1fr animiert die Höhe sauber. */}
+      <div style={{ display: 'grid', gridTemplateRows: open ? '1fr' : '0fr', transition: 'grid-template-rows 0.25s ease' }}>
+        <div style={{ overflow: 'hidden' }}>
+          <div style={{ padding: '14px' }}>
+            <MacroEditor
+              name={name}
+              macros={macros}
+              onChange={onChange}
+              t={t}
+              scanSupported={scanSupported}
+              accent={accent}
+            />
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

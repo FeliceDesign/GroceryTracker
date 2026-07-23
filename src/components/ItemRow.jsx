@@ -46,7 +46,7 @@ export function ItemRow({ item, zone, t, dark, yellowDays = 3, openedShelfDays =
           )}
           <span style={{ fontSize: 15, color: t.text, fontWeight: 500, overflowWrap: 'anywhere', lineHeight: 1.3 }}>{item.name}</span>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 2, flexWrap: 'wrap', paddingLeft: warn ? 15 : 0 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 3, flexWrap: 'wrap' }}>
           {showZoneBadge && zone && (
             <span style={{ fontSize: 10.5, fontWeight: 700, color: pal.accent }}>
               {zone.emoji} {zone.label}

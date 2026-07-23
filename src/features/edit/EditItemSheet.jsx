@@ -13,7 +13,7 @@ import { makeInputStyle, makeLabelStyle, pillStyle, btnCircle, primaryButtonStyl
 export function EditItemSheet({
   editItem, setEditItem, onClose, t, dark,
   zones, categories, onAddCategory,
-  scanSupported, scanBusy, scanMsg, stepGml, onScanDate, onSave, onDelete,
+  scanSupported, scanBusy, scanMsg, stepGml, showSlider, onScanDate, onSave, onDelete,
 }) {
   const labelStyle = makeLabelStyle(t);
   const inputStyle = makeInputStyle(t);
@@ -95,7 +95,14 @@ export function EditItemSheet({
           <button type="button" onClick={() => setEditItem((s) => ({ ...s, qty: Math.max(0, s.qty - 1) }))} style={btnCircle(t.cardAlt, t.pillInactiveText, 38)}>
             <Minus size={16} strokeWidth={2.5} />
           </button>
-          <span style={{ fontSize: 18, fontWeight: 800, minWidth: 28, textAlign: 'center', color: t.text }}>{editItem.qty}x</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={editItem.qty}
+            onChange={(e) => setEditItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
+            aria-label="Menge"
+            style={{ ...inputStyle, marginTop: 0, width: 72, textAlign: 'center', fontSize: 18, fontWeight: 800, padding: '8px 6px' }}
+          />
           <button type="button" onClick={() => setEditItem((s) => ({ ...s, qty: s.qty + 1 }))} style={btnCircle(pal.accentBg, pal.accent, 38)}>
             <Plus size={16} strokeWidth={2.5} />
           </button>
@@ -103,7 +110,9 @@ export function EditItemSheet({
       ) : (
         (() => {
           const step = stepGml && stepGml !== 'auto' ? Number(stepGml) : 10;
-          const sliderMax = Math.max(1000, Math.ceil((Math.max(editItem.qty, 1) * 2) / step) * step);
+          // Obergrenze adaptiv: knapp über der aktuellen Menge (auf Schrittweite
+          // gerundet, kleiner Puffer) – kein riesiger leerer Bereich rechts.
+          const sliderMax = Math.max(step * 5, Math.ceil((Math.max(editItem.qty, 1) * 1.3) / step) * step);
           return (
             <div style={{ marginTop: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -116,16 +125,18 @@ export function EditItemSheet({
                 />
                 <span style={{ fontSize: 15, fontWeight: 700, color: t.textMuted }}>{editItem.unit}</span>
               </div>
-              <input
-                type="range"
-                min={0}
-                max={sliderMax}
-                step={step}
-                value={Math.min(editItem.qty, sliderMax)}
-                onChange={(e) => setEditItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
-                aria-label="Menge per Schieberegler"
-                style={{ width: '100%', marginTop: 12, accentColor: pal.accent }}
-              />
+              {showSlider !== false && (
+                <input
+                  type="range"
+                  min={0}
+                  max={sliderMax}
+                  step={step}
+                  value={Math.min(editItem.qty, sliderMax)}
+                  onChange={(e) => setEditItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
+                  aria-label="Menge per Schieberegler"
+                  style={{ width: '100%', marginTop: 12, accentColor: pal.accent }}
+                />
+              )}
             </div>
           );
         })()

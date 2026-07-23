@@ -9,7 +9,7 @@ import { useFoods } from './hooks/useFoods.js';
 import { SEED } from './lib/defaults.js';
 import { emptyMacros, foodToMacros, macrosToFood, hasFoodData, defaultBasisForUnit } from './lib/macros.js';
 import { openedDaysFor, effectiveExpiry } from './lib/openedShelfLife.js';
-import { daysUntil } from './lib/date.js';
+import { daysUntil, todayISO } from './lib/date.js';
 import { isScanSupported } from './scan/scan.js';
 import { captureMhdViaPhoto } from './scan/camera.js';
 import { ensureNotifyPermission, syncExpiryNotifications, notificationsSupported } from './lib/notify.js';
@@ -49,7 +49,10 @@ export default function App() {
   });
   // Allgemeine UI-Einstellungen (z.B. Anzeige-Optionen).
   // stepGml: Schrittweite der +/−-Knöpfe für g/ml ('auto' = adaptiv).
-  const [prefs, setPrefs, prefsLoaded] = useStorage('gt-prefs-v1', { shoppingCount: true, stepGml: 'auto' });
+  const [prefs, setPrefs, prefsLoaded] = useStorage('gt-prefs-v1', {
+    shoppingCount: true, stepGml: 'auto', showSlider: true,
+    headerAlign: 'left', appTitle: '',
+  });
 
   const [activeZone, setActiveZone] = useState(null);
   const [search, setSearch] = useState('');
@@ -136,6 +139,15 @@ export default function App() {
     }
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, qty: next } : i)));
     flash(id);
+  };
+
+  // Schnell öffnen/schließen (aus der Detail-Ansicht). Setzt/entfernt openedAt.
+  const toggleOpened = (id) => {
+    setItems((prev) => prev.map((i) => {
+      if (i.id !== id) return i;
+      const opened = !i.opened;
+      return { ...i, opened, openedAt: opened ? (i.openedAt || todayISO()) : null };
+    }));
   };
 
   const removeItem = (id) => {
@@ -479,8 +491,10 @@ export default function App() {
           totalInZone={totalInZone}
           shoppingCount={shopping.length}
           showShoppingCount={prefs.shoppingCount}
+          align={prefs.headerAlign} title={prefs.appTitle}
           onShopping={() => setShowShopping(true)}
           onSettings={() => setShowSettings(true)}
+          onZoneClick={() => setShowZones(true)}
         />
         <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={setActiveZone} t={t} dark={dark} />
       </div>
@@ -544,7 +558,7 @@ export default function App() {
       <EditItemSheet
         editItem={editItem} setEditItem={setEditItem} onClose={() => { setEditItem(null); setScanMsg(''); }}
         t={t} dark={dark} zones={zones} categories={categories} onAddCategory={addCategory}
-        scanSupported={scanSupported} scanBusy={scanBusy} scanMsg={scanMsg} stepGml={prefs.stepGml}
+        scanSupported={scanSupported} scanBusy={scanBusy} scanMsg={scanMsg} stepGml={prefs.stepGml} showSlider={prefs.showSlider}
         onScanDate={handleScanDate} onSave={saveEdit} onDelete={deleteFromEdit}
       />
 
@@ -565,6 +579,12 @@ export default function App() {
         onToggleShoppingCount={(on) => setPrefs((p) => ({ ...p, shoppingCount: on }))}
         stepGml={prefs.stepGml}
         onSetStepGml={(v) => setPrefs((p) => ({ ...p, stepGml: v }))}
+        showSlider={prefs.showSlider !== false}
+        onToggleShowSlider={(on) => setPrefs((p) => ({ ...p, showSlider: on }))}
+        headerAlign={prefs.headerAlign || 'left'}
+        onSetHeaderAlign={(v) => setPrefs((p) => ({ ...p, headerAlign: v }))}
+        appTitle={prefs.appTitle || ''}
+        onSetAppTitle={(v) => setPrefs((p) => ({ ...p, appTitle: v }))}
         warn={warn} onUpdateWarn={updateWarn} onSetNotify={setNotifyEnabled} notifySupported={notificationsSupported()}
         stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
         buildBackup={buildBackup} restoreBackup={restoreBackup} previewBackup={previewBackup}
@@ -600,6 +620,7 @@ export default function App() {
         onEdit={(it) => { setDetailItem(null); openEdit(it); }}
         onChangeQty={changeQty}
         onRemove={(id) => { setDetailItem(null); removeItem(id); }}
+        onToggleOpened={toggleOpened}
       />
     </div>
 
