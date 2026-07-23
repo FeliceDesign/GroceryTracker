@@ -69,7 +69,7 @@ export function ItemRow({ item, zone, t, dark, yellowDays = 3, openedShelfDays =
             <span style={{
               fontSize: 11, fontWeight: 700, color: mhdColor,
               background: mhdWarn ? mhdBg : 'transparent',
-              padding: mhdWarn ? '1px 7px' : 0, borderRadius: 6,
+              padding: '1px 7px', borderRadius: 6,
             }}>
               MHD {mhdLabel(days)}
             </span>
