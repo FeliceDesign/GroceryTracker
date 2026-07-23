@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Package } from 'lucide-react';
+import { Package, ShoppingCart, Settings } from 'lucide-react';
 
 import { useSystemTheme, buildTheme } from './lib/theme.js';
+import { zonePalette } from './lib/colors.js';
 import { useStorage } from './hooks/useStorage.js';
 import { useZones } from './hooks/useZones.js';
 import { useCategories } from './hooks/useCategories.js';
@@ -19,7 +20,8 @@ import { ZoneTabs } from './components/ZoneTabs.jsx';
 import { ExpiringBanner } from './components/ExpiringBanner.jsx';
 import { SearchBar } from './components/SearchBar.jsx';
 import { ItemRow } from './components/ItemRow.jsx';
-import { Fab } from './components/Fab.jsx';
+import { FloatingActions } from './components/FloatingActions.jsx';
+import { CountBadge } from './components/CountBadge.jsx';
 import { Toast } from './components/Toast.jsx';
 
 import { AddItemSheet } from './features/add/AddItemSheet.jsx';
@@ -52,6 +54,7 @@ export default function App() {
   const [prefs, setPrefs, prefsLoaded] = useStorage('gt-prefs-v1', {
     shoppingCount: true, stepGml: 'auto', showSlider: true,
     headerAlign: 'left', appTitle: '', showWarnDot: true,
+    shoppingPos: 'top', settingsPos: 'top',
   });
 
   const [activeZone, setActiveZone] = useState(null);
@@ -519,6 +522,8 @@ export default function App() {
           onShopping={() => setShowShopping(true)}
           onSettings={() => setShowSettings(true)}
           onZoneClick={() => setShowZones(true)}
+          showShoppingButton={(prefs.shoppingPos || 'top') !== 'bottom'}
+          showSettingsButton={(prefs.settingsPos || 'top') !== 'bottom'}
         />
         <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={setActiveZone} t={t} dark={dark} />
       </div>
@@ -560,7 +565,32 @@ export default function App() {
         )}
       </div>
 
-      <Fab zone={zone} dark={dark} t={t} onClick={openAdd} />
+      <FloatingActions
+        zone={zone} dark={dark} t={t} onAdd={openAdd}
+        extras={[
+          (prefs.settingsPos === 'bottom') && {
+            key: 'settings',
+            onClick: () => setShowSettings(true),
+            ariaLabel: 'Einstellungen öffnen',
+            icon: <Settings size={19} strokeWidth={2.2} />,
+          },
+          (prefs.shoppingPos === 'bottom') && {
+            key: 'shopping',
+            onClick: () => setShowShopping(true),
+            ariaLabel: `Einkaufsliste öffnen${shopping.length > 0 ? ` (${shopping.length})` : ''}`,
+            icon: <ShoppingCart size={19} strokeWidth={2.2} />,
+            badge: (
+              <CountBadge
+                count={shopping.length}
+                show={prefs.shoppingCount}
+                badgeBg={t.headerText}
+                badgeFg={zonePalette(zone.color, dark).headerBg}
+                holeBorder={zonePalette(zone.color, dark).headerBg}
+              />
+            ),
+          },
+        ].filter((x) => x)}
+      />
 
       {deletedItem && (
         <Toast
@@ -616,6 +646,10 @@ export default function App() {
         onToggleShowSlider={(on) => setPrefs((p) => ({ ...p, showSlider: on }))}
         showWarnDot={prefs.showWarnDot !== false}
         onToggleShowWarnDot={(on) => setPrefs((p) => ({ ...p, showWarnDot: on }))}
+        shoppingPos={prefs.shoppingPos || 'top'}
+        onSetShoppingPos={(v) => setPrefs((p) => ({ ...p, shoppingPos: v }))}
+        settingsPos={prefs.settingsPos || 'top'}
+        onSetSettingsPos={(v) => setPrefs((p) => ({ ...p, settingsPos: v }))}
         headerAlign={prefs.headerAlign || 'left'}
         onSetHeaderAlign={(v) => setPrefs((p) => ({ ...p, headerAlign: v }))}
         appTitle={prefs.appTitle || ''}

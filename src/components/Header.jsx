@@ -1,7 +1,11 @@
 import { ShoppingCart, Settings } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
+import { CountBadge } from './CountBadge.jsx';
 
-export function Header({ zone, dark, t, totalInZone, shoppingCount, showShoppingCount = true, align = 'left', title, onShopping, onSettings, onZoneClick }) {
+export function Header({
+  zone, dark, t, totalInZone, shoppingCount, showShoppingCount = true, align = 'left', title,
+  onShopping, onSettings, onZoneClick, showShoppingButton = true, showSettingsButton = true,
+}) {
   const pal = zonePalette(zone.color, dark);
   const center = align === 'center';
   const iconBtn = {
@@ -9,10 +13,12 @@ export function Header({ zone, dark, t, totalInZone, shoppingCount, showShopping
     width: 44, height: 44, color: t.headerText, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
   };
-  // Breite der Buttons-Gruppe (44 + 44 + 8 Gap) – im „zentriert"-Modus als
-  // Gegengewicht links, damit der Zonenname wirklich mittig sitzt statt vom
-  // Buttons-Platz nach links verschoben zu wirken.
-  const buttonsWidth = 96;
+  const buttonCount = (showShoppingButton ? 1 : 0) + (showSettingsButton ? 1 : 0);
+  // Breite der Buttons-Gruppe – im „zentriert"-Modus als Gegengewicht links,
+  // damit der Zonenname wirklich mittig sitzt statt vom Buttons-Platz nach
+  // links verschoben zu wirken. Passt sich an, wenn Buttons nach unten
+  // verschoben wurden und im Header gar nicht mehr auftauchen.
+  const buttonsWidth = buttonCount > 0 ? buttonCount * 44 + (buttonCount - 1) * 8 : 0;
 
   return (
     <div style={{
@@ -29,7 +35,7 @@ export function Header({ zone, dark, t, totalInZone, shoppingCount, showShopping
 
         {/* Zonenname + Aktions-Buttons in einer Zeile, damit sie auf gleicher Höhe sitzen. */}
         <div style={{ display: 'flex', alignItems: 'center', marginTop: 4, justifyContent: center ? 'center' : 'flex-start' }}>
-          {center && <div style={{ width: buttonsWidth, flexShrink: 0 }} aria-hidden="true" />}
+          {center && buttonsWidth > 0 && <div style={{ width: buttonsWidth, flexShrink: 0 }} aria-hidden="true" />}
           <h1
             onClick={onZoneClick}
             style={{
@@ -43,32 +49,21 @@ export function Header({ zone, dark, t, totalInZone, shoppingCount, showShopping
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{zone.label}</span>
           </h1>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8, flexShrink: 0 }}>
-            <button onClick={onShopping} style={iconBtn} aria-label={`Einkaufsliste öffnen${shoppingCount > 0 ? ` (${shoppingCount})` : ''}`}>
-              <ShoppingCart size={20} strokeWidth={2.2} />
-              {shoppingCount > 0 && (
-                showShoppingCount ? (
-                  <span style={{
-                    position: 'absolute', top: -4, right: -4, minWidth: 19, height: 19,
-                    borderRadius: 10, background: t.headerText, color: pal.headerBg,
-                    fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', padding: '0 5px', boxSizing: 'border-box',
-                  }}>
-                    {shoppingCount}
-                  </span>
-                ) : (
-                  <span style={{
-                    position: 'absolute', top: -2, right: -2, width: 11, height: 11,
-                    borderRadius: '50%', background: t.headerText,
-                    border: `2px solid ${pal.headerBg}`, boxSizing: 'border-box',
-                  }} />
-                )
+          {buttonCount > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8, flexShrink: 0 }}>
+              {showShoppingButton && (
+                <button onClick={onShopping} style={iconBtn} aria-label={`Einkaufsliste öffnen${shoppingCount > 0 ? ` (${shoppingCount})` : ''}`}>
+                  <ShoppingCart size={20} strokeWidth={2.2} />
+                  <CountBadge count={shoppingCount} show={showShoppingCount} badgeBg={t.headerText} badgeFg={pal.headerBg} holeBorder={pal.headerBg} />
+                </button>
               )}
-            </button>
-            <button onClick={onSettings} style={iconBtn} aria-label="Einstellungen öffnen">
-              <Settings size={20} strokeWidth={2.2} />
-            </button>
-          </div>
+              {showSettingsButton && (
+                <button onClick={onSettings} style={iconBtn} aria-label="Einstellungen öffnen">
+                  <Settings size={20} strokeWidth={2.2} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         <div style={{ color: 'rgba(255,255,255,0.85)', marginTop: 3, textAlign: center ? 'center' : 'left' }}>

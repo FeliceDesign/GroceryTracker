@@ -108,6 +108,7 @@ export function SettingsSheet({
   onManageZones, onManageCategories, onManageFoods, onOpenShelfLife,
   showShoppingCount, onToggleShoppingCount, stepGml, onSetStepGml,
   showSlider, onToggleShowSlider, showWarnDot, onToggleShowWarnDot, headerAlign, onSetHeaderAlign, appTitle, onSetAppTitle,
+  shoppingPos, onSetShoppingPos, settingsPos, onSetSettingsPos,
   warn, onUpdateWarn, onSetNotify, notifySupported,
   stats, buildBackup, restoreBackup, previewBackup,
 }) {
@@ -259,6 +260,39 @@ export function SettingsSheet({
               { value: 'center', label: 'Mittig' },
             ]}
           />
+        </div>
+
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px', marginTop: 10 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Buttons platzieren</div>
+          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
+            Einkaufsliste und Einstellungen einzeln oben (Kopfzeile) oder unten (stapeln sich über dem +-Button).
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>Einkaufsliste</div>
+              <Segmented
+                t={t}
+                value={shoppingPos || 'top'}
+                onChange={onSetShoppingPos}
+                options={[
+                  { value: 'top', label: 'Oben' },
+                  { value: 'bottom', label: 'Unten' },
+                ]}
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>Einstellungen</div>
+              <Segmented
+                t={t}
+                value={settingsPos || 'top'}
+                onChange={onSetSettingsPos}
+                options={[
+                  { value: 'top', label: 'Oben' },
+                  { value: 'bottom', label: 'Unten' },
+                ]}
+              />
+            </div>
+          </div>
         </div>
 
       <div style={sectionLabel(t)}>MHD-Warnungen</div>
