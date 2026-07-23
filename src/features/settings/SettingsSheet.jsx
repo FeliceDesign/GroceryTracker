@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Boxes, Tags, Utensils, Clock, Download, Upload, Sun, Moon, SunMoon, ChevronRight, Plus, Minus, Bell } from 'lucide-react';
+import { Boxes, Tags, Utensils, Clock, ListOrdered, Download, Upload, Sun, Moon, SunMoon, ChevronRight, Plus, Minus, Bell } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -110,7 +110,7 @@ const ALL_THRESHOLDS = [14, 7, 3, 1, 0];
 
 export function SettingsSheet({
   open, onClose, t, themeOverride, setThemeOverride,
-  onManageZones, onManageCategories, onManageFoods, onOpenShelfLife,
+  onManageZones, onManageCategories, onManageFoods, onOpenShelfLife, onOpenExpiringView,
   showShoppingCount, onToggleShoppingCount, autoShoppingOnRemove, onToggleAutoShoppingOnRemove, stepGml, onSetStepGml,
   showSlider, onToggleShowSlider, showWarnDot, onToggleShowWarnDot, headerAlign, onSetHeaderAlign, appTitle, onSetAppTitle,
   shoppingPos, onSetShoppingPos, settingsPos, onSetSettingsPos, addPos, onSetAddPos, dateFormat, onSetDateFormat,
@@ -477,6 +477,13 @@ export function SettingsSheet({
           label="Haltbarkeits-Ratgeber"
           sub="Richtwerte nach dem Öffnen inkl. Lagerung"
           onClick={onOpenShelfLife}
+        />
+        <Row
+          t={t}
+          icon={<ListOrdered size={19} />}
+          label="Alle Artikel nach MHD"
+          sub="Zonenübergreifend, nach Ablaufdatum sortiert"
+          onClick={onOpenExpiringView}
         />
       </div>
 

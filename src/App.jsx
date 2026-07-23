@@ -499,16 +499,27 @@ export default function App() {
   const yellowDays = warn ? warn.yellowDays : 3;
   const orangeDays = warn ? warn.orangeDays : 1;
   const warnColors = { soon: warn?.colorSoon, critical: warn?.colorCritical, expired: warn?.colorExpired };
-  const expiringSoon = useMemo(() => {
+  // Alle Artikel mit bekanntem (effektivem) Ablaufdatum, aufsteigend sortiert.
+  // Grundlage für die Ablauf-Warnung (nur "bald") und die vollständige
+  // MHD-sortierte Übersicht (beide Kategorien).
+  const allByExpiry = useMemo(() => {
     if (!items) return [];
     return items
       .map((i) => {
         const eff = effectiveExpiry(i, openedDaysFor(i.name, getFood(i.name)));
         return { ...i, days: eff.date ? daysUntil(eff.date) : null };
       })
-      .filter((i) => i.days !== null && i.days <= yellowDays)
+      .filter((i) => i.days !== null)
       .sort((a, b) => a.days - b.days);
-  }, [items, yellowDays, getFood]);
+  }, [items, getFood]);
+  const expiringSoon = useMemo(
+    () => allByExpiry.filter((i) => i.days <= yellowDays),
+    [allByExpiry, yellowDays],
+  );
+  const expiringLater = useMemo(
+    () => allByExpiry.filter((i) => i.days > yellowDays),
+    [allByExpiry, yellowDays],
+  );
 
   if (!ready) {
     return (
@@ -549,7 +560,7 @@ export default function App() {
 
       {expiringView ? (
         <div style={{ maxWidth: 480, margin: '14px auto 0', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>Bald ablaufend · alle Lagerorte</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>Nach MHD sortiert · alle Lagerorte</span>
           <button onClick={() => setExpiringView(false)} aria-label="Schließen" style={btnCircle(t.cardAlt, t.pillInactiveText, 30)}>
             <X size={14} />
           </button>
@@ -561,18 +572,33 @@ export default function App() {
       {/* Liste */}
       <div style={{ maxWidth: 480, margin: '0 auto', padding: '18px 20px 0' }}>
         {expiringView ? (
-          expiringSoon.length === 0 ? (
-            <Empty t={t} label="Nichts läuft bald ab" />
+          allByExpiry.length === 0 ? (
+            <Empty t={t} label="Kein Artikel mit bekanntem MHD" />
           ) : (
-            <Section t={t} title={`${expiringSoon.length} ${expiringSoon.length === 1 ? 'Artikel' : 'Artikel'}`}>
-              {expiringSoon.map((item, idx) => (
-                <ItemRow
-                  key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
-                  justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                  showZoneBadge isLast={idx === expiringSoon.length - 1} showWarnDot={prefs.showWarnDot !== false}
-                />
-              ))}
-            </Section>
+            <>
+              {expiringSoon.length > 0 && (
+                <Section t={t} title={`Bald ablaufend (${expiringSoon.length})`}>
+                  {expiringSoon.map((item, idx) => (
+                    <ItemRow
+                      key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
+                      justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                      showZoneBadge isLast={idx === expiringSoon.length - 1} showWarnDot={prefs.showWarnDot !== false}
+                    />
+                  ))}
+                </Section>
+              )}
+              {expiringLater.length > 0 && (
+                <Section t={t} title={`Weitere Artikel nach MHD (${expiringLater.length})`}>
+                  {expiringLater.map((item, idx) => (
+                    <ItemRow
+                      key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
+                      justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                      showZoneBadge isLast={idx === expiringLater.length - 1} showWarnDot={prefs.showWarnDot !== false}
+                    />
+                  ))}
+                </Section>
+              )}
+            </>
           )
         ) : searchResults !== null ? (
           searchResults.length === 0 ? (
@@ -710,6 +736,7 @@ export default function App() {
         stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
         buildBackup={buildBackup} restoreBackup={restoreBackup} previewBackup={previewBackup}
         onOpenShelfLife={() => { setShowSettings(false); setShowShelfLife(true); }}
+        onOpenExpiringView={() => { setShowSettings(false); setExpiringView(true); setSearch(''); }}
       />
 
       <ManageZonesSheet
