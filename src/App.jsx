@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Package, ShoppingCart, Settings, Plus } from 'lucide-react';
+import { Package, ShoppingCart, Settings, Plus, X } from 'lucide-react';
 
 import { useSystemTheme, buildTheme } from './lib/theme.js';
 import { zonePalette } from './lib/colors.js';
+import { btnCircle } from './lib/styles.js';
 import { useStorage } from './hooks/useStorage.js';
 import { useZones } from './hooks/useZones.js';
 import { useCategories } from './hooks/useCategories.js';
@@ -61,6 +62,9 @@ export default function App() {
 
   const [activeZone, setActiveZone] = useState(null);
   const [search, setSearch] = useState('');
+  // Zonenübergreifende, nach Dringlichkeit sortierte Ansicht – geöffnet über
+  // die Ablauf-Warnung statt eines normalen Zonenwechsels.
+  const [expiringView, setExpiringView] = useState(false);
 
   // Sheets
   const [showAdd, setShowAdd] = useState(false);
@@ -538,16 +542,39 @@ export default function App() {
           showSettingsButton={(prefs.settingsPos || 'top') !== 'bottom'}
           showAddButton={(prefs.addPos || 'bottom') === 'top'}
         />
-        <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={setActiveZone} t={t} dark={dark} />
+        <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={(id) => { setActiveZone(id); setExpiringView(false); }} t={t} dark={dark} />
       </div>
 
-      <ExpiringBanner expiring={expiringSoon} t={t} onOpen={setActiveZone} />
+      <ExpiringBanner expiring={expiringSoon} t={t} onOpen={() => { setExpiringView(true); setSearch(''); }} />
 
-      <SearchBar value={search} onChange={setSearch} t={t} />
+      {expiringView ? (
+        <div style={{ maxWidth: 480, margin: '14px auto 0', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>Bald ablaufend · alle Lagerorte</span>
+          <button onClick={() => setExpiringView(false)} aria-label="Schließen" style={btnCircle(t.cardAlt, t.pillInactiveText, 30)}>
+            <X size={14} />
+          </button>
+        </div>
+      ) : (
+        <SearchBar value={search} onChange={setSearch} t={t} />
+      )}
 
       {/* Liste */}
       <div style={{ maxWidth: 480, margin: '0 auto', padding: '18px 20px 0' }}>
-        {searchResults !== null ? (
+        {expiringView ? (
+          expiringSoon.length === 0 ? (
+            <Empty t={t} label="Nichts läuft bald ab" />
+          ) : (
+            <Section t={t} title={`${expiringSoon.length} ${expiringSoon.length === 1 ? 'Artikel' : 'Artikel'}`}>
+              {expiringSoon.map((item, idx) => (
+                <ItemRow
+                  key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
+                  justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                  showZoneBadge isLast={idx === expiringSoon.length - 1} showWarnDot={prefs.showWarnDot !== false}
+                />
+              ))}
+            </Section>
+          )
+        ) : searchResults !== null ? (
           searchResults.length === 0 ? (
             <Empty t={t} label={`Nichts gefunden für „${search}"`} />
           ) : (
