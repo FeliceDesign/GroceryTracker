@@ -110,7 +110,7 @@ export function SettingsSheet({
   onManageZones, onManageCategories, onManageFoods, onOpenShelfLife,
   showShoppingCount, onToggleShoppingCount, autoShoppingOnRemove, onToggleAutoShoppingOnRemove, stepGml, onSetStepGml,
   showSlider, onToggleShowSlider, showWarnDot, onToggleShowWarnDot, headerAlign, onSetHeaderAlign, appTitle, onSetAppTitle,
-  shoppingPos, onSetShoppingPos, settingsPos, onSetSettingsPos, addPos, onSetAddPos,
+  shoppingPos, onSetShoppingPos, settingsPos, onSetSettingsPos, addPos, onSetAddPos, dateFormat, onSetDateFormat,
   warn, onUpdateWarn, onSetNotify, notifySupported,
   stats, buildBackup, restoreBackup, previewBackup,
 }) {
@@ -315,6 +315,23 @@ export function SettingsSheet({
               />
             </div>
           </div>
+        </div>
+
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px', marginTop: 10 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Datumsformat</div>
+          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
+            Gilt für Datums-Anzeigen in der App (z.B. MHD-Badge). Das Kalender-Auswahlfeld selbst richtet sich immer nach der Spracheinstellung des Geräts.
+          </div>
+          <Segmented
+            t={t}
+            value={dateFormat || 'dmy'}
+            onChange={onSetDateFormat}
+            options={[
+              { value: 'dmy', label: 'TT.MM.JJJJ' },
+              { value: 'dmy-short', label: 'TT.MM.JJ' },
+              { value: 'iso', label: 'JJJJ-MM-TT' },
+            ]}
+          />
         </div>
 
       <div style={sectionLabel(t)}>MHD-Warnungen</div>

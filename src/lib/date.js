@@ -58,3 +58,16 @@ export function mhdLabel(days) {
   if (days === 1) return 'morgen';
   return `in ${days}T`;
 }
+
+// Formatiert ein ISO-Datum (JJJJ-MM-TT) für eigene Text-Anzeigen (Badges
+// etc.) nach dem in den Einstellungen gewählten Format. Betrifft nur diese
+// Text-Ausgaben – native <input type="date">-Felder folgen weiterhin immer
+// der Geräte-/Browsersprache, das lässt sich nicht überschreiben.
+export function formatDateDisplay(iso, format = 'dmy') {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  if (!y || !m || !d) return iso;
+  if (format === 'iso') return iso;
+  if (format === 'dmy-short') return `${d}.${m}.${y.slice(2)}`;
+  return `${d}.${m}.${y}`; // 'dmy' (Standard): TT.MM.JJJJ
+}

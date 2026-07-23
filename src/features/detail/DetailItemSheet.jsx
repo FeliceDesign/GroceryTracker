@@ -3,7 +3,7 @@ import { Plus, Minus, Trash2, Pencil, Copy, Check, Utensils, List, PackageOpen }
 import { Modal } from '../../components/Modal.jsx';
 import { ShelfLifeDetails } from '../macros/ShelfLifeDetails.jsx';
 import { zonePalette } from '../../lib/colors.js';
-import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel } from '../../lib/date.js';
+import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel, formatDateDisplay } from '../../lib/date.js';
 import { MACRO_FIELDS, fmtNum, unsaturatedFat, hasMacros, basisLabel, copyMacros } from '../../lib/macros.js';
 import { openedDaysFor, openedUntil } from '../../lib/openedShelfLife.js';
 import { btnCircle, primaryButtonStyle, makeInputStyle } from '../../lib/styles.js';
@@ -12,7 +12,7 @@ import { btnCircle, primaryButtonStyle, makeInputStyle } from '../../lib/styles.
 // Haltbarkeit). „Bearbeiten" öffnet das Formular. `warnColors` optional:
 // { soon, critical, expired } – eigene Farben aus den Einstellungen.
 export function DetailItemSheet({
-  open, item, zone, food, t, dark, yellowDays = 3, orangeDays = 1, warnColors = {},
+  open, item, zone, food, t, dark, yellowDays = 3, orangeDays = 1, warnColors = {}, dateFormat = 'dmy',
   onClose, onEdit, onChangeQty, onRemove, onToggleOpened, onChangeMhd,
 }) {
   const [copied, setCopied] = useState(false);
@@ -84,7 +84,7 @@ export function DetailItemSheet({
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
         {item.mhd && (
           <span style={{ fontSize: 12.5, fontWeight: 700, color: levelColor(mhdLevel, t, warnColors), background: mhdWarn ? levelBg(mhdLevel, t, warnColors) : t.cardAlt, padding: '5px 11px', borderRadius: 8 }}>
-            MHD {mhdLabel(rawDays)} ({item.mhd})
+            MHD {mhdLabel(rawDays)} ({formatDateDisplay(item.mhd, dateFormat)})
           </span>
         )}
         {item.opened && (

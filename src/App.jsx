@@ -673,6 +673,8 @@ export default function App() {
         onSetSettingsPos={(v) => setPrefs((p) => ({ ...p, settingsPos: v }))}
         addPos={prefs.addPos || 'bottom'}
         onSetAddPos={(v) => setPrefs((p) => ({ ...p, addPos: v }))}
+        dateFormat={prefs.dateFormat || 'dmy'}
+        onSetDateFormat={(v) => setPrefs((p) => ({ ...p, dateFormat: v }))}
         headerAlign={prefs.headerAlign || 'left'}
         onSetHeaderAlign={(v) => setPrefs((p) => ({ ...p, headerAlign: v }))}
         appTitle={prefs.appTitle || ''}
@@ -707,7 +709,7 @@ export default function App() {
         open={!!detailLive} item={detailLive}
         zone={detailLive ? resolveZone(detailLive.zone) : null}
         food={detailLive ? getFood(detailLive.name) : null}
-        t={t} dark={dark} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
+        t={t} dark={dark} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors} dateFormat={prefs.dateFormat || 'dmy'}
         onClose={() => setDetailItem(null)}
         onEdit={(it) => { setDetailItem(null); openEdit(it); }}
         onChangeQty={changeQty}
@@ -721,7 +723,7 @@ export default function App() {
         damit während des transparenten Live-Barcode-Scans nur sein Overlay
         über dem Kamerabild sichtbar ist. */}
     <ScanFlowSheet
-      open={showScanFlow} onClose={() => setShowScanFlow(false)} t={t} dark={dark}
+      open={showScanFlow} onClose={() => setShowScanFlow(false)} t={t} dark={dark} dateFormat={prefs.dateFormat || 'dmy'}
       zones={zones} categories={categories} onAddCategory={addCategory}
       targetZone={scanZone || activeZone} mode={scanMode}
       onCommit={commitScanFlow}

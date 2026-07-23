@@ -4,6 +4,7 @@ import { BarcodeIcon } from '../../components/icons.jsx';
 import { CategoryPicker } from '../../components/CategoryPicker.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { zonePalette } from '../../lib/colors.js';
+import { formatDateDisplay } from '../../lib/date.js';
 import { btnCircle, makeInputStyle, pillStyle, primaryButtonStyle } from '../../lib/styles.js';
 import { hasMacros } from '../../lib/macros.js';
 import { lookupOpenFoodFacts } from '../../scan/scan.js';
@@ -18,7 +19,7 @@ function vibrate(ms = 35) {
 // native Live-Scanner, dann die System-Kamera fürs MHD-Foto).
 // `mode` = 'batch' (Standard, mehrere hintereinander) | 'single' (ein Produkt,
 // danach direkt zur Übernahme-Ansicht).
-export function ScanFlowSheet({ open, onClose, t, dark, zones, categories, onAddCategory, targetZone, mode = 'batch', onCommit }) {
+export function ScanFlowSheet({ open, onClose, t, dark, zones, categories, onAddCategory, targetZone, mode = 'batch', onCommit, dateFormat = 'dmy' }) {
   const [phase, setPhase] = useState('barcode'); // barcode | mhd | nutrition | review
   const [collected, setCollected] = useState([]);
   const [current, setCurrent] = useState(null);
@@ -194,6 +195,7 @@ export function ScanFlowSheet({ open, onClose, t, dark, zones, categories, onAdd
               zones={zones}
               dark={dark}
               t={t}
+              dateFormat={dateFormat}
               categories={categories}
               onAddCategory={onAddCategory}
               onUpdate={(patch) => setCollected((prev) => prev.map((x) => (x.key === b.key ? { ...x, ...patch } : x)))}
@@ -373,7 +375,7 @@ function TopBar({ t, title, step, onClose }) {
 
 // Eine bearbeitbare Zeile in der Übernahme-Ansicht: Lagerort, Name, Kategorie,
 // Einheit und Menge lassen sich vor dem Übernehmen noch anpassen.
-function ReviewRow({ b, zones, dark, t, categories, onAddCategory, onUpdate, onCycleZone, onRemove }) {
+function ReviewRow({ b, zones, dark, t, categories, onAddCategory, onUpdate, onCycleZone, onRemove, dateFormat = 'dmy' }) {
   const z = zones.find((zz) => zz.id === b.zone) || zones[0];
   const bp = zonePalette(z.color, dark);
   return (
@@ -438,7 +440,7 @@ function ReviewRow({ b, zones, dark, t, categories, onAddCategory, onUpdate, onC
 
       {(b.mhd || hasMacros(b.macros)) && (
         <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: 11, color: t.textMuted }}>
-          {b.mhd && <span>MHD {b.mhd}</span>}
+          {b.mhd && <span>MHD {formatDateDisplay(b.mhd, dateFormat)}</span>}
           {hasMacros(b.macros) && <span style={{ color: t.success, fontWeight: 700 }}>Nährwerte ✓</span>}
         </div>
       )}
