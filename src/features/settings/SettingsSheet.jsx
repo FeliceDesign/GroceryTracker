@@ -311,7 +311,7 @@ export function SettingsSheet({
           <input
             value={appTitle || ''}
             onChange={(e) => onSetAppTitle(e.target.value)}
-            placeholder="GroceryTracker"
+            placeholder="Stock-Tracker"
             maxLength={28}
             style={{ ...inputStyle, marginTop: 0, marginBottom: 10 }}
           />
@@ -608,7 +608,7 @@ export function SettingsSheet({
       )}
 
       <div style={{ textAlign: 'center', fontSize: 11.5, color: t.textFaint, marginTop: 24 }}>
-        GroceryTracker · lokal gespeichert auf diesem Gerät
+        Stock-Tracker · lokal gespeichert auf diesem Gerät
       </div>
     </Modal>
   );

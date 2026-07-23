@@ -30,7 +30,7 @@ export function Header({
           fontSize: 12.5, fontWeight: 600, color: 'rgba(255,255,255,0.72)', letterSpacing: '0.06em',
           textAlign: center ? 'center' : 'left',
         }}>
-          {title && title.trim() ? title.toUpperCase() : 'GROCERYTRACKER'}
+          {title && title.trim() ? title.toUpperCase() : 'STOCK-TRACKER'}
         </div>
 
         {/* Zonenname + Aktions-Buttons in einer Zeile, damit sie auf gleicher Höhe sitzen. */}

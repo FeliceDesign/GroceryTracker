@@ -1,6 +1,6 @@
 {
-  "name": "GroceryTracker",
-  "short_name": "GroceryTracker",
+  "name": "Stock-Tracker",
+  "short_name": "Stock-Tracker",
   "description": "Anpassbarer Vorrats-/Lebensmittel-Tracker mit Barcode- und MHD-Scan.",
   "start_url": "/",
   "display": "standalone",
