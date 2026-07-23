@@ -80,8 +80,7 @@ export function DetailItemSheet({ open, item, zone, food, t, dark, yellowDays = 
         )}
         {item.opened && (
           <span style={{ fontSize: 12.5, fontWeight: 700, color: t.warning, background: t.warningBg, padding: '5px 11px', borderRadius: 8 }}>
-            Geöffnet{item.openedAt ? ` seit ${item.openedAt}` : ''}
-            {openUntil ? ` · verbrauchen bis ${openUntil}${openDays != null ? ` · ${openDays < 0 ? `${Math.abs(openDays)}T überfällig` : openDays === 0 ? 'heute' : openDays === 1 ? 'morgen' : `noch ${openDays}T`}` : ''}` : ''}
+            Geöffnet{openDays != null ? ` · ${openDays < 0 ? `${Math.abs(openDays)}T überfällig` : openDays === 0 ? 'heute' : openDays === 1 ? 'morgen' : `noch ${openDays}T`}` : ''}
           </span>
         )}
       </div>
