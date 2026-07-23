@@ -1,5 +1,8 @@
 import { useRef, useState } from 'react';
 import { Boxes, Tags, Utensils, Clock, Download, Upload, Sun, Moon, SunMoon, ChevronRight, Plus, Minus, Bell } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { Modal } from '../../components/Modal.jsx';
 import { ColorSwatches } from '../../components/ColorSwatches.jsx';
 import { MHD_COLOR_CHOICES } from '../../lib/colors.js';
@@ -151,6 +154,26 @@ export function SettingsSheet({
 
   const doExport = async () => {
     const json = buildBackup(exportMacros);
+    const filename = `grocerytracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
+
+    // In der Android-App löst ein simulierter <a download>-Klick im
+    // WebView keinen echten Download aus. Stattdessen: Datei im Cache
+    // ablegen und den nativen "Speichern unter/Teilen"-Dialog öffnen,
+    // über den ein echter Speicherort gewählt werden kann.
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Cache, encoding: Encoding.UTF8 });
+        const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
+        await Share.share({ title: 'Backup speichern', url: uri, dialogTitle: 'Backup speichern unter…' });
+        setMsg('✓ Speichern-Dialog geöffnet.');
+      } catch (e) {
+        setMsg(e?.message?.includes('cancel') ? '' : 'Backup konnte nicht erstellt werden.');
+      }
+      setTimeout(() => setMsg(''), 3000);
+      return;
+    }
+
+    // Browser/Vorschau: Zwischenablage + Web-Download wie bisher.
     let copied = false;
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -165,7 +188,7 @@ export function SettingsSheet({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `grocerytracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
