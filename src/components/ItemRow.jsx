@@ -29,6 +29,19 @@ export function ItemRow({ item, zone, t, dark, yellowDays = 3, openedShelfDays =
   const warn = level === 'expired' || level === 'soon';
   const wColor = levelColor(level, t);
 
+  // In der Zeile nur die dringendere der beiden Fristen zeigen statt beide
+  // nebeneinander – bei bekannten Werten gewinnt die kürzere, sonst bleibt
+  // die jeweils einzig bekannte übrig.
+  let showMhdBadge = !!item.mhd;
+  let showOpenedBadge = !!item.opened;
+  if (item.mhd && item.opened) {
+    if (openDays != null) {
+      if (openDays < days) showMhdBadge = false; else showOpenedBadge = false;
+    } else {
+      showOpenedBadge = false;
+    }
+  }
+
   return (
     <div
       style={{
@@ -52,7 +65,7 @@ export function ItemRow({ item, zone, t, dark, yellowDays = 3, openedShelfDays =
               {zone.emoji} {zone.label}
             </span>
           )}
-          {item.mhd && (
+          {showMhdBadge && (
             <span style={{
               fontSize: 11, fontWeight: 700, color: mhdColor,
               background: mhdWarn ? mhdBg : 'transparent',
@@ -63,7 +76,7 @@ export function ItemRow({ item, zone, t, dark, yellowDays = 3, openedShelfDays =
           )}
           {/* „geöffnet"-Badge – nur sichtbar, wenn im Bearbeiten-Menü aktiviert;
               zeigt die Rest-Haltbarkeit nach dem Öffnen, wenn bekannt. */}
-          {item.opened && (
+          {showOpenedBadge && (
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700,
               color: openDays != null ? openColor : t.warning,
