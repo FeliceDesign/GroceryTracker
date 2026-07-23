@@ -110,11 +110,12 @@ export function EditItemSheet({
       ) : (
         (() => {
           const step = stepGml && stepGml !== 'auto' ? Number(stepGml) : 10;
-          // Obergrenze adaptiv: knapp über der aktuellen Menge (auf Schrittweite
-          // gerundet, kleiner Puffer) – kein riesiger leerer Bereich rechts.
-          // Hart gedeckelt bei 1000, sonst wächst die Obergrenze beim Ziehen
-          // immer weiter mit und der Regler wirkt endlos.
-          const sliderMax = Math.min(1000, Math.max(step * 5, Math.ceil((Math.max(editItem.qty, 1) * 1.3) / step) * step));
+          // Obergrenze in festen Stufen statt bei jeder Mengenänderung neu zu
+          // rechnen – sonst verschiebt sich die Skala bei jedem Tick mit und
+          // der Regler wirkt endlos/unruhig. Erste Stufe, die bequem Platz
+          // über der aktuellen Menge lässt, gewinnt.
+          const sliderTiers = [100, 250, 500, 1000];
+          const sliderMax = Math.max(step * 5, sliderTiers.find((tier) => tier >= editItem.qty * 1.15) ?? 1000);
           return (
             <div style={{ marginTop: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
