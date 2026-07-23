@@ -51,7 +51,7 @@ export default function App() {
   // stepGml: Schrittweite der +/−-Knöpfe für g/ml ('auto' = adaptiv).
   const [prefs, setPrefs, prefsLoaded] = useStorage('gt-prefs-v1', {
     shoppingCount: true, stepGml: 'auto', showSlider: true,
-    headerAlign: 'left', appTitle: '',
+    headerAlign: 'left', appTitle: '', showWarnDot: true,
   });
 
   const [activeZone, setActiveZone] = useState(null);
@@ -538,7 +538,7 @@ export default function App() {
                 <ItemRow
                   key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays}
                   justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                  showZoneBadge isLast={idx === searchResults.length - 1}
+                  showZoneBadge isLast={idx === searchResults.length - 1} showWarnDot={prefs.showWarnDot !== false}
                 />
               ))}
             </Section>
@@ -552,7 +552,7 @@ export default function App() {
                 <ItemRow
                   key={item.id} item={item} zone={zone} t={t} dark={dark} yellowDays={yellowDays}
                   justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                  isLast={idx === list.length - 1}
+                  isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false}
                 />
               ))}
             </Section>
@@ -614,6 +614,8 @@ export default function App() {
         onSetStepGml={(v) => setPrefs((p) => ({ ...p, stepGml: v }))}
         showSlider={prefs.showSlider !== false}
         onToggleShowSlider={(on) => setPrefs((p) => ({ ...p, showSlider: on }))}
+        showWarnDot={prefs.showWarnDot !== false}
+        onToggleShowWarnDot={(on) => setPrefs((p) => ({ ...p, showWarnDot: on }))}
         headerAlign={prefs.headerAlign || 'left'}
         onSetHeaderAlign={(v) => setPrefs((p) => ({ ...p, headerAlign: v }))}
         appTitle={prefs.appTitle || ''}

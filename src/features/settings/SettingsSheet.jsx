@@ -107,7 +107,7 @@ export function SettingsSheet({
   open, onClose, t, themeOverride, setThemeOverride,
   onManageZones, onManageCategories, onManageFoods, onOpenShelfLife,
   showShoppingCount, onToggleShoppingCount, stepGml, onSetStepGml,
-  showSlider, onToggleShowSlider, headerAlign, onSetHeaderAlign, appTitle, onSetAppTitle,
+  showSlider, onToggleShowSlider, showWarnDot, onToggleShowWarnDot, headerAlign, onSetHeaderAlign, appTitle, onSetAppTitle,
   warn, onUpdateWarn, onSetNotify, notifySupported,
   stats, buildBackup, restoreBackup, previewBackup,
 }) {
@@ -228,6 +228,15 @@ export function SettingsSheet({
             label="Schieberegler für Menge"
             sub="Im Bearbeiten-Dialog bei g/ml zusätzlich zum Zahlenfeld."
             control={<Toggle t={t} on={showSlider !== false} onChange={onToggleShowSlider} />}
+          />
+        </div>
+
+        <div style={{ marginTop: 10 }}>
+          <SettingRow
+            t={t}
+            label="Warn-Punkt bei MHD"
+            sub="Farbiger Punkt vor dem Namen, wenn MHD oder Öffnungsfrist bald abläuft."
+            control={<Toggle t={t} on={showWarnDot !== false} onChange={onToggleShowWarnDot} />}
           />
         </div>
 

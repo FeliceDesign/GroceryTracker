@@ -7,7 +7,7 @@ import { btnCircle } from '../lib/styles.js';
 // Eine Artikelzeile. `zone` ist das aufgelöste Lagerort-Objekt (oder undefined,
 // falls der Lagerort inzwischen entfernt wurde – dann neutraler Fallback).
 // `openedShelfDays` = aufgelöste Haltbarkeit nach dem Öffnen (oder null).
-export function ItemRow({ item, zone, t, dark, yellowDays = 3, openedShelfDays = null, justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast }) {
+export function ItemRow({ item, zone, t, dark, yellowDays = 3, openedShelfDays = null, justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast, showWarnDot = true }) {
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
   const days = daysUntil(item.mhd); // gedrucktes MHD
   const mhdLevel = expiryLevel(days, yellowDays);
@@ -41,7 +41,7 @@ export function ItemRow({ item, zone, t, dark, yellowDays = 3, openedShelfDays =
     >
       <div onClick={() => onEdit(item)} style={{ cursor: 'pointer', minWidth: 0, flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
-          {warn && (
+          {warn && showWarnDot && (
             <span style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', background: wColor, marginTop: 6 }} aria-hidden="true" />
           )}
           <span style={{ fontSize: 15, color: t.text, fontWeight: 500, overflowWrap: 'anywhere', lineHeight: 1.3 }}>{item.name}</span>
