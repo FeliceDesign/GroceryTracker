@@ -216,11 +216,13 @@ export function EditItemSheet({
 
       <label style={labelStyle}>Mindesthaltbarkeitsdatum</label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-        <input
+        <ClearableInput
+          t={t}
           type="date"
           value={editItem.mhd || ''}
-          onChange={(e) => setEditItem((s) => ({ ...s, mhd: e.target.value || null }))}
+          onChange={(v) => setEditItem((s) => ({ ...s, mhd: v || null }))}
           style={{ ...inputStyle, marginTop: 0 }}
+          wrapperStyle={{ flex: 1, minWidth: 0 }}
         />
         {scanSupported && (
           <button

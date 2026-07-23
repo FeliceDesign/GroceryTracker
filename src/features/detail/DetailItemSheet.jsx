@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Minus, Trash2, Pencil, Copy, Check, Utensils, List, PackageOpen } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
+import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { ShelfLifeDetails } from '../macros/ShelfLifeDetails.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel, formatDateDisplay } from '../../lib/date.js';
@@ -98,11 +99,13 @@ export function DetailItemSheet({
       {onChangeMhd && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
           <span style={{ fontSize: 13, color: t.textMuted, flexShrink: 0 }}>MHD ändern</span>
-          <input
+          <ClearableInput
+            t={t}
             type="date"
             value={item.mhd || ''}
-            onChange={(e) => onChangeMhd(item.id, e.target.value)}
+            onChange={(v) => onChangeMhd(item.id, v)}
             style={{ ...inputStyle, marginTop: 0 }}
+            wrapperStyle={{ flex: 1, minWidth: 0 }}
           />
         </div>
       )}

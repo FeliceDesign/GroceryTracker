@@ -266,7 +266,7 @@ export function MacroEditor({
               aria-label={ingBusy ? 'Lese Zutaten…' : 'Zutaten scannen'}
               title="Zutaten scannen"
               style={{
-                position: 'absolute', right: 8, bottom: 44,
+                position: 'absolute', right: 8, top: 8,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: 30, height: 30, borderRadius: 8, border: `1.5px solid ${t.border}`,
                 background: t.card, color: accent || t.textMuted,
