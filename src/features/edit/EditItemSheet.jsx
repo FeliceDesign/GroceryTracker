@@ -157,15 +157,16 @@ export function EditItemSheet({
             type="button"
             onClick={() => onScanDate('edit')}
             disabled={scanBusy}
-            aria-label="MHD per Foto einlesen"
+            aria-label={scanBusy ? 'Lese MHD…' : 'MHD per Foto einlesen'}
+            title="MHD per Foto einlesen"
             style={{
-              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
-              padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${t.border}`,
-              background: 'transparent', color: t.textMuted, fontWeight: 700, fontSize: 13.5,
+              flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 46, height: 46, borderRadius: 12, border: `1.5px solid ${t.border}`,
+              background: 'transparent', color: t.textMuted,
               cursor: scanBusy ? 'default' : 'pointer', opacity: scanBusy ? 0.6 : 1,
             }}
           >
-            <Camera size={17} /> Foto
+            <Camera size={17} />
           </button>
         )}
       </div>

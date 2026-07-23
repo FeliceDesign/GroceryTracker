@@ -188,15 +188,22 @@ export function MacroEditor({
 
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 16, paddingTop: 16, borderTop: `1px solid ${t.border}` }}>
         {scanSupported && (
-          <button type="button" onClick={scan} disabled={busy} style={secondaryBtn({ flex: 1, color: accent || t.textMuted, opacity: busy ? 0.6 : 1, cursor: busy ? 'default' : 'pointer' })}>
-            <Camera size={16} /> {busy ? 'Lese…' : 'Tabelle scannen'}
+          <button
+            type="button"
+            onClick={scan}
+            disabled={busy}
+            aria-label={busy ? 'Lese Nährwerttabelle…' : 'Nährwerttabelle scannen'}
+            title="Nährwerttabelle scannen"
+            style={secondaryBtn({ padding: '12px', width: 46, flexShrink: 0, color: accent || t.textMuted, opacity: busy ? 0.6 : 1, cursor: busy ? 'default' : 'pointer' })}
+          >
+            <Camera size={16} />
           </button>
         )}
         <button type="button" onClick={() => { setShowPaste((v) => !v); setMsg(''); }} style={secondaryBtn({ flex: 1 })}>
           <ClipboardPaste size={16} /> Text einfügen
         </button>
         {showCopy && (
-          <button type="button" onClick={doCopy} aria-label="Nährwerttabelle kopieren" style={secondaryBtn({ color: copied ? t.success : t.textMuted, padding: '12px', width: 46, flexShrink: 0 })}>
+          <button type="button" onClick={doCopy} aria-label="Nährwerttabelle kopieren" title="Nährwerttabelle kopieren" style={secondaryBtn({ color: copied ? t.success : t.textMuted, padding: '12px', width: 46, flexShrink: 0 })}>
             {copied ? <Check size={17} /> : <Copy size={16} />}
           </button>
         )}
@@ -232,26 +239,44 @@ export function MacroEditor({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, color: t.text }}>
             <List size={16} /> Zutaten
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {macros.ingredients && String(macros.ingredients).trim() && (
-              <button type="button" onClick={doCopyIngredients} aria-label="Zutaten kopieren" style={secondaryBtn({ padding: '8px', width: 38, color: copiedIng ? t.success : t.textMuted })}>
-                {copiedIng ? <Check size={15} /> : <Copy size={14} />}
-              </button>
-            )}
-            {scanSupported && (
-              <button type="button" onClick={scanIngredients} disabled={ingBusy} style={secondaryBtn({ padding: '8px 12px', fontSize: 12.5, color: accent || t.textMuted, opacity: ingBusy ? 0.6 : 1, cursor: ingBusy ? 'default' : 'pointer' })}>
-                <Camera size={15} /> {ingBusy ? 'Lese…' : 'Scannen'}
-              </button>
-            )}
-          </div>
+          {scanSupported && (
+            <button
+              type="button"
+              onClick={scanIngredients}
+              disabled={ingBusy}
+              aria-label={ingBusy ? 'Lese Zutaten…' : 'Zutaten scannen'}
+              title="Zutaten scannen"
+              style={secondaryBtn({ padding: '8px', width: 34, color: accent || t.textMuted, opacity: ingBusy ? 0.6 : 1, cursor: ingBusy ? 'default' : 'pointer' })}
+            >
+              <Camera size={14} />
+            </button>
+          )}
         </div>
-        <textarea
-          value={macros.ingredients || ''}
-          onChange={(e) => onChange({ ingredients: e.target.value })}
-          placeholder="z.B. Weizenmehl, Zucker, Palmöl, Haselnüsse (13 %), …"
-          rows={3}
-          style={{ ...inputStyle, marginTop: 8, resize: 'vertical', fontSize: 13, lineHeight: 1.45 }}
-        />
+        <div style={{ position: 'relative', marginTop: 8 }}>
+          <textarea
+            value={macros.ingredients || ''}
+            onChange={(e) => onChange({ ingredients: e.target.value })}
+            placeholder="z.B. Weizenmehl, Zucker, Palmöl, Haselnüsse (13 %), …"
+            rows={3}
+            style={{ ...inputStyle, marginTop: 0, resize: 'vertical', fontSize: 13, lineHeight: 1.45, paddingRight: 42 }}
+          />
+          {macros.ingredients && String(macros.ingredients).trim() && (
+            <button
+              type="button"
+              onClick={doCopyIngredients}
+              aria-label="Zutaten kopieren"
+              title="Zutaten kopieren"
+              style={{
+                position: 'absolute', right: 8, bottom: 8,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 30, height: 30, borderRadius: 8, border: `1.5px solid ${t.border}`,
+                background: t.card, color: copiedIng ? t.success : t.textMuted, cursor: 'pointer',
+              }}
+            >
+              {copiedIng ? <Check size={14} /> : <Copy size={13} />}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Haltbarkeit nach dem Öffnen (Override der Regel-Tabelle) */}
