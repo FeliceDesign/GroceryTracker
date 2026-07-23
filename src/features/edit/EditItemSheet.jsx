@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Plus, Minus, Camera, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ZonePicker } from '../../components/ZonePicker.jsx';
@@ -17,7 +18,27 @@ export function EditItemSheet({
 }) {
   const labelStyle = makeLabelStyle(t);
   const inputStyle = makeInputStyle(t);
+  // Roh-Text während der Eingabe bei g/ml (statt jeden Tastendruck sofort zu
+  // übernehmen) – so kann man z.B. "-40" eintippen, ohne dass es zwischendurch
+  // schon als 0 interpretiert wird. Erst bei Verlassen des Felds/Enter wird
+  // ausgewertet: beginnt der Text mit +/-, zählt er als Delta auf die
+  // aktuelle Menge, sonst als neuer Absolutwert.
+  const [qtyDraft, setQtyDraft] = useState(null);
   if (!editItem) return null;
+
+  const commitQtyDraft = () => {
+    if (qtyDraft === null) return;
+    const raw = qtyDraft.trim();
+    let next;
+    if (/^[+-]\d+$/.test(raw)) {
+      next = Math.max(0, editItem.qty + parseInt(raw, 10));
+    } else {
+      const parsed = parseInt(raw, 10);
+      next = Math.max(0, Number.isFinite(parsed) ? parsed : editItem.qty);
+    }
+    setEditItem((s) => ({ ...s, qty: next }));
+    setQtyDraft(null);
+  };
   const zone = zones.find((z) => z.id === editItem.zone) || zones[0];
   const pal = zonePalette(zone.color, dark);
 
@@ -117,10 +138,14 @@ export function EditItemSheet({
             <div style={{ marginTop: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="numeric"
-                  value={editItem.qty}
-                  onChange={(e) => setEditItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
+                  value={qtyDraft !== null ? qtyDraft : String(editItem.qty)}
+                  onFocus={() => setQtyDraft(String(editItem.qty))}
+                  onChange={(e) => setQtyDraft(e.target.value)}
+                  onBlur={commitQtyDraft}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { commitQtyDraft(); e.target.blur(); } }}
+                  aria-label="Menge (auch als +/-Delta eingebbar, z.B. -40)"
                   style={{ ...inputStyle, marginTop: 0 }}
                 />
                 <span style={{ fontSize: 15, fontWeight: 700, color: t.textMuted }}>{editItem.unit}</span>
