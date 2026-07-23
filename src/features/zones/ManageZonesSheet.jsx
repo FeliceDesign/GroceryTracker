@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Plus, Trash2, Check, Snowflake } from 'lucide-react';
+import { Plus, Trash2, Snowflake } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
+import { ColorSwatches } from '../../components/ColorSwatches.jsx';
 import { ZONE_COLOR_CHOICES, zonePalette } from '../../lib/colors.js';
 import { zoneIsCooled } from '../../lib/openedShelfLife.js';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
@@ -23,29 +24,6 @@ function CooledToggle({ on, onChange, t }) {
     >
       <Snowflake size={14} /> {on ? 'Gekühlt' : 'Nicht gekühlt'}
     </button>
-  );
-}
-
-function ColorRow({ value, onChange }) {
-  return (
-    <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 8 }}>
-      {ZONE_COLOR_CHOICES.map((c) => (
-        <button
-          key={c}
-          type="button"
-          onClick={() => onChange(c)}
-          aria-label={`Farbe ${c}`}
-          style={{
-            width: 26, height: 26, borderRadius: '50%', background: c, cursor: 'pointer',
-            border: value === c ? '3px solid rgba(255,255,255,0.9)' : '3px solid transparent',
-            boxShadow: value === c ? `0 0 0 2px ${c}` : 'none',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          {value === c && <Check size={13} color="#fff" strokeWidth={3} />}
-        </button>
-      ))}
-    </div>
   );
 }
 
@@ -96,7 +74,7 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
                   <Trash2 size={16} />
                 </button>
               </div>
-              <ColorRow value={z.color} onChange={(c) => onUpdate(z.id, { color: c })} />
+              <ColorSwatches choices={ZONE_COLOR_CHOICES} value={z.color} onChange={(c) => onUpdate(z.id, { color: c })} />
               <CooledToggle t={t} on={zoneIsCooled(z)} onChange={(v) => onUpdate(z.id, { cooled: v })} />
               <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 8 }}>
                 {count} {count === 1 ? 'Artikel' : 'Artikel'}{zones.length > 1 ? ' · beim Entfernen wandern sie in den ersten Lagerort' : ''}
@@ -155,7 +133,7 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
               wrapperStyle={{ flex: 1, minWidth: 0 }}
             />
           </div>
-          <ColorRow value={draft.color} onChange={(c) => setDraft((s) => ({ ...s, color: c }))} />
+          <ColorSwatches choices={ZONE_COLOR_CHOICES} value={draft.color} onChange={(c) => setDraft((s) => ({ ...s, color: c }))} />
           <CooledToggle t={t} on={draft.cooled} onChange={(v) => setDraft((s) => ({ ...s, cooled: v }))} />
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <button

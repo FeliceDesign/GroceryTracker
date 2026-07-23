@@ -65,3 +65,15 @@ export const ZONE_COLOR_CHOICES = [
   '#6E7F3B', // olive
   '#9E4B6E', // magenta
 ];
+
+// Eigene Palette für MHD-Warnstufen – bewusst andere Töne als bei den
+// Lagerorten, im Gelb-bis-Rot-Spektrum passend zur Ampel-Logik (Stufe 1,
+// Stufe 2/kritisch, Abgelaufen).
+export const MHD_COLOR_CHOICES = [
+  '#C9A227', // gelb
+  '#D98A2B', // orange
+  '#C2542F', // rotorange
+  '#B23A3A', // rot
+  '#8B2E2E', // dunkelrot
+  '#9C3B3B', // weinrot
+];

@@ -47,7 +47,8 @@ export default function App() {
   const [items, setItems, itemsLoaded] = useStorage('gt-items-v1', SEED);
   const [shopping, setShopping, shoppingLoaded] = useStorage('gt-shopping-v1', []);
   const [warn, setWarn, warnLoaded] = useStorage('gt-warn-v1', {
-    yellowDays: 3, notify: false, thresholds: [7, 3, 1, 0], notifyHour: 9,
+    yellowDays: 3, orangeDays: 1, notify: false, thresholds: [7, 3, 1, 0], notifyHour: 9,
+    colorSoon: null, colorCritical: null, colorExpired: null,
   });
   // Allgemeine UI-Einstellungen (z.B. Anzeige-Optionen).
   // stepGml: Schrittweite der +/−-Knöpfe für g/ml ('auto' = adaptiv).
@@ -488,6 +489,8 @@ export default function App() {
   }, [items, search]);
 
   const yellowDays = warn ? warn.yellowDays : 3;
+  const orangeDays = warn ? warn.orangeDays : 1;
+  const warnColors = { soon: warn?.colorSoon, critical: warn?.colorCritical, expired: warn?.colorExpired };
   const expiringSoon = useMemo(() => {
     if (!items) return [];
     return items
@@ -547,7 +550,7 @@ export default function App() {
             <Section t={t} title={`${searchResults.length} ${searchResults.length === 1 ? 'Treffer' : 'Treffer'}`}>
               {searchResults.map((item, idx) => (
                 <ItemRow
-                  key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays}
+                  key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                   justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                   showZoneBadge isLast={idx === searchResults.length - 1} showWarnDot={prefs.showWarnDot !== false}
                 />
@@ -561,7 +564,7 @@ export default function App() {
             <Section key={cat} t={t} title={cat}>
               {list.map((item, idx) => (
                 <ItemRow
-                  key={item.id} item={item} zone={zone} t={t} dark={dark} yellowDays={yellowDays}
+                  key={item.id} item={item} zone={zone} t={t} dark={dark} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                   justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                   isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false}
                 />
@@ -698,7 +701,7 @@ export default function App() {
         open={!!detailLive} item={detailLive}
         zone={detailLive ? resolveZone(detailLive.zone) : null}
         food={detailLive ? getFood(detailLive.name) : null}
-        t={t} dark={dark} yellowDays={yellowDays}
+        t={t} dark={dark} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
         onClose={() => setDetailItem(null)}
         onEdit={(it) => { setDetailItem(null); openEdit(it); }}
         onChangeQty={changeQty}

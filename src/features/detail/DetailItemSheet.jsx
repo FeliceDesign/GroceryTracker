@@ -3,25 +3,33 @@ import { Plus, Minus, Trash2, Pencil, Copy, Check, Utensils, List, PackageOpen }
 import { Modal } from '../../components/Modal.jsx';
 import { ShelfLifeDetails } from '../macros/ShelfLifeDetails.jsx';
 import { zonePalette } from '../../lib/colors.js';
-import { daysUntil, expiryLevel, levelColor, mhdLabel } from '../../lib/date.js';
+import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel } from '../../lib/date.js';
 import { MACRO_FIELDS, fmtNum, unsaturatedFat, hasMacros, basisLabel, copyMacros } from '../../lib/macros.js';
 import { openedDaysFor, openedUntil } from '../../lib/openedShelfLife.js';
 import { btnCircle, primaryButtonStyle, makeInputStyle } from '../../lib/styles.js';
 
 // Schreibgeschützte Detail-Ansicht eines Artikels (Nährwerte, Zutaten,
-// Haltbarkeit). „Bearbeiten" öffnet das Formular.
-export function DetailItemSheet({ open, item, zone, food, t, dark, yellowDays = 3, onClose, onEdit, onChangeQty, onRemove, onToggleOpened, onChangeMhd }) {
+// Haltbarkeit). „Bearbeiten" öffnet das Formular. `warnColors` optional:
+// { soon, critical, expired } – eigene Farben aus den Einstellungen.
+export function DetailItemSheet({
+  open, item, zone, food, t, dark, yellowDays = 3, orangeDays = 1, warnColors = {},
+  onClose, onEdit, onChangeQty, onRemove, onToggleOpened, onChangeMhd,
+}) {
   const [copied, setCopied] = useState(false);
   if (!open || !item) return null;
   const inputStyle = makeInputStyle(t);
 
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
   const rawDays = daysUntil(item.mhd);
-  const mhdLevel = expiryLevel(rawDays, yellowDays);
+  const mhdLevel = expiryLevel(rawDays, yellowDays, orangeDays);
+  const mhdWarn = mhdLevel === 'expired' || mhdLevel === 'critical' || mhdLevel === 'soon';
 
   const shelfDays = openedDaysFor(item.name, food);
   const openUntil = openedUntil(item, shelfDays);
   const openDays = openUntil ? daysUntil(openUntil) : null;
+  const openLevel = openDays != null ? expiryLevel(openDays, yellowDays, orangeDays) : null;
+  const openColor = openLevel ? levelColor(openLevel, t, warnColors) : levelColor('soon', t, warnColors);
+  const openBg = openLevel ? levelBg(openLevel, t, warnColors) : levelBg('soon', t, warnColors);
 
   const showMacros = hasMacros(food);
   const unsat = unsaturatedFat(food);
@@ -75,12 +83,12 @@ export function DetailItemSheet({ open, item, zone, food, t, dark, yellowDays = 
       {/* Status: MHD + Geöffnet */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
         {item.mhd && (
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: levelColor(mhdLevel, t), background: (mhdLevel === 'expired' || mhdLevel === 'soon') ? (mhdLevel === 'expired' ? t.dangerBg : t.warningBg) : t.cardAlt, padding: '5px 11px', borderRadius: 8 }}>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: levelColor(mhdLevel, t, warnColors), background: mhdWarn ? levelBg(mhdLevel, t, warnColors) : t.cardAlt, padding: '5px 11px', borderRadius: 8 }}>
             MHD {mhdLabel(rawDays)} ({item.mhd})
           </span>
         )}
         {item.opened && (
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: t.warning, background: t.warningBg, padding: '5px 11px', borderRadius: 8 }}>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: openColor, background: openBg, padding: '5px 11px', borderRadius: 8 }}>
             Geöffnet{openDays != null ? ` · ${openDays < 0 ? `${Math.abs(openDays)}T überfällig` : openDays === 0 ? 'heute' : openDays === 1 ? 'morgen' : `noch ${openDays}T`}` : ''}
           </span>
         )}

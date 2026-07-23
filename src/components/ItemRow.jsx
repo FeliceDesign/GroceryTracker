@@ -1,33 +1,37 @@
 import { Plus, Minus, Trash2 } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
-import { daysUntil, expiryLevel, levelColor, mhdLabel } from '../lib/date.js';
+import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel } from '../lib/date.js';
 import { openedUntil } from '../lib/openedShelfLife.js';
 import { btnCircle } from '../lib/styles.js';
 
 // Eine Artikelzeile. `zone` ist das aufgelöste Lagerort-Objekt (oder undefined,
 // falls der Lagerort inzwischen entfernt wurde – dann neutraler Fallback).
 // `openedShelfDays` = aufgelöste Haltbarkeit nach dem Öffnen (oder null).
-export function ItemRow({ item, zone, t, dark, yellowDays = 3, openedShelfDays = null, justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast, showWarnDot = true }) {
+// `warnColors` optional: { soon, critical, expired } – eigene Farben aus den Einstellungen.
+export function ItemRow({
+  item, zone, t, dark, yellowDays = 3, orangeDays = 1, warnColors = {}, openedShelfDays = null,
+  justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast, showWarnDot = true,
+}) {
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
   const days = daysUntil(item.mhd); // gedrucktes MHD
-  const mhdLevel = expiryLevel(days, yellowDays);
-  const mhdColor = levelColor(mhdLevel, t);
-  const mhdBg = mhdLevel === 'expired' ? t.dangerBg : t.warningBg;
-  const mhdWarn = mhdLevel === 'expired' || mhdLevel === 'soon';
+  const mhdLevel = expiryLevel(days, yellowDays, orangeDays);
+  const mhdColor = levelColor(mhdLevel, t, warnColors);
+  const mhdBg = levelBg(mhdLevel, t, warnColors);
+  const mhdWarn = mhdLevel === 'expired' || mhdLevel === 'critical' || mhdLevel === 'soon';
 
   // Rest-Haltbarkeit nach dem Öffnen
   const openUntil = openedUntil(item, openedShelfDays);
   const openDays = openUntil ? daysUntil(openUntil) : null;
-  const openLevel = openDays != null ? expiryLevel(openDays, yellowDays) : null;
-  const openColor = openLevel ? levelColor(openLevel, t) : t.warning;
-  const openBg = openLevel === 'expired' ? t.dangerBg : t.warningBg;
+  const openLevel = openDays != null ? expiryLevel(openDays, yellowDays, orangeDays) : null;
+  const openColor = openLevel ? levelColor(openLevel, t, warnColors) : levelColor('soon', t, warnColors);
+  const openBg = openLevel ? levelBg(openLevel, t, warnColors) : levelBg('soon', t, warnColors);
   const remLabel = openDays == null ? '' : openDays < 0 ? `${Math.abs(openDays)}T überfällig` : openDays === 0 ? 'heute' : openDays === 1 ? 'morgen' : `noch ${openDays}T`;
 
   // Warn-Punkt vor dem Namen richtet sich nach dem frühesten (effektiven) Datum.
   const effDays = [days, openDays].filter((d) => d != null);
-  const level = effDays.length ? expiryLevel(Math.min(...effDays), yellowDays) : null;
-  const warn = level === 'expired' || level === 'soon';
-  const wColor = levelColor(level, t);
+  const level = effDays.length ? expiryLevel(Math.min(...effDays), yellowDays, orangeDays) : null;
+  const warn = level === 'expired' || level === 'critical' || level === 'soon';
+  const wColor = levelColor(level, t, warnColors);
 
   // In der Zeile nur die dringendere der beiden Fristen zeigen statt beide
   // nebeneinander – bei bekannten Werten gewinnt die kürzere, sonst bleibt
@@ -79,11 +83,11 @@ export function ItemRow({ item, zone, t, dark, yellowDays = 3, openedShelfDays =
           {showOpenedBadge && (
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700,
-              color: openDays != null ? openColor : t.warning,
-              background: openDays != null ? openBg : t.warningBg,
+              color: openColor,
+              background: openBg,
               padding: '1px 7px', borderRadius: 6,
             }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: openDays != null ? openColor : t.warning }} aria-hidden="true" />
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: openColor }} aria-hidden="true" />
               {openDays != null ? `geöffnet · ${remLabel}` : 'geöffnet'}
             </span>
           )}

@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 import { Boxes, Tags, Utensils, Clock, Download, Upload, Sun, Moon, SunMoon, ChevronRight, Plus, Minus, Bell } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
+import { ColorSwatches } from '../../components/ColorSwatches.jsx';
+import { MHD_COLOR_CHOICES } from '../../lib/colors.js';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
 
 function Stepper({ value, onChange, min = 0, max = 60, suffix, t }) {
@@ -309,12 +311,45 @@ export function SettingsSheet({
 
       <div style={sectionLabel(t)}>MHD-Warnungen</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <SettingRow
-          t={t}
-          label="Gelb-Markierung"
-          sub={`Artikel werden ${warn.yellowDays} ${warn.yellowDays === 1 ? 'Tag' : 'Tage'} vor Ablauf gelb, abgelaufene rot.`}
-          control={<Stepper t={t} value={warn.yellowDays} min={0} max={90} suffix={warn.yellowDays === 1 ? 'Tag' : 'Tage'} onChange={(v) => onUpdateWarn({ yellowDays: v })} />}
-        />
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Stufe 1</div>
+          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10 }}>
+            Artikel werden {warn.yellowDays} {warn.yellowDays === 1 ? 'Tag' : 'Tage'} vor Ablauf markiert.
+          </div>
+          <Stepper
+            t={t}
+            value={warn.yellowDays}
+            min={Math.max(1, (warn.orangeDays ?? 1) + 1)}
+            max={90}
+            suffix={warn.yellowDays === 1 ? 'Tag' : 'Tage'}
+            onChange={(v) => onUpdateWarn({ yellowDays: v })}
+          />
+          <ColorSwatches choices={MHD_COLOR_CHOICES} value={warn.colorSoon} onChange={(c) => onUpdateWarn({ colorSoon: c })} />
+        </div>
+
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Stufe 2 (kritisch)</div>
+          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10 }}>
+            Ab {warn.orangeDays ?? 1} {(warn.orangeDays ?? 1) === 1 ? 'Tag' : 'Tage'} vor Ablauf, dringlicher als Stufe 1.
+          </div>
+          <Stepper
+            t={t}
+            value={warn.orangeDays ?? 1}
+            min={0}
+            max={Math.max(0, warn.yellowDays - 1)}
+            suffix={(warn.orangeDays ?? 1) === 1 ? 'Tag' : 'Tage'}
+            onChange={(v) => onUpdateWarn({ orangeDays: v })}
+          />
+          <ColorSwatches choices={MHD_COLOR_CHOICES} value={warn.colorCritical} onChange={(c) => onUpdateWarn({ colorCritical: c })} />
+        </div>
+
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Abgelaufen</div>
+          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10 }}>
+            Farbe für bereits abgelaufene Artikel.
+          </div>
+          <ColorSwatches choices={MHD_COLOR_CHOICES} value={warn.colorExpired} onChange={(c) => onUpdateWarn({ colorExpired: c })} />
+        </div>
 
         {notifySupported ? (
           <>

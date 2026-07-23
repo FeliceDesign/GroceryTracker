@@ -1,5 +1,6 @@
 // Mindesthaltbarkeitsdatum (MHD) – Berechnung und Darstellung.
 // Ein MHD ist optional und pro Artikel im Format JJJJ-MM-TT gespeichert.
+import { rgba } from './colors.js';
 
 // Heutiges Datum als JJJJ-MM-TT (lokale Zeitzone).
 export function todayISO() {
@@ -17,20 +18,37 @@ export function daysUntil(mhd) {
 }
 
 // Einstufung eines MHD:
-//  'expired' – bereits überfällig (rot)
-//  'soon'    – läuft innerhalb von `yellowDays` Tagen ab (gelb)
-//  'ok'      – noch genug Zeit
-export function expiryLevel(days, yellowDays = 3) {
+//  'expired'  – bereits überfällig (rot)
+//  'critical' – läuft innerhalb von `orangeDays` Tagen ab (Stufe 2)
+//  'soon'     – läuft innerhalb von `yellowDays` Tagen ab (Stufe 1, gelb)
+//  'ok'       – noch genug Zeit
+export function expiryLevel(days, yellowDays = 3, orangeDays = 1) {
   if (days === null || days === undefined) return null;
   if (days < 0) return 'expired';
+  if (days <= orangeDays) return 'critical';
   if (days <= yellowDays) return 'soon';
   return 'ok';
 }
 
-export function levelColor(level, t) {
-  if (level === 'expired') return t.danger;
-  if (level === 'soon') return t.warning;
+// Default-Farbe für Stufe 2, falls in den Einstellungen keine eigene Farbe
+// gewählt wurde (das Theme kennt von Haus aus nur "warning"/"danger").
+const DEFAULT_CRITICAL_COLOR = '#C2703D';
+
+// `colors` optional: { soon, critical, expired } – eigene Hex-Werte aus den
+// Einstellungen überschreiben die Theme-/Default-Farben.
+export function levelColor(level, t, colors = {}) {
+  if (level === 'expired') return colors.expired || t.danger;
+  if (level === 'critical') return colors.critical || DEFAULT_CRITICAL_COLOR;
+  if (level === 'soon') return colors.soon || t.warning;
   return t.textMuted;
+}
+
+// Passender zarter Flächen-Hintergrund zur jeweiligen Stufe (für Badges).
+export function levelBg(level, t, colors = {}) {
+  if (level === 'expired') return colors.expired ? rgba(colors.expired, 0.16) : t.dangerBg;
+  if (level === 'critical') return colors.critical ? rgba(colors.critical, 0.16) : rgba(DEFAULT_CRITICAL_COLOR, 0.16);
+  if (level === 'soon') return colors.soon ? rgba(colors.soon, 0.16) : t.warningBg;
+  return 'transparent';
 }
 
 export function mhdLabel(days) {
