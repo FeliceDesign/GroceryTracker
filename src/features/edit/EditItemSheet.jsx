@@ -185,7 +185,7 @@ export function EditItemSheet({
             style={{
               flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: 46, height: 46, borderRadius: 12, border: `1.5px solid ${t.border}`,
-              background: 'transparent', color: t.textMuted,
+              background: 'transparent', color: pal.accent,
               cursor: scanBusy ? 'default' : 'pointer', opacity: scanBusy ? 0.6 : 1,
             }}
           >

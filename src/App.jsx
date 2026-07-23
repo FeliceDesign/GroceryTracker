@@ -56,6 +56,7 @@ export default function App() {
     shoppingCount: true, stepGml: 'auto', showSlider: true,
     headerAlign: 'left', appTitle: '', showWarnDot: true,
     shoppingPos: 'top', settingsPos: 'top', addPos: 'bottom',
+    autoShoppingOnRemove: true, dateFormat: 'dmy',
   });
 
   const [activeZone, setActiveZone] = useState(null);
@@ -164,11 +165,14 @@ export default function App() {
     const removed = items.find((i) => i.id === id);
     if (!removed) return;
     setItems((prev) => prev.filter((i) => i.id !== id));
-    // Aufgebrauchtes wandert automatisch auf die Einkaufsliste (ohne Duplikate)
-    setShopping((prev) => {
-      const exists = prev.some((s) => s.zone === removed.zone && s.name.toLowerCase() === removed.name.toLowerCase());
-      return exists ? prev : [...prev, { ...removed, addedAt: Date.now() }];
-    });
+    // Aufgebrauchtes wandert automatisch auf die Einkaufsliste (ohne Duplikate) –
+    // abschaltbar in den Einstellungen.
+    if (prefs.autoShoppingOnRemove !== false) {
+      setShopping((prev) => {
+        const exists = prev.some((s) => s.zone === removed.zone && s.name.toLowerCase() === removed.name.toLowerCase());
+        return exists ? prev : [...prev, { ...removed, addedAt: Date.now() }];
+      });
+    }
     setDeletedItem(removed);
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeletedItem(null), 5000);
@@ -655,6 +659,8 @@ export default function App() {
         onManageFoods={() => { setShowSettings(false); setShowFoods(true); }}
         showShoppingCount={prefs.shoppingCount}
         onToggleShoppingCount={(on) => setPrefs((p) => ({ ...p, shoppingCount: on }))}
+        autoShoppingOnRemove={prefs.autoShoppingOnRemove !== false}
+        onToggleAutoShoppingOnRemove={(on) => setPrefs((p) => ({ ...p, autoShoppingOnRemove: on }))}
         stepGml={prefs.stepGml}
         onSetStepGml={(v) => setPrefs((p) => ({ ...p, stepGml: v }))}
         showSlider={prefs.showSlider !== false}

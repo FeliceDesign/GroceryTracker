@@ -108,7 +108,7 @@ const ALL_THRESHOLDS = [14, 7, 3, 1, 0];
 export function SettingsSheet({
   open, onClose, t, themeOverride, setThemeOverride,
   onManageZones, onManageCategories, onManageFoods, onOpenShelfLife,
-  showShoppingCount, onToggleShoppingCount, stepGml, onSetStepGml,
+  showShoppingCount, onToggleShoppingCount, autoShoppingOnRemove, onToggleAutoShoppingOnRemove, stepGml, onSetStepGml,
   showSlider, onToggleShowSlider, showWarnDot, onToggleShowWarnDot, headerAlign, onSetHeaderAlign, appTitle, onSetAppTitle,
   shoppingPos, onSetShoppingPos, settingsPos, onSetSettingsPos, addPos, onSetAddPos,
   warn, onUpdateWarn, onSetNotify, notifySupported,
@@ -199,6 +199,14 @@ export function SettingsSheet({
           sub="Zahl-Badge am Einkaufs-Symbol. Aus: nur ein Punkt bei offenen Artikeln."
           control={<Toggle t={t} on={showShoppingCount !== false} onChange={onToggleShoppingCount} />}
         />
+        <div style={{ marginTop: 10 }}>
+          <SettingRow
+            t={t}
+            label="Entfernte Artikel auf Einkaufsliste"
+            sub="Wenn ein Artikel entfernt wird, automatisch auf die Einkaufsliste setzen."
+            control={<Toggle t={t} on={autoShoppingOnRemove !== false} onChange={onToggleAutoShoppingOnRemove} />}
+          />
+        </div>
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px', marginTop: 10 }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Schrittweite (g/ml)</div>
           <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
