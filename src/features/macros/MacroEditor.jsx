@@ -266,7 +266,7 @@ export function MacroEditor({
             value={macros.openedDays ?? ''}
             onChange={(e) => onChange({ openedDays: e.target.value === '' ? null : Math.max(0, parseInt(e.target.value, 10) || 0) })}
             placeholder={ruleDays != null ? `Standard: ${ruleDays}` : 'z.B. 5'}
-            style={{ ...inputStyle, marginTop: 0, width: 120, textAlign: 'right' }}
+            style={{ ...inputStyle, marginTop: 0, width: 160, textAlign: 'right' }}
           />
           <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>Tage</span>
         </div>
