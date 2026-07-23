@@ -155,6 +155,10 @@ export default function App() {
     }));
   };
 
+  const changeMhd = (id, mhd) => {
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, mhd: mhd || null } : i)));
+  };
+
   const removeItem = (id) => {
     const removed = items.find((i) => i.id === id);
     if (!removed) return;
@@ -700,6 +704,7 @@ export default function App() {
         onChangeQty={changeQty}
         onRemove={(id) => { setDetailItem(null); removeItem(id); }}
         onToggleOpened={toggleOpened}
+        onChangeMhd={changeMhd}
       />
     </div>
 

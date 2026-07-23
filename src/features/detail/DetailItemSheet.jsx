@@ -6,13 +6,14 @@ import { zonePalette } from '../../lib/colors.js';
 import { daysUntil, expiryLevel, levelColor, mhdLabel } from '../../lib/date.js';
 import { MACRO_FIELDS, fmtNum, unsaturatedFat, hasMacros, basisLabel, copyMacros } from '../../lib/macros.js';
 import { openedDaysFor, openedUntil } from '../../lib/openedShelfLife.js';
-import { btnCircle, primaryButtonStyle } from '../../lib/styles.js';
+import { btnCircle, primaryButtonStyle, makeInputStyle } from '../../lib/styles.js';
 
 // Schreibgeschützte Detail-Ansicht eines Artikels (Nährwerte, Zutaten,
 // Haltbarkeit). „Bearbeiten" öffnet das Formular.
-export function DetailItemSheet({ open, item, zone, food, t, dark, yellowDays = 3, onClose, onEdit, onChangeQty, onRemove, onToggleOpened }) {
+export function DetailItemSheet({ open, item, zone, food, t, dark, yellowDays = 3, onClose, onEdit, onChangeQty, onRemove, onToggleOpened, onChangeMhd }) {
   const [copied, setCopied] = useState(false);
   if (!open || !item) return null;
+  const inputStyle = makeInputStyle(t);
 
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
   const rawDays = daysUntil(item.mhd);
@@ -84,6 +85,19 @@ export function DetailItemSheet({ open, item, zone, food, t, dark, yellowDays = 
           </span>
         )}
       </div>
+
+      {/* MHD direkt ändern – ohne ins Bearbeiten zu wechseln */}
+      {onChangeMhd && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+          <span style={{ fontSize: 13, color: t.textMuted, flexShrink: 0 }}>MHD ändern</span>
+          <input
+            type="date"
+            value={item.mhd || ''}
+            onChange={(e) => onChangeMhd(item.id, e.target.value)}
+            style={{ ...inputStyle, marginTop: 0 }}
+          />
+        </div>
+      )}
 
       {/* Schnell als geöffnet markieren – ohne ins Bearbeiten zu wechseln */}
       {onToggleOpened && (
