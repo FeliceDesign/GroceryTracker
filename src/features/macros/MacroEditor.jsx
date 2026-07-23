@@ -168,7 +168,8 @@ export function MacroEditor({
           );
           // Direkt hinter „davon gesättigte" die berechnete, schreibgeschützte
           // Zeile „davon ungesättigt" (Fett − gesättigt) – immer sichtbar,
-          // zeigt „—", solange nicht beide Werte vorliegen.
+          // zeigt „—", solange nicht beide Werte vorliegen. Optisch wie die
+          // echten Eingabefelder (nur deaktiviert), für einheitliches Layout.
           if (f.key === 'satFat') {
             const u = unsaturatedFat(macros);
             return [row, (
@@ -176,9 +177,14 @@ export function MacroEditor({
                 <span style={{ flex: 1, fontSize: 13.5, color: t.textFaint, fontWeight: 500, paddingLeft: 12, fontStyle: 'italic' }}>
                   – davon ungesättigt
                 </span>
-                <span style={{ width: 96, textAlign: 'right', padding: '9px 10px', fontSize: 14.5, color: t.textFaint, fontVariantNumeric: 'tabular-nums' }}>
-                  {u != null ? fmtNum(u) : '—'}
-                </span>
+                <input
+                  type="text"
+                  disabled
+                  readOnly
+                  value={u != null ? fmtNum(u) : '—'}
+                  aria-label="davon ungesättigt (berechnet)"
+                  style={{ ...inputStyle, marginTop: 0, width: 96, textAlign: 'right', padding: '9px 10px', color: t.textFaint, cursor: 'default' }}
+                />
                 <span style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, width: 30 }}>g</span>
               </div>
             )];
