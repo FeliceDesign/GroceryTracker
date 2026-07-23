@@ -78,11 +78,13 @@ export default function App() {
 
   // Toast / Feedback
   const [deletedItem, setDeletedItem] = useState(null);
+  const [deletedZone, setDeletedZone] = useState(null);
   const [justChanged, setJustChanged] = useState(null);
   const [justChecked, setJustChecked] = useState(null);
   const [shoppingInput, setShoppingInput] = useState('');
 
   const undoTimerRef = useRef(null);
+  const zoneUndoTimerRef = useRef(null);
   const flashTimerRef = useRef(null);
   const checkedTimerRef = useRef(null);
 
@@ -368,11 +370,33 @@ export default function App() {
   // -- Lagerorte --------------------------------------------------------------
   const removeZoneWithReassign = (id) => {
     if (!zones || zones.length <= 1) return;
+    const index = zones.findIndex((z) => z.id === id);
+    const removedZone = zones[index];
     const target = zones.find((z) => z.id !== id);
+    const movedItemIds = items.filter((i) => i.zone === id).map((i) => i.id);
+    const movedShoppingIds = shopping.filter((s) => s.zone === id).map((s) => s.id);
     setItems((prev) => prev.map((i) => (i.zone === id ? { ...i, zone: target.id } : i)));
     setShopping((prev) => prev.map((s) => (s.zone === id ? { ...s, zone: target.id } : s)));
     setZones((prev) => prev.filter((z) => z.id !== id));
     if (activeZone === id) setActiveZone(target.id);
+    setDeletedZone({ zone: removedZone, index, movedItemIds, movedShoppingIds, wasActive: activeZone === id });
+    clearTimeout(zoneUndoTimerRef.current);
+    zoneUndoTimerRef.current = setTimeout(() => setDeletedZone(null), 5000);
+  };
+
+  const undoZoneDelete = () => {
+    if (!deletedZone) return;
+    const { zone, index, movedItemIds, movedShoppingIds, wasActive } = deletedZone;
+    setZones((prev) => {
+      const next = [...prev];
+      next.splice(Math.min(index, next.length), 0, zone);
+      return next;
+    });
+    setItems((prev) => prev.map((i) => (movedItemIds.includes(i.id) ? { ...i, zone: zone.id } : i)));
+    setShopping((prev) => prev.map((s) => (movedShoppingIds.includes(s.id) ? { ...s, zone: zone.id } : s)));
+    if (wasActive) setActiveZone(zone.id);
+    setDeletedZone(null);
+    clearTimeout(zoneUndoTimerRef.current);
   };
 
   // -- Backup -----------------------------------------------------------------
@@ -544,6 +568,15 @@ export default function App() {
           message={`„${deletedItem.name}" entfernt · auf Einkaufsliste`}
           actionLabel="Rückgängig"
           onAction={undoDelete}
+        />
+      )}
+
+      {!deletedItem && deletedZone && (
+        <Toast
+          t={t}
+          message={`Lagerort „${deletedZone.zone.label}" entfernt`}
+          actionLabel="Rückgängig"
+          onAction={undoZoneDelete}
         />
       )}
 

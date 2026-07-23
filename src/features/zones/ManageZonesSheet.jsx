@@ -54,6 +54,7 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
   const inputStyle = makeInputStyle(t);
   const [draft, setDraft] = useState({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], cooled: false });
   const [showAdd, setShowAdd] = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
 
   const submitAdd = () => {
     if (!draft.label.trim()) return;
@@ -87,7 +88,7 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
                 />
                 <button
                   type="button"
-                  onClick={() => onRemove(z.id)}
+                  onClick={() => setConfirmRemoveId(z.id)}
                   disabled={zones.length <= 1}
                   aria-label={`${z.label} entfernen`}
                   style={{ ...btnCircle('transparent', zones.length <= 1 ? t.textFaint : t.danger, 40), opacity: zones.length <= 1 ? 0.4 : 1, cursor: zones.length <= 1 ? 'default' : 'pointer' }}
@@ -100,6 +101,33 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
               <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 8 }}>
                 {count} {count === 1 ? 'Artikel' : 'Artikel'}{zones.length > 1 ? ' · beim Entfernen wandern sie in den ersten Lagerort' : ''}
               </div>
+              {confirmRemoveId === z.id && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                  marginTop: 10, padding: '10px 12px', borderRadius: 10,
+                  background: t.dangerBg, border: `1.5px solid ${t.dangerBorder}`,
+                }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: t.danger }}>
+                    „{z.label}" wirklich entfernen?
+                  </span>
+                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmRemoveId(null)}
+                      style={{ border: 'none', background: 'transparent', color: t.textMuted, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: '6px 4px' }}
+                    >
+                      Abbrechen
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { onRemove(z.id); setConfirmRemoveId(null); }}
+                      style={{ border: 'none', background: 'transparent', color: t.danger, fontWeight: 800, fontSize: 12.5, cursor: 'pointer', padding: '6px 4px' }}
+                    >
+                      Entfernen
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
