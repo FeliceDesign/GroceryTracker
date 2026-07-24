@@ -20,7 +20,7 @@ export function ProduceStorageSheet({ open, onClose, t }) {
     const query = q.trim().toLowerCase();
     if (!query) return PRODUCE_RULES;
     return PRODUCE_RULES.filter(
-      (r) => r.label.toLowerCase().includes(query) || r.keys.some((k) => k.includes(query)),
+      (r) => r.label.toLowerCase().includes(query) || r.keys.some((k) => k.includes(query) || query.includes(k)),
     );
   }, [q]);
 
