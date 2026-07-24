@@ -8,6 +8,7 @@ import { useStorage } from './hooks/useStorage.js';
 import { useZones } from './hooks/useZones.js';
 import { useCategories } from './hooks/useCategories.js';
 import { useFoods } from './hooks/useFoods.js';
+import { useFavorites } from './hooks/useFavorites.js';
 import { SEED } from './lib/defaults.js';
 import { emptyMacros, foodToMacros, macrosToFood, hasFoodData, defaultBasisForUnit } from './lib/macros.js';
 import { openedDaysFor, effectiveExpiry } from './lib/openedShelfLife.js';
@@ -21,6 +22,7 @@ import { Header } from './components/Header.jsx';
 import { ZoneTabs } from './components/ZoneTabs.jsx';
 import { ExpiringBanner } from './components/ExpiringBanner.jsx';
 import { SearchBar } from './components/SearchBar.jsx';
+import { FavoriteChips } from './components/FavoriteChips.jsx';
 import { ItemRow } from './components/ItemRow.jsx';
 import { FloatingActions } from './components/FloatingActions.jsx';
 import { CountBadge } from './components/CountBadge.jsx';
@@ -32,6 +34,7 @@ import { ScanFlowSheet } from './features/scanflow/ScanFlowSheet.jsx';
 import { ShoppingSheet } from './features/shopping/ShoppingSheet.jsx';
 import { ManageZonesSheet } from './features/zones/ManageZonesSheet.jsx';
 import { ManageCategoriesSheet } from './features/categories/ManageCategoriesSheet.jsx';
+import { ManageFavoritesSheet } from './features/favorites/ManageFavoritesSheet.jsx';
 import { SettingsSheet } from './features/settings/SettingsSheet.jsx';
 import { BackupSheet } from './features/settings/BackupSheet.jsx';
 import { LayoutSheet } from './features/settings/LayoutSheet.jsx';
@@ -51,6 +54,7 @@ export default function App() {
   const { zones, loaded: zonesLoaded, addZone, updateZone, setZones } = useZones();
   const { categories, loaded: catsLoaded, addCategory, removeCategory, setCategories } = useCategories();
   const { foods, setFoods, loaded: foodsLoaded, getFood, upsertFood, removeFood } = useFoods();
+  const { favorites, loaded: favoritesLoaded, isFavorite, addFavorite, removeFavorite, removeFavoriteByName } = useFavorites();
   const [items, setItems, itemsLoaded] = useStorage('gt-items-v1', SEED);
   const [shopping, setShopping, shoppingLoaded] = useStorage('gt-shopping-v1', []);
   const [warn, setWarn, warnLoaded] = useStorage('gt-warn-v1', {
@@ -98,6 +102,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showZones, setShowZones] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
+  const [showFavorites, setShowFavorites] = useState(false);
   const [showFoods, setShowFoods] = useState(false);
   const [showShelfLife, setShowShelfLife] = useState(false);
   const [showProduceStorage, setShowProduceStorage] = useState(false);
@@ -128,7 +133,7 @@ export default function App() {
   const checkedTimerRef = useRef(null);
 
   const scanSupported = isScanSupported();
-  const ready = themeLoaded && zonesLoaded && catsLoaded && foodsLoaded && itemsLoaded && shoppingLoaded && warnLoaded && prefsLoaded
+  const ready = themeLoaded && zonesLoaded && catsLoaded && foodsLoaded && favoritesLoaded && itemsLoaded && shoppingLoaded && warnLoaded && prefsLoaded
     && zones !== null && categories !== null && foods !== null && items !== null && shopping !== null && warn !== null && prefs !== null;
 
   // activeZone gültig halten (z.B. nachdem ein Lagerort entfernt wurde)
@@ -193,6 +198,41 @@ export default function App() {
 
   const changeMhd = (id, mhd) => {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, mhd: mhd || null } : i)));
+  };
+
+  // Favorit umschalten (Stern im Detail-Sheet) - merkt sich Lagerort/
+  // Kategorie/Einheit als Vorlage für den Schnellzugriff, keine Menge.
+  const toggleFavorite = (item) => {
+    if (isFavorite(item.name)) removeFavoriteByName(item.name);
+    else addFavorite({ name: item.name, zone: item.zone, category: item.category, unit: item.unit });
+  };
+
+  // Favorit direkt in den Bestand übernehmen (Schnellzugriff-Chip): immer in
+  // den beim Markieren gespeicherten Lagerort, Menge fest auf 1.
+  const addFavoriteToInventory = (fav) => {
+    setItems((prev) => {
+      const idx = prev.findIndex((i) => i.zone === fav.zone && i.unit === fav.unit && i.name.toLowerCase() === fav.name.toLowerCase());
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
+        return next;
+      }
+      return [...prev, { id: newId(), name: fav.name, zone: fav.zone, category: fav.category, qty: 1, unit: fav.unit, mhd: null }];
+    });
+    setActiveZone(fav.zone);
+  };
+
+  // Favorit auf die Einkaufsliste setzen (Schnellzugriff-Chip in der
+  // Einkaufsliste) - trägt Lagerort/Kategorie/Einheit mit, damit er beim
+  // Abhaken direkt in den Bestand wandert statt übers Formular zu gehen.
+  const addFavoriteToShopping = (fav) => {
+    setShopping((prev) => {
+      if (prev.some((s) => s.zone === fav.zone && s.name.toLowerCase() === fav.name.toLowerCase())) return prev;
+      return [...prev, {
+        id: newId('sl'), name: fav.name, zone: fav.zone, category: fav.category, qty: 1, unit: fav.unit, mhd: null,
+        manual: true, addedAt: Date.now(),
+      }];
+    });
   };
 
   const removeItem = (id) => {
@@ -599,6 +639,12 @@ export default function App() {
         <SearchBar value={search} onChange={setSearch} t={t} lang={lang} />
       )}
 
+      {!expiringView && !search.trim() && favorites.length > 0 && (
+        <div style={{ maxWidth: 480, margin: '0 auto', padding: '0 14px 10px' }}>
+          <FavoriteChips favorites={favorites} zones={zones} dark={dark} t={t} onTap={addFavoriteToInventory} />
+        </div>
+      )}
+
       {/* Liste */}
       <div style={{ maxWidth: 480, margin: '0 auto', padding: '18px 20px 0' }}>
         {expiringView ? (
@@ -732,6 +778,7 @@ export default function App() {
         shopping={shopping} shoppingInput={shoppingInput} setShoppingInput={setShoppingInput}
         onAddManual={addManualShopping} onCheck={checkAndRestore} onRemove={removeFromShopping}
         onClearAll={clearShopping} justChecked={justChecked} showCount={prefs.shoppingCount}
+        favorites={favorites} onTapFavorite={addFavoriteToShopping}
       />
 
       <SettingsSheet
@@ -739,8 +786,9 @@ export default function App() {
         themeOverride={themeOverride} setThemeOverride={setThemeOverride}
         onManageZones={() => { setShowSettings(false); setShowZones(true); }}
         onManageCategories={() => { setShowSettings(false); setShowCategories(true); }}
+        onManageFavorites={() => { setShowSettings(false); setShowFavorites(true); }}
         onManageFoods={() => { setShowSettings(false); setShowFoods(true); }}
-        stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
+        stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length, favorites: favorites.length }}
         onOpenShelfLife={() => { setShowSettings(false); setShowShelfLife(true); }}
         onOpenExpiringView={() => { setShowSettings(false); setExpiringView(true); setSearch(''); }}
         onOpenProduceStorage={() => { setShowSettings(false); setShowProduceStorage(true); }}
@@ -801,6 +849,11 @@ export default function App() {
         onAdd={addCategory} onRename={renameCategory} onRemove={removeCategoryWithReassign}
       />
 
+      <ManageFavoritesSheet
+        open={showFavorites} onClose={() => setShowFavorites(false)} t={t} dark={dark} lang={lang}
+        favorites={favorites} zones={zones} onRemove={removeFavorite}
+      />
+
       <ManageFoodsSheet
         open={showFoods} onClose={() => setShowFoods(false)} t={t} lang={lang}
         foods={foods} onUpsert={upsertFood} onRemove={removeFood}
@@ -821,6 +874,8 @@ export default function App() {
         zone={detailLive ? resolveZone(detailLive.zone) : null}
         food={detailLive ? getFood(detailLive.name) : null}
         t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors} dateFormat={prefs.dateFormat || 'dmy'}
+        isFavorite={detailLive ? isFavorite(detailLive.name) : false}
+        onToggleFavorite={() => detailLive && toggleFavorite(detailLive)}
         onClose={() => setDetailItem(null)}
         onEdit={(it) => { setDetailItem(null); openEdit(it); }}
         onChangeQty={changeQty}

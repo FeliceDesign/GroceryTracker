@@ -1,4 +1,4 @@
-import { Boxes, Tags, Utensils, Clock, ListOrdered, Sprout, Download, Sun, Moon, SunMoon, LayoutGrid, SlidersHorizontal, AlertTriangle, Languages } from 'lucide-react';
+import { Boxes, Tags, Utensils, Clock, ListOrdered, Sprout, Download, Sun, Moon, SunMoon, LayoutGrid, SlidersHorizontal, AlertTriangle, Languages, Star } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { Row } from '../../components/Row.jsx';
@@ -15,7 +15,7 @@ const sectionLabel = (t) => ({
 // Scroll-Bereich.
 export function SettingsSheet({
   open, onClose, t, lang = 'de', onSetLang, themeOverride, setThemeOverride,
-  onManageZones, onManageCategories, onManageFoods, onOpenShelfLife, onOpenExpiringView, onOpenProduceStorage,
+  onManageZones, onManageCategories, onManageFoods, onManageFavorites, onOpenShelfLife, onOpenExpiringView, onOpenProduceStorage,
   onOpenLayout, onOpenBehavior, onOpenWarnSettings, onOpenBackup,
   stats,
 }) {
@@ -62,6 +62,13 @@ export function SettingsSheet({
           label={tr(lang, 'settings.categoriesTitle')}
           sub={tr(lang, 'settings.categoriesSub', { count: stats.categories })}
           onClick={onManageCategories}
+        />
+        <Row
+          t={t}
+          icon={<Star size={19} />}
+          label={tr(lang, 'settings.favoritesTitle')}
+          sub={tr(lang, 'settings.favoritesSub', { count: stats.favorites })}
+          onClick={onManageFavorites}
         />
         <Row
           t={t}

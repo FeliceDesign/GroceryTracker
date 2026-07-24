@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Minus, Trash2, Pencil, Copy, Check, Utensils, List, PackageOpen } from 'lucide-react';
+import { Plus, Minus, Trash2, Pencil, Copy, Check, Utensils, List, PackageOpen, Star } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { ShelfLifeDetails } from '../macros/ShelfLifeDetails.jsx';
@@ -24,6 +24,7 @@ const SHELF_TABS = (lang) => [
 // { soon, critical, expired } – eigene Farben aus den Einstellungen.
 export function DetailItemSheet({
   open, item, zone, food, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = {}, dateFormat = 'dmy',
+  isFavorite = false, onToggleFavorite,
   onClose, onEdit, onChangeQty, onRemove, onToggleOpened, onChangeMhd,
 }) {
   const [copied, setCopied] = useState(false);
@@ -81,6 +82,21 @@ export function DetailItemSheet({
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: pal.accentBg, color: pal.accent, fontWeight: 700, fontSize: 13, borderRadius: 999, padding: '6px 12px' }}>
             {zone.emoji} {zone.label}
           </span>
+        )}
+        {onToggleFavorite && (
+          <button
+            type="button"
+            onClick={onToggleFavorite}
+            aria-pressed={isFavorite}
+            aria-label={tr(lang, isFavorite ? 'detail.unfavoriteAria' : 'detail.favoriteAria')}
+            style={{
+              flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 36, height: 36, borderRadius: 10, border: 'none', cursor: 'pointer',
+              background: isFavorite ? t.warningBg : t.cardAlt, color: isFavorite ? t.warning : t.textFaint,
+            }}
+          >
+            <Star size={17} fill={isFavorite ? 'currentColor' : 'none'} />
+          </button>
         )}
         <div style={{ flex: 1 }} />
         <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText, 36)} aria-label={tr(lang, 'detail.fewerAria')}>

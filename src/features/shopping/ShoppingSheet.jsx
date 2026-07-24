@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Check, X, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
+import { FavoriteChips } from '../../components/FavoriteChips.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
@@ -11,7 +12,7 @@ import { tr } from '../../lib/i18n.js';
 export function ShoppingSheet({
   open, onClose, t, dark, lang = 'de', zones,
   shopping, shoppingInput, setShoppingInput, onAddManual, onCheck, onRemove, onClearAll, justChecked,
-  showCount = true,
+  showCount = true, favorites, onTapFavorite,
 }) {
   const inputStyle = makeInputStyle(t);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -46,6 +47,12 @@ export function ShoppingSheet({
           <Plus size={18} strokeWidth={2.6} />
         </button>
       </div>
+
+      {favorites && favorites.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <FavoriteChips favorites={favorites} zones={zones} dark={dark} t={t} onTap={onTapFavorite} label={tr(lang, 'shopping.favoritesLabel')} />
+        </div>
+      )}
 
       {shopping.length > 0 && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
