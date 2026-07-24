@@ -37,7 +37,7 @@ export function ShelfLifeSheet({ open, onClose, t }) {
     const query = q.trim().toLowerCase();
     if (!query) return rules;
     return rules.filter(
-      (r) => r.label.toLowerCase().includes(query) || r.keys.some((k) => k.includes(query)),
+      (r) => r.label.toLowerCase().includes(query) || r.keys.some((k) => k.includes(query) || query.includes(k)),
     );
   }, [rules, q]);
 
