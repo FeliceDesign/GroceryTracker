@@ -33,6 +33,9 @@ import { ManageZonesSheet } from './features/zones/ManageZonesSheet.jsx';
 import { ManageCategoriesSheet } from './features/categories/ManageCategoriesSheet.jsx';
 import { SettingsSheet } from './features/settings/SettingsSheet.jsx';
 import { BackupSheet } from './features/settings/BackupSheet.jsx';
+import { LayoutSheet } from './features/settings/LayoutSheet.jsx';
+import { BehaviorSheet } from './features/settings/BehaviorSheet.jsx';
+import { WarnSheet } from './features/settings/WarnSheet.jsx';
 import { ManageFoodsSheet } from './features/macros/ManageFoodsSheet.jsx';
 import { ShelfLifeSheet } from './features/macros/ShelfLifeSheet.jsx';
 import { ProduceStorageSheet } from './features/macros/ProduceStorageSheet.jsx';
@@ -79,6 +82,9 @@ export default function App() {
   const [showShelfLife, setShowShelfLife] = useState(false);
   const [showProduceStorage, setShowProduceStorage] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
+  const [showLayout, setShowLayout] = useState(false);
+  const [showBehavior, setShowBehavior] = useState(false);
+  const [showWarnSettings, setShowWarnSettings] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
 
   // Formular / Scan
@@ -714,6 +720,32 @@ export default function App() {
         onManageZones={() => { setShowSettings(false); setShowZones(true); }}
         onManageCategories={() => { setShowSettings(false); setShowCategories(true); }}
         onManageFoods={() => { setShowSettings(false); setShowFoods(true); }}
+        stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
+        onOpenShelfLife={() => { setShowSettings(false); setShowShelfLife(true); }}
+        onOpenExpiringView={() => { setShowSettings(false); setExpiringView(true); setSearch(''); }}
+        onOpenProduceStorage={() => { setShowSettings(false); setShowProduceStorage(true); }}
+        onOpenBackup={() => { setShowSettings(false); setShowBackup(true); }}
+        onOpenLayout={() => { setShowSettings(false); setShowLayout(true); }}
+        onOpenBehavior={() => { setShowSettings(false); setShowBehavior(true); }}
+        onOpenWarnSettings={() => { setShowSettings(false); setShowWarnSettings(true); }}
+      />
+
+      <LayoutSheet
+        open={showLayout} onClose={() => setShowLayout(false)} t={t}
+        headerAlign={prefs.headerAlign || 'left'}
+        onSetHeaderAlign={(v) => setPrefs((p) => ({ ...p, headerAlign: v }))}
+        appTitle={prefs.appTitle || ''}
+        onSetAppTitle={(v) => setPrefs((p) => ({ ...p, appTitle: v }))}
+        shoppingPos={prefs.shoppingPos || 'top'}
+        onSetShoppingPos={(v) => setPrefs((p) => ({ ...p, shoppingPos: v }))}
+        settingsPos={prefs.settingsPos || 'top'}
+        onSetSettingsPos={(v) => setPrefs((p) => ({ ...p, settingsPos: v }))}
+        addPos={prefs.addPos || 'bottom'}
+        onSetAddPos={(v) => setPrefs((p) => ({ ...p, addPos: v }))}
+      />
+
+      <BehaviorSheet
+        open={showBehavior} onClose={() => setShowBehavior(false)} t={t}
         showShoppingCount={prefs.shoppingCount}
         onToggleShoppingCount={(on) => setPrefs((p) => ({ ...p, shoppingCount: on }))}
         autoShoppingOnRemove={prefs.autoShoppingOnRemove !== false}
@@ -724,24 +756,13 @@ export default function App() {
         onToggleShowSlider={(on) => setPrefs((p) => ({ ...p, showSlider: on }))}
         showWarnDot={prefs.showWarnDot !== false}
         onToggleShowWarnDot={(on) => setPrefs((p) => ({ ...p, showWarnDot: on }))}
-        shoppingPos={prefs.shoppingPos || 'top'}
-        onSetShoppingPos={(v) => setPrefs((p) => ({ ...p, shoppingPos: v }))}
-        settingsPos={prefs.settingsPos || 'top'}
-        onSetSettingsPos={(v) => setPrefs((p) => ({ ...p, settingsPos: v }))}
-        addPos={prefs.addPos || 'bottom'}
-        onSetAddPos={(v) => setPrefs((p) => ({ ...p, addPos: v }))}
         dateFormat={prefs.dateFormat || 'dmy'}
         onSetDateFormat={(v) => setPrefs((p) => ({ ...p, dateFormat: v }))}
-        headerAlign={prefs.headerAlign || 'left'}
-        onSetHeaderAlign={(v) => setPrefs((p) => ({ ...p, headerAlign: v }))}
-        appTitle={prefs.appTitle || ''}
-        onSetAppTitle={(v) => setPrefs((p) => ({ ...p, appTitle: v }))}
+      />
+
+      <WarnSheet
+        open={showWarnSettings} onClose={() => setShowWarnSettings(false)} t={t}
         warn={warn} onUpdateWarn={updateWarn} onSetNotify={setNotifyEnabled} notifySupported={notificationsSupported()}
-        stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
-        onOpenShelfLife={() => { setShowSettings(false); setShowShelfLife(true); }}
-        onOpenExpiringView={() => { setShowSettings(false); setExpiringView(true); setSearch(''); }}
-        onOpenProduceStorage={() => { setShowSettings(false); setShowProduceStorage(true); }}
-        onOpenBackup={() => { setShowSettings(false); setShowBackup(true); }}
       />
 
       <ManageZonesSheet

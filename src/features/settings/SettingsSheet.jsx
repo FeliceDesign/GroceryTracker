@@ -1,54 +1,5 @@
-import { Boxes, Tags, Utensils, Clock, ListOrdered, Sprout, Download, Sun, Moon, SunMoon, ChevronRight, Plus, Minus, Bell } from 'lucide-react';
+import { Boxes, Tags, Utensils, Clock, ListOrdered, Sprout, Download, Sun, Moon, SunMoon, LayoutGrid, SlidersHorizontal, AlertTriangle } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
-import { ColorSwatches } from '../../components/ColorSwatches.jsx';
-import { MHD_COLOR_CHOICES } from '../../lib/colors.js';
-import { makeInputStyle, btnCircle } from '../../lib/styles.js';
-
-function Stepper({ value, onChange, min = 0, max = 60, suffix, t }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <button type="button" onClick={() => onChange(Math.max(min, value - 1))} style={btnCircle(t.cardAlt, t.pillInactiveText, 34)} aria-label="Weniger">
-        <Minus size={15} strokeWidth={2.5} />
-      </button>
-      <span style={{ minWidth: 74, textAlign: 'center', fontSize: 14.5, fontWeight: 700, color: t.text }}>
-        {value}{suffix ? ` ${suffix}` : ''}
-      </span>
-      <button type="button" onClick={() => onChange(Math.min(max, value + 1))} style={btnCircle(t.cardAlt, t.pillInactiveText, 34)} aria-label="Mehr">
-        <Plus size={15} strokeWidth={2.5} />
-      </button>
-    </div>
-  );
-}
-
-function Toggle({ on, onChange, t }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!on)}
-      role="switch"
-      aria-checked={on}
-      style={{
-        width: 46, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer', padding: 3,
-        background: on ? t.success : t.border, display: 'flex', justifyContent: on ? 'flex-end' : 'flex-start',
-        transition: 'background 0.15s ease',
-      }}
-    >
-      <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
-    </button>
-  );
-}
-
-function SettingRow({ label, sub, control, t }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{label}</div>
-        {sub && <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, lineHeight: 1.35 }}>{sub}</div>}
-      </div>
-      <div style={{ flexShrink: 0 }}>{control}</div>
-    </div>
-  );
-}
 
 function Segmented({ options, value, onChange, t }) {
   return (
@@ -92,7 +43,6 @@ function Row({ icon, label, sub, onClick, t }) {
         <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: t.text }}>{label}</span>
         {sub && <span style={{ display: 'block', fontSize: 12, color: t.textFaint, marginTop: 1 }}>{sub}</span>}
       </span>
-      <ChevronRight size={18} color={t.textFaint} />
     </button>
   );
 }
@@ -102,19 +52,15 @@ const sectionLabel = (t) => ({
   letterSpacing: '0.06em', margin: '30px 2px 10px',
 });
 
-const ALL_THRESHOLDS = [14, 7, 3, 1, 0];
-
+// Haupt-Einstellungen: nur noch Theme direkt sichtbar (am häufigsten
+// genutzt), alles andere über Untermenüs (Layout, Verhalten, MHD-Warnungen,
+// Struktur, Daten) – vorher ein sehr langer, flacher Scroll-Bereich.
 export function SettingsSheet({
   open, onClose, t, themeOverride, setThemeOverride,
   onManageZones, onManageCategories, onManageFoods, onOpenShelfLife, onOpenExpiringView, onOpenProduceStorage,
-  showShoppingCount, onToggleShoppingCount, autoShoppingOnRemove, onToggleAutoShoppingOnRemove, stepGml, onSetStepGml,
-  showSlider, onToggleShowSlider, showWarnDot, onToggleShowWarnDot, headerAlign, onSetHeaderAlign, appTitle, onSetAppTitle,
-  shoppingPos, onSetShoppingPos, settingsPos, onSetSettingsPos, addPos, onSetAddPos, dateFormat, onSetDateFormat,
-  warn, onUpdateWarn, onSetNotify, notifySupported,
-  stats, onOpenBackup,
+  onOpenLayout, onOpenBehavior, onOpenWarnSettings, onOpenBackup,
+  stats,
 }) {
-  const inputStyle = makeInputStyle(t);
-
   return (
     <Modal open={open} onClose={onClose} t={t} title="Einstellungen">
       <div style={sectionLabel(t)}>Darstellung</div>
@@ -128,237 +74,10 @@ export function SettingsSheet({
           { value: 'dark', label: 'Dunkel', icon: <Moon size={15} /> },
         ]}
       />
-      <div style={{ marginTop: 10 }}>
-        <SettingRow
-          t={t}
-          label="Artikelzahl auf Einkaufsliste"
-          sub="Zahl-Badge am Einkaufs-Symbol. Aus: nur ein Punkt bei offenen Artikeln."
-          control={<Toggle t={t} on={showShoppingCount !== false} onChange={onToggleShoppingCount} />}
-        />
-        <div style={{ marginTop: 10 }}>
-          <SettingRow
-            t={t}
-            label="Entfernte Artikel auf Einkaufsliste"
-            sub="Wenn ein Artikel entfernt wird, automatisch auf die Einkaufsliste setzen."
-            control={<Toggle t={t} on={autoShoppingOnRemove !== false} onChange={onToggleAutoShoppingOnRemove} />}
-          />
-        </div>
-        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px', marginTop: 10 }}>
-          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Schrittweite (g/ml)</div>
-          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
-            Wie viel die +/−-Knöpfe bei Gramm/Milliliter ändern. „Auto" = 10 bis 100, danach 50.
-          </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {[['auto', 'Auto'], [5, '5'], [10, '10'], [25, '25'], [50, '50'], [100, '100']].map(([val, lbl]) => {
-              const active = String(stepGml ?? 'auto') === String(val);
-              return (
-                <button
-                  key={String(val)}
-                  type="button"
-                  onClick={() => onSetStepGml(val)}
-                  style={{
-                    padding: '8px 14px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
-                    background: active ? t.pillActive : t.card, color: active ? t.pillActiveText : t.textMuted,
-                  }}
-                >
-                  {lbl}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-        <div style={{ marginTop: 10 }}>
-          <SettingRow
-            t={t}
-            label="Schieberegler für Menge"
-            sub="Im Bearbeiten-Dialog bei g/ml zusätzlich zum Zahlenfeld."
-            control={<Toggle t={t} on={showSlider !== false} onChange={onToggleShowSlider} />}
-          />
-        </div>
-
-        <div style={{ marginTop: 10 }}>
-          <SettingRow
-            t={t}
-            label="Warn-Punkt bei MHD"
-            sub="Farbiger Punkt vor dem Namen, wenn MHD oder Öffnungsfrist bald abläuft."
-            control={<Toggle t={t} on={showWarnDot !== false} onChange={onToggleShowWarnDot} />}
-          />
-        </div>
-
-        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px', marginTop: 10 }}>
-          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Kopfzeile</div>
-          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10 }}>Eigener Titel und Ausrichtung von Titel, Zone und Artikelzahl.</div>
-          <input
-            value={appTitle || ''}
-            onChange={(e) => onSetAppTitle(e.target.value)}
-            placeholder="Stock-Tracker"
-            maxLength={28}
-            style={{ ...inputStyle, marginTop: 0, marginBottom: 10 }}
-          />
-          <Segmented
-            t={t}
-            value={headerAlign || 'left'}
-            onChange={onSetHeaderAlign}
-            options={[
-              { value: 'left', label: 'Links' },
-              { value: 'center', label: 'Mittig' },
-            ]}
-          />
-        </div>
-
-        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px', marginTop: 10 }}>
-          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Buttons platzieren</div>
-          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
-            Jeder Button einzeln oben (Kopfzeile) oder unten (schwebend, stapeln sich in fester Reihenfolge).
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>Einkaufsliste</div>
-              <Segmented
-                t={t}
-                value={shoppingPos || 'top'}
-                onChange={onSetShoppingPos}
-                options={[
-                  { value: 'top', label: 'Oben' },
-                  { value: 'bottom', label: 'Unten' },
-                ]}
-              />
-            </div>
-            <div>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>Einstellungen</div>
-              <Segmented
-                t={t}
-                value={settingsPos || 'top'}
-                onChange={onSetSettingsPos}
-                options={[
-                  { value: 'top', label: 'Oben' },
-                  { value: 'bottom', label: 'Unten' },
-                ]}
-              />
-            </div>
-            <div>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>Hinzufügen (+)</div>
-              <Segmented
-                t={t}
-                value={addPos || 'bottom'}
-                onChange={onSetAddPos}
-                options={[
-                  { value: 'top', label: 'Oben' },
-                  { value: 'bottom', label: 'Unten' },
-                ]}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px', marginTop: 10 }}>
-          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Datumsformat</div>
-          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
-            Gilt für Datums-Anzeigen in der App (z.B. MHD-Badge). Das Kalender-Auswahlfeld selbst richtet sich immer nach der Spracheinstellung des Geräts.
-          </div>
-          <Segmented
-            t={t}
-            value={dateFormat || 'dmy'}
-            onChange={onSetDateFormat}
-            options={[
-              { value: 'dmy', label: 'TT.MM.JJJJ' },
-              { value: 'dmy-short', label: 'TT.MM.JJ' },
-              { value: 'iso', label: 'JJJJ-MM-TT' },
-            ]}
-          />
-        </div>
-
-      <div style={sectionLabel(t)}>MHD-Warnungen</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
-          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Stufe 1</div>
-          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10 }}>
-            Artikel werden {warn.yellowDays} {warn.yellowDays === 1 ? 'Tag' : 'Tage'} vor Ablauf markiert.
-          </div>
-          <Stepper
-            t={t}
-            value={warn.yellowDays}
-            min={Math.max(1, (warn.orangeDays ?? 1) + 1)}
-            max={90}
-            suffix={warn.yellowDays === 1 ? 'Tag' : 'Tage'}
-            onChange={(v) => onUpdateWarn({ yellowDays: v })}
-          />
-          <ColorSwatches choices={MHD_COLOR_CHOICES} value={warn.colorSoon} onChange={(c) => onUpdateWarn({ colorSoon: c })} />
-        </div>
-
-        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
-          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Stufe 2 (kritisch)</div>
-          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10 }}>
-            Ab {warn.orangeDays ?? 1} {(warn.orangeDays ?? 1) === 1 ? 'Tag' : 'Tage'} vor Ablauf, dringlicher als Stufe 1.
-          </div>
-          <Stepper
-            t={t}
-            value={warn.orangeDays ?? 1}
-            min={0}
-            max={Math.max(0, warn.yellowDays - 1)}
-            suffix={(warn.orangeDays ?? 1) === 1 ? 'Tag' : 'Tage'}
-            onChange={(v) => onUpdateWarn({ orangeDays: v })}
-          />
-          <ColorSwatches choices={MHD_COLOR_CHOICES} value={warn.colorCritical} onChange={(c) => onUpdateWarn({ colorCritical: c })} />
-        </div>
-
-        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
-          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>Abgelaufen</div>
-          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10 }}>
-            Farbe für bereits abgelaufene Artikel.
-          </div>
-          <ColorSwatches choices={MHD_COLOR_CHOICES} value={warn.colorExpired} onChange={(c) => onUpdateWarn({ colorExpired: c })} />
-        </div>
-
-        {notifySupported ? (
-          <>
-            <SettingRow
-              t={t}
-              label="Push-Benachrichtigung"
-              sub="Erinnerung, wenn Artikel bald ablaufen."
-              control={<Toggle t={t} on={!!warn.notify} onChange={(on) => onSetNotify(on)} />}
-            />
-            {warn.notify && (
-              <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 10 }}>
-                  <Bell size={15} /> Wann erinnern (Tage vorher)
-                </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {ALL_THRESHOLDS.map((d) => {
-                    const active = (warn.thresholds || []).includes(d);
-                    return (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => {
-                          const cur = warn.thresholds || [];
-                          onUpdateWarn({ thresholds: active ? cur.filter((x) => x !== d) : [...cur, d].sort((a, b) => b - a) });
-                        }}
-                        style={{
-                          padding: '8px 14px', borderRadius: 999, border: 'none', cursor: 'pointer',
-                          fontSize: 13, fontWeight: 700,
-                          background: active ? t.pillActive : t.card, color: active ? t.pillActiveText : t.textMuted,
-                        }}
-                      >
-                        {d === 0 ? 'am Tag' : `${d} ${d === 1 ? 'Tag' : 'Tage'}`}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Uhrzeit</span>
-                  <Stepper t={t} value={warn.notifyHour} min={0} max={23} suffix="Uhr" onChange={(v) => onUpdateWarn({ notifyHour: v })} />
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <div style={{ fontSize: 12, color: t.textFaint, padding: '2px 4px', lineHeight: 1.4 }}>
-            Push-Benachrichtigungen sind nur in der Android-App verfügbar.
-          </div>
-        )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+        <Row t={t} icon={<LayoutGrid size={19} />} label="Layout" sub="Kopfzeile, Titel, Button-Positionen" onClick={onOpenLayout} />
+        <Row t={t} icon={<SlidersHorizontal size={19} />} label="Verhalten" sub="Einkaufsliste, Mengen, Formate" onClick={onOpenBehavior} />
+        <Row t={t} icon={<AlertTriangle size={19} />} label="MHD-Warnungen" sub="Schwellwerte, Farben, Erinnerungen" onClick={onOpenWarnSettings} />
       </div>
 
       <div style={sectionLabel(t)}>Struktur</div>
