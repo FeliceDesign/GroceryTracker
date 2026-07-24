@@ -63,7 +63,7 @@ export default function App() {
     shoppingCount: true, stepGml: 'auto', showSlider: true,
     headerAlign: 'left', appTitle: '', showWarnDot: true,
     shoppingPos: 'top', settingsPos: 'top', addPos: 'bottom',
-    autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de',
+    autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -778,6 +778,8 @@ export default function App() {
         onToggleShowWarnDot={(on) => setPrefs((p) => ({ ...p, showWarnDot: on }))}
         dateFormat={prefs.dateFormat || 'dmy'}
         onSetDateFormat={(v) => setPrefs((p) => ({ ...p, dateFormat: v }))}
+        stripBrandNames={prefs.stripBrandNames !== false}
+        onToggleStripBrandNames={(on) => setPrefs((p) => ({ ...p, stripBrandNames: on }))}
       />
 
       <WarnSheet
@@ -835,7 +837,7 @@ export default function App() {
       open={showScanFlow} onClose={() => setShowScanFlow(false)} t={t} dark={dark} lang={lang} dateFormat={prefs.dateFormat || 'dmy'}
       zones={zones} categories={categories} onAddCategory={addCategory}
       targetZone={scanZone || activeZone} mode={scanMode}
-      onCommit={commitScanFlow}
+      onCommit={commitScanFlow} stripBrandNames={prefs.stripBrandNames !== false}
     />
     </>
   );

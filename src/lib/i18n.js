@@ -157,6 +157,7 @@ const DE = {
     warnDot: 'Warn-Punkt bei MHD', warnDotHint: 'Farbiger Punkt vor dem Namen, wenn MHD oder Öffnungsfrist bald abläuft.',
     dateFormat: 'Datumsformat', dateFormatHint: 'Gilt für Datums-Anzeigen in der App (z.B. MHD-Badge). Das Kalender-Auswahlfeld selbst richtet sich immer nach der Spracheinstellung des Geräts.',
     fmtDmy: 'TT.MM.JJJJ', fmtDmyShort: 'TT.MM.JJ', fmtIso: 'JJJJ-MM-TT',
+    stripBrandNames: 'Markennamen beim Scannen entfernen', stripBrandNamesHint: 'Entfernt bekannte Marken (z.B. „Alpro") vom Anfang/Ende des per Barcode gefundenen Produktnamens.',
   },
   warn: {
     title: 'MHD-Warnungen', subtitle: 'Schwellwerte, Farben, Erinnerungen',
@@ -409,6 +410,7 @@ const EN = {
     warnDot: 'Best-before warning dot', warnDotHint: 'Colored dot before the name when the best-before or opened deadline is approaching.',
     dateFormat: 'Date format', dateFormatHint: 'Applies to date displays in the app (e.g. best-before badge). The calendar picker itself always follows the device’s language setting.',
     fmtDmy: 'DD.MM.YYYY', fmtDmyShort: 'DD.MM.YY', fmtIso: 'YYYY-MM-DD',
+    stripBrandNames: 'Remove brand names when scanning', stripBrandNamesHint: 'Removes known brands (e.g. "Alpro") from the start/end of product names found via barcode.',
   },
   warn: {
     title: 'Best-before warnings', subtitle: 'Thresholds, colors, reminders',

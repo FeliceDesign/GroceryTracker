@@ -20,7 +20,7 @@ function vibrate(ms = 35) {
 // native Live-Scanner, dann die System-Kamera fürs MHD-Foto).
 // `mode` = 'batch' (Standard, mehrere hintereinander) | 'single' (ein Produkt,
 // danach direkt zur Übernahme-Ansicht).
-export function ScanFlowSheet({ open, onClose, t, dark, lang = 'de', zones, categories, onAddCategory, targetZone, mode = 'batch', onCommit, dateFormat = 'dmy' }) {
+export function ScanFlowSheet({ open, onClose, t, dark, lang = 'de', zones, categories, onAddCategory, targetZone, mode = 'batch', onCommit, dateFormat = 'dmy', stripBrandNames = true }) {
   const [phase, setPhase] = useState('barcode'); // barcode | mhd | nutrition | review
   const [collected, setCollected] = useState([]);
   const [current, setCurrent] = useState(null);
@@ -103,7 +103,7 @@ export function ScanFlowSheet({ open, onClose, t, dark, lang = 'de', zones, cate
     setStatus(tr(lang, 'scan.searchingProduct'));
     if (!quick) setPhase('mhd');
     let product = null;
-    try { product = await lookupOpenFoodFacts(value); } catch { product = null; }
+    try { product = await lookupOpenFoodFacts(value, { stripBrand: stripBrandNames }); } catch { product = null; }
     const resolved = { ...base, ...(product ? { name: product.name, category: product.category, qty: product.qty, unit: product.unit } : {}) };
     setStatus(product ? `✓ ${product.name}` : tr(lang, 'scan.noMatch', { value }));
     if (quick) {

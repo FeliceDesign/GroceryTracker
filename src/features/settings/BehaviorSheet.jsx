@@ -10,6 +10,7 @@ export function BehaviorSheet({
   open, onClose, t, lang = 'de',
   showShoppingCount, onToggleShoppingCount, autoShoppingOnRemove, onToggleAutoShoppingOnRemove, stepGml, onSetStepGml,
   showSlider, onToggleShowSlider, showWarnDot, onToggleShowWarnDot, dateFormat, onSetDateFormat,
+  stripBrandNames, onToggleStripBrandNames,
 }) {
   return (
     <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'behavior.title')} subtitle={tr(lang, 'behavior.subtitle')}>
@@ -64,6 +65,13 @@ export function BehaviorSheet({
           label={tr(lang, 'behavior.warnDot')}
           sub={tr(lang, 'behavior.warnDotHint')}
           control={<Toggle t={t} on={showWarnDot !== false} onChange={onToggleShowWarnDot} />}
+        />
+
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.stripBrandNames')}
+          sub={tr(lang, 'behavior.stripBrandNamesHint')}
+          control={<Toggle t={t} on={stripBrandNames !== false} onChange={onToggleStripBrandNames} />}
         />
 
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
