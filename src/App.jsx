@@ -32,6 +32,7 @@ import { ShoppingSheet } from './features/shopping/ShoppingSheet.jsx';
 import { ManageZonesSheet } from './features/zones/ManageZonesSheet.jsx';
 import { ManageCategoriesSheet } from './features/categories/ManageCategoriesSheet.jsx';
 import { SettingsSheet } from './features/settings/SettingsSheet.jsx';
+import { BackupSheet } from './features/settings/BackupSheet.jsx';
 import { ManageFoodsSheet } from './features/macros/ManageFoodsSheet.jsx';
 import { ShelfLifeSheet } from './features/macros/ShelfLifeSheet.jsx';
 import { ProduceStorageSheet } from './features/macros/ProduceStorageSheet.jsx';
@@ -77,6 +78,7 @@ export default function App() {
   const [showFoods, setShowFoods] = useState(false);
   const [showShelfLife, setShowShelfLife] = useState(false);
   const [showProduceStorage, setShowProduceStorage] = useState(false);
+  const [showBackup, setShowBackup] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
 
   // Formular / Scan
@@ -736,10 +738,10 @@ export default function App() {
         onSetAppTitle={(v) => setPrefs((p) => ({ ...p, appTitle: v }))}
         warn={warn} onUpdateWarn={updateWarn} onSetNotify={setNotifyEnabled} notifySupported={notificationsSupported()}
         stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
-        buildBackup={buildBackup} restoreBackup={restoreBackup} previewBackup={previewBackup}
         onOpenShelfLife={() => { setShowSettings(false); setShowShelfLife(true); }}
         onOpenExpiringView={() => { setShowSettings(false); setExpiringView(true); setSearch(''); }}
         onOpenProduceStorage={() => { setShowSettings(false); setShowProduceStorage(true); }}
+        onOpenBackup={() => { setShowSettings(false); setShowBackup(true); }}
       />
 
       <ManageZonesSheet
@@ -762,6 +764,11 @@ export default function App() {
 
       <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} />
       <ProduceStorageSheet open={showProduceStorage} onClose={() => setShowProduceStorage(false)} t={t} />
+      <BackupSheet
+        open={showBackup} onClose={() => setShowBackup(false)} t={t} dark={dark} zones={zones} items={items}
+        stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
+        buildBackup={buildBackup} restoreBackup={restoreBackup} previewBackup={previewBackup}
+      />
 
       <DetailItemSheet
         open={!!detailLive} item={detailLive}
