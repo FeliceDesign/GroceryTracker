@@ -24,8 +24,15 @@ const TABS = [
   { id: 'frozen', label: 'Tiefgefroren' },
 ];
 
+const categoryHeaderStyle = (t) => ({
+  fontSize: 11, fontWeight: 700, color: t.textFaint, letterSpacing: '0.04em',
+  textTransform: 'uppercase', marginBottom: 8, paddingLeft: 2,
+});
+
 // Nachschlage-Übersicht aller Haltbarkeits-Richtwerte, mit Tab-Umschalter
-// zwischen Geöffnet / Ungeöffnet (über MHD hinaus) / Tiefgefroren.
+// zwischen Geöffnet / Ungeöffnet (über MHD hinaus) / Tiefgefroren, gruppiert
+// nach Kategorie (Anzeige-Feld `category`, beeinflusst nicht das Keyword-
+// Matching in den lib/*ShelfLife.js-Dateien).
 export function ShelfLifeSheet({ open, onClose, t }) {
   const [tab, setTab] = useState('opened');
   const [q, setQ] = useState('');
@@ -40,6 +47,15 @@ export function ShelfLifeSheet({ open, onClose, t }) {
       (r) => r.label.toLowerCase().includes(query) || r.keys.some((k) => k.includes(query) || query.includes(k)),
     );
   }, [rules, q]);
+
+  const grouped = useMemo(() => {
+    const byCat = {};
+    list.forEach((r) => {
+      const cat = r.category || 'Sonstiges';
+      (byCat[cat] = byCat[cat] || []).push(r);
+    });
+    return Object.entries(byCat).sort(([a], [b]) => a.localeCompare(b, 'de'));
+  }, [list]);
 
   const subtitle = tab === 'unopened' ? 'Richtwerte ungeöffnet über das MHD hinaus' : tab === 'frozen' ? 'Richtwerte tiefgefroren' : 'Richtwerte nach dem Öffnen';
 
@@ -77,48 +93,55 @@ export function ShelfLifeSheet({ open, onClose, t }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {tab === 'opened' && list.map((r) => (
-          <div key={r.label} style={{ background: t.cardAlt, borderRadius: 12, padding: '11px 13px' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: t.text }}>{r.label}</span>
-              <span style={{ flexShrink: 0, fontSize: 14, fontWeight: 800, color: t.text }}>
-                {r.days} {r.days === 1 ? 'Tag' : 'Tage'}
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, fontSize: 11.5, fontWeight: 700, color: t.textMuted }}>
-              <StorageIcon storage={r.storage} color={t.textMuted} /> {storageLabel(r.storage)}
-            </div>
-            <div style={{ fontSize: 12, color: t.textFaint, marginTop: 5, lineHeight: 1.45 }}>{r.reason}</div>
-          </div>
-        ))}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        {grouped.map(([cat, entries]) => (
+          <div key={cat}>
+            <div style={categoryHeaderStyle(t)}>{cat}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {tab === 'opened' && entries.map((r) => (
+                <div key={r.label} style={{ background: t.cardAlt, borderRadius: 12, padding: '11px 13px' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: t.text }}>{r.label}</span>
+                    <span style={{ flexShrink: 0, fontSize: 14, fontWeight: 800, color: t.text }}>
+                      {r.days} {r.days === 1 ? 'Tag' : 'Tage'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, fontSize: 11.5, fontWeight: 700, color: t.textMuted }}>
+                    <StorageIcon storage={r.storage} color={t.textMuted} /> {storageLabel(r.storage)}
+                  </div>
+                  <div style={{ fontSize: 12, color: t.textFaint, marginTop: 5, lineHeight: 1.45 }}>{r.reason}</div>
+                </div>
+              ))}
 
-        {tab === 'unopened' && list.map((r) => (
-          <div key={r.label} style={{ background: t.cardAlt, borderRadius: 12, padding: '11px 13px' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: t.text }}>{r.label}</span>
-              <span style={{ flexShrink: 0, fontSize: 14, fontWeight: 800, color: t.text }}>
-                {r.extraDays > 0 ? `+${formatExtraDays(r.extraDays)}` : 'kein Puffer'}
-              </span>
-            </div>
-            <div style={{ fontSize: 12, color: t.textFaint, marginTop: 5, lineHeight: 1.45 }}>{r.reason}</div>
-          </div>
-        ))}
+              {tab === 'unopened' && entries.map((r) => (
+                <div key={r.label} style={{ background: t.cardAlt, borderRadius: 12, padding: '11px 13px' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: t.text }}>{r.label}</span>
+                    <span style={{ flexShrink: 0, fontSize: 14, fontWeight: 800, color: t.text }}>
+                      {r.extraDays > 0 ? `+${formatExtraDays(r.extraDays)}` : 'kein Puffer'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12, color: t.textFaint, marginTop: 5, lineHeight: 1.45 }}>{r.reason}</div>
+                </div>
+              ))}
 
-        {tab === 'frozen' && list.map((r) => (
-          <div key={r.label} style={{ background: t.cardAlt, borderRadius: 12, padding: '11px 13px' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: t.text }}>{r.label}</span>
-              <span style={{ flexShrink: 0, fontSize: 14, fontWeight: 800, color: t.text }}>
-                {r.notRecommended ? 'nicht empfohlen' : `${r.months} ${r.months === 1 ? 'Monat' : 'Monate'}`}
-              </span>
+              {tab === 'frozen' && entries.map((r) => (
+                <div key={r.label} style={{ background: t.cardAlt, borderRadius: 12, padding: '11px 13px' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: t.text }}>{r.label}</span>
+                    <span style={{ flexShrink: 0, fontSize: 14, fontWeight: 800, color: t.text }}>
+                      {r.notRecommended ? 'nicht empfohlen' : `${r.months} ${r.months === 1 ? 'Monat' : 'Monate'}`}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12, color: t.textFaint, marginTop: 5, lineHeight: 1.45 }}>{r.reason}</div>
+                  {r.prep && (
+                    <div style={{ fontSize: 12, color: t.textFaint, marginTop: 4, lineHeight: 1.45 }}>
+                      <b>Vorbereitung:</b> {r.prep}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-            <div style={{ fontSize: 12, color: t.textFaint, marginTop: 5, lineHeight: 1.45 }}>{r.reason}</div>
-            {r.prep && (
-              <div style={{ fontSize: 12, color: t.textFaint, marginTop: 4, lineHeight: 1.45 }}>
-                <b>Vorbereitung:</b> {r.prep}
-              </div>
-            )}
           </div>
         ))}
 
