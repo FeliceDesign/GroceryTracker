@@ -142,26 +142,30 @@ export function AddItemSheet({
 
       <label style={labelStyle}>{tr(lang, 'add.mhd')}</label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-        <input
+        <ClearableInput
+          t={t}
+          lang={lang}
           type="date"
           value={newItem.mhd || ''}
-          onChange={(e) => setNewItem((s) => ({ ...s, mhd: e.target.value || null }))}
+          onChange={(v) => setNewItem((s) => ({ ...s, mhd: v || null }))}
           style={{ ...inputStyle, marginTop: 0 }}
+          wrapperStyle={{ flex: 1, minWidth: 0 }}
         />
         {scanSupported && (
           <button
             type="button"
             onClick={() => onScanDate('add')}
             disabled={scanBusy}
-            aria-label={tr(lang, 'add.photoAria')}
+            aria-label={scanBusy ? tr(lang, 'add.reading') : tr(lang, 'add.photoAria')}
+            title={tr(lang, 'add.photoAria')}
             style={{
-              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
-              padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${t.border}`,
-              background: 'transparent', color: t.textMuted, fontWeight: 700, fontSize: 13.5,
+              flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 46, height: 46, borderRadius: 12, border: `1.5px solid ${t.border}`,
+              background: 'transparent', color: pal.accent,
               cursor: scanBusy ? 'default' : 'pointer', opacity: scanBusy ? 0.6 : 1,
             }}
           >
-            <Camera size={17} /> {tr(lang, 'add.photo')}
+            <Camera size={17} />
           </button>
         )}
       </div>

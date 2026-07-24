@@ -25,7 +25,7 @@ export function ZonePicker({ zones, value, onChange, t, dark, lang = 'de', label
               onClick={() => onChange(z.id)}
               aria-label={tr(lang, 'zonePicker.locationAria', { label: z.label })}
               style={{
-                flex: '1 0 auto', minWidth: 80,
+                flex: '1 1 0', minWidth: 80, maxWidth: 130,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                 padding: '10px 6px', borderRadius: 12, cursor: 'pointer',
                 border: active ? `2px solid ${pal.headerBg}` : `2px solid transparent`,
@@ -34,8 +34,8 @@ export function ZonePicker({ zones, value, onChange, t, dark, lang = 'de', label
             >
               <span style={{ fontSize: 18 }}>{z.emoji}</span>
               <span style={{
-                fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap',
-                color: active ? pal.accent : t.pillInactiveText,
+                fontSize: 11, fontWeight: 700, color: active ? pal.accent : t.pillInactiveText,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
               }}>
                 {z.label}
               </span>

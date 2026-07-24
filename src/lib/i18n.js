@@ -47,7 +47,7 @@ const DE = {
     title: 'Neuer Artikel', name: 'Name', namePlaceholder: 'z.B. Frischmilch',
     location: 'Lagerort', category: 'Kategorie', unit: 'Einheit', piece: 'Stück',
     quantity: 'Menge', mhd: 'Mindesthaltbarkeitsdatum (optional)', photo: 'Foto',
-    photoAria: 'MHD per Foto einlesen', scanning: 'Scanne…', barcode: 'Barcode',
+    photoAria: 'MHD per Foto einlesen', reading: 'Lese MHD…', scanning: 'Scanne…', barcode: 'Barcode',
     multiple: 'Mehrere', submit: 'Hinzufügen',
   },
   edit: {
@@ -298,7 +298,7 @@ const EN = {
     title: 'New item', name: 'Name', namePlaceholder: 'e.g. fresh milk',
     location: 'Location', category: 'Category', unit: 'Unit', piece: 'pcs',
     quantity: 'Quantity', mhd: 'Best-before date (optional)', photo: 'Photo',
-    photoAria: 'Scan best-before date with camera', scanning: 'Scanning…', barcode: 'Barcode',
+    photoAria: 'Scan best-before date with camera', reading: 'Reading best-before date…', scanning: 'Scanning…', barcode: 'Barcode',
     multiple: 'Multiple', submit: 'Add',
   },
   edit: {
