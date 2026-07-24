@@ -11,12 +11,32 @@ import { zonePalette } from '../../lib/colors.js';
 import { makeInputStyle, pillStyle } from '../../lib/styles.js';
 import { DownloadsSaver } from '../../lib/downloadsSaver.js';
 import { tr } from '../../lib/i18n.js';
+import { formatDateDisplay } from '../../lib/date.js';
+import { hasMacros, macroSummary } from '../../lib/macros.js';
 
-// Menschenlesbare Tabelle (Kategorie | Artikel) je ausgewähltem Lagerort –
-// zum schnellen Teilen (z.B. per Nachricht), kein Backup zum Wiederherstellen.
-function buildInventoryText(items, zones, selectedIds, lang) {
+// Menschenlesbare Tabelle (Kategorie | Artikel | ggf. MHD | ggf. Makros) je
+// ausgewähltem Lagerort – zum schnellen Teilen (z.B. per Nachricht), kein
+// Backup zum Wiederherstellen.
+function buildInventoryText(items, zones, selectedIds, lang, opts = {}) {
+  const { showMhd = false, showMacros = false, getFood = null, dateFormat = 'dmy' } = opts;
   const selected = zones.filter((z) => selectedIds.includes(z.id));
   if (selected.length === 0) return '';
+  const dash = '–';
+  const cols = [
+    { label: tr(lang, 'backup.category'), get: (i) => i.category || 'Sonstiges' },
+    { label: tr(lang, 'backup.articleCol'), get: (i) => i.name },
+  ];
+  if (showMhd) cols.push({ label: tr(lang, 'backup.mhdCol'), get: (i) => (i.mhd ? formatDateDisplay(i.mhd, dateFormat) : dash) });
+  if (showMacros) {
+    cols.push({
+      label: tr(lang, 'backup.macroCol'),
+      get: (i) => {
+        const food = getFood ? getFood(i.name) : null;
+        return food && hasMacros(food) ? macroSummary(food, lang) : dash;
+      },
+    });
+  }
+
   const blocks = selected.map((z) => {
     const zoneItems = items
       .filter((i) => i.zone === z.id)
@@ -24,13 +44,12 @@ function buildInventoryText(items, zones, selectedIds, lang) {
       .sort((a, b) => (a.category || '').localeCompare(b.category || '', 'de') || a.name.localeCompare(b.name, 'de'));
     const header = `${z.emoji} ${z.label.toUpperCase()} (${z.id})`;
     if (zoneItems.length === 0) return `${header}\n\n${tr(lang, 'backup.noItemsInZone')}`;
-    const catCol = tr(lang, 'backup.category');
-    const itemCol = tr(lang, 'backup.articleCol');
-    const catWidth = Math.max(catCol.length, ...zoneItems.map((i) => (i.category || 'Sonstiges').length));
+    const widths = cols.map((c) => Math.max(c.label.length, ...zoneItems.map((i) => c.get(i).length)));
+    const padRow = (vals) => vals.map((v, idx) => (idx === cols.length - 1 ? v : v.padEnd(widths[idx]))).join(' | ');
     const lines = [
-      `${catCol.padEnd(catWidth)} | ${itemCol}`,
-      `${'-'.repeat(catWidth)}|${'-'.repeat(30)}`,
-      ...zoneItems.map((i) => `${(i.category || 'Sonstiges').padEnd(catWidth)} | ${i.name}`),
+      padRow(cols.map((c) => c.label)),
+      widths.map((w) => '-'.repeat(w)).join('-|-'),
+      ...zoneItems.map((i) => padRow(cols.map((c) => c.get(i)))),
     ];
     return `${header}\n\n${lines.join('\n')}`;
   });
@@ -45,7 +64,7 @@ const TABS = (lang) => [
 // Konsolidierte Backup-/Export-Ansicht: JSON-Backup (Sichern/Teilen/
 // Zwischenablage/Import) auf einem Tab, dazu eine separate, zonen-
 // filterbare Bestandsliste als reine Lesetabelle auf einem zweiten Tab.
-export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items, stats, buildBackup, restoreBackup, previewBackup }) {
+export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items, stats, buildBackup, restoreBackup, previewBackup, getFood, dateFormat = 'dmy' }) {
   const [tab, setTab] = useState('backup');
   const [importing, setImporting] = useState(false);
   const [importText, setImportText] = useState('');
@@ -53,6 +72,8 @@ export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items,
   const [exportMacros, setExportMacros] = useState(true);
   const [pending, setPending] = useState(null);
   const [selectedZoneIds, setSelectedZoneIds] = useState(() => zones.map((z) => z.id));
+  const [showMhd, setShowMhd] = useState(false);
+  const [showMacros, setShowMacros] = useState(false);
   const fileRef = useRef(null);
   const inputStyle = makeInputStyle(t);
   const tabs = TABS(lang);
@@ -167,8 +188,8 @@ export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items,
   };
 
   const inventoryText = useMemo(
-    () => buildInventoryText(items, zones, selectedZoneIds, lang),
-    [items, zones, selectedZoneIds, lang],
+    () => buildInventoryText(items, zones, selectedZoneIds, lang, { showMhd, showMacros, getFood, dateFormat }),
+    [items, zones, selectedZoneIds, lang, showMhd, showMacros, getFood, dateFormat],
   );
 
   const toggleZone = (id) => {
@@ -288,6 +309,21 @@ export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items,
             {tr(lang, 'backup.listHint')}
           </div>
 
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+            <SettingRow
+              t={t}
+              label={tr(lang, 'backup.showMhd')}
+              sub={tr(lang, 'backup.showMhdHint')}
+              control={<Toggle t={t} on={showMhd} onChange={setShowMhd} />}
+            />
+            <SettingRow
+              t={t}
+              label={tr(lang, 'backup.showMacros')}
+              sub={tr(lang, 'backup.showMacrosHint')}
+              control={<Toggle t={t} on={showMacros} onChange={setShowMacros} />}
+            />
+          </div>
+
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
             {zones.map((z) => {
               const active = selectedZoneIds.includes(z.id);
@@ -299,7 +335,7 @@ export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items,
                   onClick={() => toggleZone(z.id)}
                   aria-pressed={active}
                   style={{
-                    flex: '1 0 auto', minWidth: 80,
+                    flex: '1 1 0', minWidth: 80, maxWidth: 130,
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                     padding: '10px 6px', borderRadius: 12, cursor: 'pointer',
                     border: active ? `2px solid ${pal.headerBg}` : '2px solid transparent',
@@ -307,7 +343,10 @@ export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items,
                   }}
                 >
                   <span style={{ fontSize: 18 }}>{z.emoji}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', color: active ? pal.accent : t.pillInactiveText }}>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, color: active ? pal.accent : t.pillInactiveText,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
+                  }}>
                     {z.label}
                   </span>
                 </button>

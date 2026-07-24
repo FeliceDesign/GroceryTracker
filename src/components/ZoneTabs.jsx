@@ -18,7 +18,7 @@ export function ZoneTabs({ zones, activeZone, countFor, onSelect, t, dark }) {
             key={z.id}
             onClick={() => onSelect(z.id)}
             style={{
-              flex: '1 0 auto', minWidth: 76,
+              flex: '1 1 0', minWidth: 76, maxWidth: 120,
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
               padding: '9px 10px', borderRadius: 14, border: 'none', cursor: 'pointer',
               background: active ? t.card : 'transparent',
@@ -27,7 +27,10 @@ export function ZoneTabs({ zones, activeZone, countFor, onSelect, t, dark }) {
             }}
           >
             <span style={{ fontSize: 18 }}>{z.emoji}</span>
-            <span style={{ fontSize: 10.5, fontWeight: 700, color: active ? pal.accent : t.textFaint, whiteSpace: 'nowrap' }}>
+            <span style={{
+              fontSize: 10.5, fontWeight: 700, color: active ? pal.accent : t.textFaint,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
+            }}>
               {z.label}
             </span>
             <span style={{ fontSize: 9, color: active ? pal.accent : t.textFaint, fontWeight: 600 }}>

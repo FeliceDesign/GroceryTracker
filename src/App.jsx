@@ -811,6 +811,7 @@ export default function App() {
         open={showBackup} onClose={() => setShowBackup(false)} t={t} dark={dark} lang={lang} zones={zones} items={items}
         stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
         buildBackup={buildBackup} restoreBackup={restoreBackup} previewBackup={previewBackup}
+        getFood={getFood} dateFormat={prefs.dateFormat || 'dmy'}
       />
 
       <DetailItemSheet

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Camera, Copy, Check, ClipboardPaste, List, Clock } from 'lucide-react';
+import { Camera, Copy, Check, ClipboardPaste, List, Clock, Eraser } from 'lucide-react';
 import {
   MACRO_FIELDS, basisOptions, hasMacros, mergeScanned, copyMacros, copyToClipboard, unsaturatedFat, fmtNum,
 } from '../../lib/macros.js';
@@ -24,6 +24,7 @@ export function MacroEditor({
   const [copiedIng, setCopiedIng] = useState(false);
   const [showPaste, setShowPaste] = useState(false);
   const [pasteText, setPasteText] = useState('');
+  const [confirmReset, setConfirmReset] = useState(false);
   const inputStyle = makeInputStyle(t);
   const showCopy = hasMacros(macros) && (name || '').trim().length > 0;
   const ruleDays = shelfLifeAfterOpening(name);
@@ -91,6 +92,13 @@ export function MacroEditor({
     setCopied(ok);
     setMsg(ok ? '' : tr(lang, 'macroEditor.copyFailed'));
     if (ok) setTimeout(() => setCopied(false), 1600);
+  };
+
+  const resetValues = () => {
+    const patch = {};
+    MACRO_FIELDS.forEach((f) => { patch[f.key] = null; });
+    onChange(patch);
+    setConfirmReset(false);
   };
 
   const doCopyIngredients = async () => {
@@ -194,6 +202,48 @@ export function MacroEditor({
           return row;
         })}
       </div>
+
+      {hasMacros(macros) && !confirmReset && (
+        <button
+          type="button"
+          onClick={() => setConfirmReset(true)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6, marginTop: 10,
+            border: 'none', background: 'transparent', color: t.textFaint,
+            fontWeight: 700, fontSize: 12, cursor: 'pointer', padding: '4px 2px',
+          }}
+        >
+          <Eraser size={13} /> {tr(lang, 'macroEditor.resetValues')}
+        </button>
+      )}
+
+      {confirmReset && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+          marginTop: 10, padding: '10px 12px', borderRadius: 10,
+          background: t.dangerBg, border: `1.5px solid ${t.dangerBorder}`,
+        }}>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: t.danger }}>
+            {tr(lang, 'macroEditor.confirmReset')}
+          </span>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => setConfirmReset(false)}
+              style={{ border: 'none', background: 'transparent', color: t.textMuted, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: '6px 4px' }}
+            >
+              {tr(lang, 'common.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={resetValues}
+              style={{ border: 'none', background: 'transparent', color: t.danger, fontWeight: 800, fontSize: 12.5, cursor: 'pointer', padding: '6px 4px' }}
+            >
+              {tr(lang, 'macroEditor.reset')}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 16, paddingTop: 16, borderTop: `1px solid ${t.border}` }}>
         {scanSupported && (

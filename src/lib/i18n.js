@@ -117,6 +117,7 @@ const DE = {
     ingredientsRecognized: '✓ Zutaten erkannt – bitte kurz prüfen.',
     ingredientsNotRecognized: 'Kein Text erkannt – Zutatenliste näher/schärfer fotografieren.',
     copyFailed: 'Kopieren nicht möglich.',
+    resetValues: 'Nährwerte zurücksetzen', confirmReset: 'Alle Nährwerte wirklich leeren?', reset: 'Zurücksetzen',
   },
   macroSection: { title: 'Nährwerte, Zutaten und Haltbarkeit', none: 'noch keine – tippen zum Erfassen', ingredientsPresent: 'Zutaten hinterlegt' },
   macros: {
@@ -137,7 +138,7 @@ const DE = {
     shelfLifeTitle: 'Haltbarkeits-Ratgeber', shelfLifeSub: 'Geöffnet, ungeöffnet, tiefgefroren',
     expiringTitle: 'Alle Artikel nach MHD', expiringSub: 'Zonenübergreifend, nach Ablaufdatum sortiert',
     produceTitle: 'Obst-&-Gemüse-Ratgeber', produceSub: 'Kühlen, Ethylen, Verpackung',
-    data: 'Daten', backupTitle: 'Backup & Export', backupSub: '{{count}} Artikel · Sichern, Teilen, Bestandsliste',
+    data: 'Daten', backupTitle: 'Backup, Export & Import', backupSub: '{{count}} Artikel · Sichern, Teilen, Bestandsliste',
     language: 'Sprache', footer: 'Stock-Tracker · lokal gespeichert auf diesem Gerät',
   },
   layout: {
@@ -168,7 +169,7 @@ const DE = {
     time: 'Uhrzeit', hour: 'Uhr', fewer: 'Weniger', more: 'Mehr',
   },
   backup: {
-    title: 'Backup & Export', subtitle: 'Sichern, Teilen, Bestandsliste', tabBackup: 'Backup', tabList: 'Bestandsliste',
+    title: 'Backup, Export & Import', subtitle: 'Sichern, Teilen, Bestandsliste', tabBackup: 'Backup', tabList: 'Bestandsliste',
     exportMacros: 'Makros mit exportieren', exportMacrosHint: 'Nährwerte von {{count}} Lebensmitteln ins Backup aufnehmen.',
     exportBackup: 'Backup exportieren', exportBackupHint: '{{count}} Artikel als JSON{{macros}} · als Datei speichern',
     withMacros: ' inkl. Makros', withoutMacros: ' ohne Makros',
@@ -183,7 +184,9 @@ const DE = {
     cancel: 'Abbrechen', replace: 'Ersetzen',
     listHint: 'Lesbare Tabelle für ausgewählte Lagerorte, z.B. zum Teilen per Nachricht – kein Backup zum Wiederherstellen.',
     all: 'Alle', none: 'Keine', copyList: 'In Zwischenablage kopieren', noZonesSelected: 'Keine Lagerorte ausgewählt.',
-    category: 'KATEGORIE', articleCol: 'ARTIKEL', noItemsInZone: 'Keine Artikel.',
+    category: 'KATEGORIE', articleCol: 'ARTIKEL', mhdCol: 'MHD', macroCol: 'MAKROS', noItemsInZone: 'Keine Artikel.',
+    showMhd: 'MHD anzeigen', showMhdHint: 'Ablaufdatum als Spalte mit aufnehmen.',
+    showMacros: 'Makros anzeigen', showMacrosHint: 'Nährwert-Kurzzusammenfassung als Spalte mit aufnehmen.',
     savedTo: '✓ Gespeichert: Downloads/{{filename}}', saveFailed: 'Backup konnte nicht gespeichert werden.',
     downloaded: '✓ Backup heruntergeladen.', createFailed: 'Backup konnte nicht erstellt werden.',
     shareFailed: 'Teilen fehlgeschlagen.', shareUnavailable: 'Teilen ist in der Browser-Vorschau nicht verfügbar.',
@@ -365,6 +368,7 @@ const EN = {
     ingredientsRecognized: '✓ Ingredients recognized – please double-check.',
     ingredientsNotRecognized: 'No text recognized – photograph the ingredients list closer/sharper.',
     copyFailed: 'Could not copy.',
+    resetValues: 'Reset nutrition values', confirmReset: 'Really clear all nutrition values?', reset: 'Reset',
   },
   macroSection: { title: 'Nutrition, ingredients and shelf life', none: 'none yet – tap to add', ingredientsPresent: 'Ingredients on file' },
   macros: {
@@ -385,7 +389,7 @@ const EN = {
     shelfLifeTitle: 'Shelf life guide', shelfLifeSub: 'Opened, unopened, frozen',
     expiringTitle: 'All items by best-before date', expiringSub: 'Across all locations, sorted by expiry',
     produceTitle: 'Fruit & veg storage guide', produceSub: 'Cooling, ethylene, packaging',
-    data: 'Data', backupTitle: 'Backup & export', backupSub: '{{count}} items · Save, share, inventory list',
+    data: 'Data', backupTitle: 'Backup, export & import', backupSub: '{{count}} items · Save, share, inventory list',
     language: 'Language', footer: 'Stock-Tracker · stored locally on this device',
   },
   layout: {
@@ -416,7 +420,7 @@ const EN = {
     time: 'Time', hour: "o'clock", fewer: 'Fewer', more: 'More',
   },
   backup: {
-    title: 'Backup & export', subtitle: 'Save, share, inventory list', tabBackup: 'Backup', tabList: 'Inventory list',
+    title: 'Backup, export & import', subtitle: 'Save, share, inventory list', tabBackup: 'Backup', tabList: 'Inventory list',
     exportMacros: 'Include nutrition data in export', exportMacrosHint: 'Include nutrition data for {{count}} foods in the backup.',
     exportBackup: 'Export backup', exportBackupHint: '{{count}} items as JSON{{macros}} · save as file',
     withMacros: ' incl. nutrition data', withoutMacros: ' without nutrition data',
@@ -431,7 +435,9 @@ const EN = {
     cancel: 'Cancel', replace: 'Replace',
     listHint: 'Readable table for selected locations, e.g. to share via message – not a backup for restoring.',
     all: 'All', none: 'None', copyList: 'Copy to clipboard', noZonesSelected: 'No locations selected.',
-    category: 'CATEGORY', articleCol: 'ITEM', noItemsInZone: 'No items.',
+    category: 'CATEGORY', articleCol: 'ITEM', mhdCol: 'BEST BEFORE', macroCol: 'NUTRITION', noItemsInZone: 'No items.',
+    showMhd: 'Show best-before date', showMhdHint: 'Include the expiry date as a column.',
+    showMacros: 'Show nutrition data', showMacrosHint: 'Include a short nutrition summary as a column.',
     savedTo: '✓ Saved: Downloads/{{filename}}', saveFailed: 'Could not save backup.',
     downloaded: '✓ Backup downloaded.', createFailed: 'Could not create backup.',
     shareFailed: 'Sharing failed.', shareUnavailable: 'Sharing is not available in the browser preview.',
