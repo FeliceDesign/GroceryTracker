@@ -83,13 +83,13 @@ export function DetailItemSheet({
           </span>
         )}
         <div style={{ flex: 1 }} />
-        <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText, 34)} aria-label={tr(lang, 'detail.fewerAria')}>
+        <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText, 36)} aria-label={tr(lang, 'detail.fewerAria')}>
           <Minus size={15} strokeWidth={2.5} />
         </button>
         <span style={{ minWidth: 54, textAlign: 'center', fontSize: 16, fontWeight: 800, color: t.text }}>
           {item.unit === 'stk' ? `${item.qty}×` : `${item.qty} ${item.unit}`}
         </span>
-        <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent, 34)} aria-label={tr(lang, 'detail.moreAria')}>
+        <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent, 36)} aria-label={tr(lang, 'detail.moreAria')}>
           <Plus size={15} strokeWidth={2.5} />
         </button>
       </div>

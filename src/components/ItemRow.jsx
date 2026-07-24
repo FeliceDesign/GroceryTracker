@@ -96,7 +96,7 @@ export function ItemRow({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-        <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText)} aria-label={tr(lang, 'itemRow.decreaseAria', { name: item.name })}>
+        <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText, 36)} aria-label={tr(lang, 'itemRow.decreaseAria', { name: item.name })}>
           <Minus size={14} strokeWidth={2.5} />
         </button>
         <span
@@ -109,7 +109,7 @@ export function ItemRow({
         >
           {item.unit === 'stk' ? `${item.qty}x` : `${item.qty}${item.unit}`}
         </span>
-        <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent)} aria-label={tr(lang, 'itemRow.increaseAria', { name: item.name })}>
+        <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent, 36)} aria-label={tr(lang, 'itemRow.increaseAria', { name: item.name })}>
           <Plus size={14} strokeWidth={2.5} />
         </button>
         <button onClick={() => onRemove(item.id)} style={{ ...btnCircle('transparent', t.danger), marginLeft: 2 }} aria-label={tr(lang, 'itemRow.removeAria', { name: item.name })}>

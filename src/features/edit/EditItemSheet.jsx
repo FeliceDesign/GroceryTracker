@@ -139,7 +139,7 @@ export function EditItemSheet({
       <label style={labelStyle}>{tr(lang, 'edit.quantity')}</label>
       {editItem.unit === 'stk' ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
-          <button type="button" onClick={() => setEditItem((s) => ({ ...s, qty: Math.max(0, s.qty - 1) }))} style={btnCircle(t.cardAlt, t.pillInactiveText, 38)}>
+          <button type="button" onClick={() => setEditItem((s) => ({ ...s, qty: Math.max(0, s.qty - 1) }))} style={btnCircle(t.cardAlt, t.pillInactiveText, 36)}>
             <Minus size={16} strokeWidth={2.5} />
           </button>
           <input
@@ -150,7 +150,7 @@ export function EditItemSheet({
             aria-label={tr(lang, 'edit.quantityAria')}
             style={{ ...inputStyle, marginTop: 0, width: 72, textAlign: 'center', fontSize: 18, fontWeight: 800, padding: '8px 6px' }}
           />
-          <button type="button" onClick={() => setEditItem((s) => ({ ...s, qty: s.qty + 1 }))} style={btnCircle(pal.accentBg, pal.accent, 38)}>
+          <button type="button" onClick={() => setEditItem((s) => ({ ...s, qty: s.qty + 1 }))} style={btnCircle(pal.accentBg, pal.accent, 36)}>
             <Plus size={16} strokeWidth={2.5} />
           </button>
         </div>

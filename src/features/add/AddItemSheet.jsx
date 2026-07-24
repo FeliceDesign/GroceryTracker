@@ -119,11 +119,11 @@ export function AddItemSheet({
       <label style={labelStyle}>{tr(lang, 'add.quantity')}</label>
       {newItem.unit === 'stk' ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
-          <button type="button" onClick={() => setNewItem((s) => ({ ...s, qty: Math.max(1, s.qty - 1) }))} style={btnCircle(t.cardAlt, t.pillInactiveText, 38)}>
+          <button type="button" onClick={() => setNewItem((s) => ({ ...s, qty: Math.max(1, s.qty - 1) }))} style={btnCircle(t.cardAlt, t.pillInactiveText, 36)}>
             <Minus size={16} strokeWidth={2.5} />
           </button>
           <span style={{ fontSize: 18, fontWeight: 800, minWidth: 28, textAlign: 'center', color: t.text }}>{newItem.qty}x</span>
-          <button type="button" onClick={() => setNewItem((s) => ({ ...s, qty: s.qty + 1 }))} style={btnCircle(pal.accentBg, pal.accent, 38)}>
+          <button type="button" onClick={() => setNewItem((s) => ({ ...s, qty: s.qty + 1 }))} style={btnCircle(pal.accentBg, pal.accent, 36)}>
             <Plus size={16} strokeWidth={2.5} />
           </button>
         </div>
