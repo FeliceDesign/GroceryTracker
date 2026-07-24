@@ -1,10 +1,30 @@
-import { Check } from 'lucide-react';
+import { Check, SunMoon } from 'lucide-react';
 
 // Reihe anklickbarer Farbkreise zur Auswahl aus einer festen Palette
 // (Lagerorte, MHD-Warnstufen, …). `choices` ist ein Array von Hex-Werten.
-export function ColorSwatches({ choices, value, onChange }) {
+// `allowAuto` (+ `t` fürs Theme) blendet vorne einen zusätzlichen Kreis ein,
+// der `value === null` repräsentiert ("keine eigene Farbe, Theme-Standard").
+// Ohne diesen Kreis war bei null kein Kreis markiert, obwohl im Hintergrund
+// längst eine Farbe (Theme-Fallback) aktiv war – wirkte wie ein Bug.
+export function ColorSwatches({ choices, value, onChange, allowAuto, t }) {
   return (
     <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 8 }}>
+      {allowAuto && (
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          aria-label="Automatisch (Theme-Standardfarbe)"
+          aria-pressed={value == null}
+          style={{
+            width: 26, height: 26, borderRadius: '50%', cursor: 'pointer',
+            background: t ? t.cardAlt : '#e5e5e5',
+            border: value == null ? `3px solid ${t ? t.textMuted : '#888'}` : '3px solid transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <SunMoon size={13} color={t ? t.textMuted : '#888'} />
+        </button>
+      )}
       {choices.map((c) => (
         <button
           key={c}
