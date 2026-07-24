@@ -508,7 +508,7 @@ export function SettingsSheet({
           t={t}
           icon={<Clock size={19} />}
           label="Haltbarkeits-Ratgeber"
-          sub="Richtwerte nach dem Öffnen inkl. Lagerung"
+          sub="Geöffnet, ungeöffnet, tiefgefroren"
           onClick={onOpenShelfLife}
         />
         <Row

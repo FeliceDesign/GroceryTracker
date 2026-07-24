@@ -3,12 +3,20 @@ import { Plus, Minus, Trash2, Pencil, Copy, Check, Utensils, List, PackageOpen }
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { ShelfLifeDetails } from '../macros/ShelfLifeDetails.jsx';
+import { UnopenedShelfLifeDetails } from '../macros/UnopenedShelfLifeDetails.jsx';
+import { FrozenShelfLifeDetails } from '../macros/FrozenShelfLifeDetails.jsx';
 import { ProduceStorageDetails } from '../macros/ProduceStorageDetails.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel, formatDateDisplay } from '../../lib/date.js';
 import { MACRO_FIELDS, fmtNum, unsaturatedFat, hasMacros, basisLabel, copyMacros } from '../../lib/macros.js';
 import { openedDaysFor, openedUntil } from '../../lib/openedShelfLife.js';
-import { btnCircle, primaryButtonStyle, makeInputStyle } from '../../lib/styles.js';
+import { btnCircle, primaryButtonStyle, makeInputStyle, pillStyle } from '../../lib/styles.js';
+
+const SHELF_TABS = [
+  { id: 'opened', label: 'Geöffnet' },
+  { id: 'unopened', label: 'Ungeöffnet' },
+  { id: 'frozen', label: 'Tiefgefroren' },
+];
 
 // Schreibgeschützte Detail-Ansicht eines Artikels (Nährwerte, Zutaten,
 // Haltbarkeit). „Bearbeiten" öffnet das Formular. `warnColors` optional:
@@ -18,6 +26,7 @@ export function DetailItemSheet({
   onClose, onEdit, onChangeQty, onRemove, onToggleOpened, onChangeMhd,
 }) {
   const [copied, setCopied] = useState(false);
+  const [shelfTab, setShelfTab] = useState('opened');
   if (!open || !item) return null;
   const inputStyle = makeInputStyle(t);
 
@@ -190,10 +199,19 @@ export function DetailItemSheet({
         </div>
       )}
 
-      {/* Haltbarkeit */}
+      {/* Haltbarkeit: Geöffnet / Ungeöffnet / Tiefgefroren */}
       <div style={section}>
-        <div style={secLabel}>Haltbarkeit nach dem Öffnen</div>
-        <ShelfLifeDetails name={item.name} food={food} zone={zone} t={t} />
+        <div style={secLabel}>Haltbarkeit</div>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          {SHELF_TABS.map((tab) => (
+            <button key={tab.id} type="button" onClick={() => setShelfTab(tab.id)} style={pillStyle(shelfTab === tab.id, t)}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {shelfTab === 'opened' && <ShelfLifeDetails name={item.name} food={food} zone={zone} t={t} />}
+        {shelfTab === 'unopened' && <UnopenedShelfLifeDetails name={item.name} t={t} />}
+        {shelfTab === 'frozen' && <FrozenShelfLifeDetails name={item.name} t={t} />}
       </div>
     </Modal>
   );
