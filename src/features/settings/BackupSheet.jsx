@@ -4,58 +4,12 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Modal } from '../../components/Modal.jsx';
+import { Toggle } from '../../components/Toggle.jsx';
+import { SettingRow } from '../../components/SettingRow.jsx';
+import { Row } from '../../components/Row.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { makeInputStyle, pillStyle } from '../../lib/styles.js';
 import { DownloadsSaver } from '../../lib/downloadsSaver.js';
-
-function Toggle({ on, onChange, t }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!on)}
-      role="switch"
-      aria-checked={on}
-      style={{
-        width: 46, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer', padding: 3,
-        background: on ? t.success : t.border, display: 'flex', justifyContent: on ? 'flex-end' : 'flex-start',
-        transition: 'background 0.15s ease',
-      }}
-    >
-      <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
-    </button>
-  );
-}
-
-function SettingRow({ label, sub, control, t }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{label}</div>
-        {sub && <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, lineHeight: 1.35 }}>{sub}</div>}
-      </div>
-      <div style={{ flexShrink: 0 }}>{control}</div>
-    </div>
-  );
-}
-
-function Row({ icon, label, sub, onClick, t }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 14px',
-        background: t.cardAlt, border: 'none', borderRadius: 14, cursor: 'pointer', textAlign: 'left',
-      }}
-    >
-      <span style={{ color: t.textMuted, display: 'flex' }}>{icon}</span>
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: t.text }}>{label}</span>
-        {sub && <span style={{ display: 'block', fontSize: 12, color: t.textFaint, marginTop: 1 }}>{sub}</span>}
-      </span>
-    </button>
-  );
-}
 
 const TABS = [
   { id: 'backup', label: 'Backup' },

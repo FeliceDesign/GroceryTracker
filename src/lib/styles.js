@@ -60,15 +60,6 @@ export function makeLabelStyle(t) {
   };
 }
 
-export function makeModalHeaderStyle() {
-  return {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  };
-}
-
 export function primaryButtonStyle(t) {
   return {
     flex: 1,

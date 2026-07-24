@@ -1,6 +1,8 @@
 import { Bell, Minus, Plus } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ColorSwatches } from '../../components/ColorSwatches.jsx';
+import { Toggle } from '../../components/Toggle.jsx';
+import { SettingRow } from '../../components/SettingRow.jsx';
 import { MHD_COLOR_CHOICES } from '../../lib/colors.js';
 import { btnCircle } from '../../lib/styles.js';
 
@@ -16,36 +18,6 @@ function Stepper({ value, onChange, min = 0, max = 60, suffix, t }) {
       <button type="button" onClick={() => onChange(Math.min(max, value + 1))} style={btnCircle(t.cardAlt, t.pillInactiveText, 34)} aria-label="Mehr">
         <Plus size={15} strokeWidth={2.5} />
       </button>
-    </div>
-  );
-}
-
-function Toggle({ on, onChange, t }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!on)}
-      role="switch"
-      aria-checked={on}
-      style={{
-        width: 46, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer', padding: 3,
-        background: on ? t.success : t.border, display: 'flex', justifyContent: on ? 'flex-end' : 'flex-start',
-        transition: 'background 0.15s ease',
-      }}
-    >
-      <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
-    </button>
-  );
-}
-
-function SettingRow({ label, sub, control, t }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{label}</div>
-        {sub && <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, lineHeight: 1.35 }}>{sub}</div>}
-      </div>
-      <div style={{ flexShrink: 0 }}>{control}</div>
     </div>
   );
 }

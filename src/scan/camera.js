@@ -19,10 +19,6 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { parseBestBeforeDate } from './scan.js';
 import { parseNutritionFacts } from './nutrition.js';
 
-export function isNative() {
-  return Capacitor.isNativePlatform();
-}
-
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---------------------------------------------------------------------------
