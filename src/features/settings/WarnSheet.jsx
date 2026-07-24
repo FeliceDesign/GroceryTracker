@@ -54,7 +54,7 @@ const ALL_THRESHOLDS = [14, 7, 3, 1, 0];
 
 // MHD-Warnstufen (Farben, Schwellwerte) + Push-Benachrichtigung – vorher Teil
 // der Haupt-Einstellungen, jetzt eigenes Untermenü (Settings-Declutter).
-export function WarnSheet({ open, onClose, t, warn, onUpdateWarn, onSetNotify, notifySupported }) {
+export function WarnSheet({ open, onClose, t, warn, onUpdateWarn, onSetNotify, notifySupported, customColors, onAddCustomColor, onRemoveCustomColor }) {
   return (
     <Modal open={open} onClose={onClose} t={t} title="MHD-Warnungen" subtitle="Schwellwerte, Farben, Erinnerungen">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -71,7 +71,10 @@ export function WarnSheet({ open, onClose, t, warn, onUpdateWarn, onSetNotify, n
             suffix={warn.yellowDays === 1 ? 'Tag' : 'Tage'}
             onChange={(v) => onUpdateWarn({ yellowDays: v })}
           />
-          <ColorSwatches t={t} allowAuto choices={MHD_COLOR_CHOICES} value={warn.colorSoon} onChange={(c) => onUpdateWarn({ colorSoon: c })} />
+          <ColorSwatches
+            t={t} allowAuto choices={MHD_COLOR_CHOICES} value={warn.colorSoon} onChange={(c) => onUpdateWarn({ colorSoon: c })}
+            customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); onUpdateWarn({ colorSoon: c }); }} onRemoveCustom={onRemoveCustomColor}
+          />
         </div>
 
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
@@ -87,7 +90,10 @@ export function WarnSheet({ open, onClose, t, warn, onUpdateWarn, onSetNotify, n
             suffix={(warn.orangeDays ?? 1) === 1 ? 'Tag' : 'Tage'}
             onChange={(v) => onUpdateWarn({ orangeDays: v })}
           />
-          <ColorSwatches t={t} allowAuto choices={MHD_COLOR_CHOICES} value={warn.colorCritical} onChange={(c) => onUpdateWarn({ colorCritical: c })} />
+          <ColorSwatches
+            t={t} allowAuto choices={MHD_COLOR_CHOICES} value={warn.colorCritical} onChange={(c) => onUpdateWarn({ colorCritical: c })}
+            customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); onUpdateWarn({ colorCritical: c }); }} onRemoveCustom={onRemoveCustomColor}
+          />
         </div>
 
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
@@ -95,7 +101,10 @@ export function WarnSheet({ open, onClose, t, warn, onUpdateWarn, onSetNotify, n
           <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10 }}>
             Farbe für bereits abgelaufene Artikel.
           </div>
-          <ColorSwatches t={t} allowAuto choices={MHD_COLOR_CHOICES} value={warn.colorExpired} onChange={(c) => onUpdateWarn({ colorExpired: c })} />
+          <ColorSwatches
+            t={t} allowAuto choices={MHD_COLOR_CHOICES} value={warn.colorExpired} onChange={(c) => onUpdateWarn({ colorExpired: c })}
+            customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); onUpdateWarn({ colorExpired: c }); }} onRemoveCustom={onRemoveCustomColor}
+          />
         </div>
 
         {notifySupported ? (

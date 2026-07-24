@@ -28,7 +28,7 @@ function CooledToggle({ on, onChange, t }) {
 }
 
 // Lagerorte verwalten: umbenennen, Emoji/Farbe ändern, hinzufügen, entfernen.
-export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAdd, onUpdate, onRemove }) {
+export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAdd, onUpdate, onRemove, customColors, onAddCustomColor, onRemoveCustomColor }) {
   const inputStyle = makeInputStyle(t);
   const [draft, setDraft] = useState({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], cooled: false });
   const [showAdd, setShowAdd] = useState(false);
@@ -74,7 +74,10 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
                   <Trash2 size={16} />
                 </button>
               </div>
-              <ColorSwatches choices={ZONE_COLOR_CHOICES} value={z.color} onChange={(c) => onUpdate(z.id, { color: c })} />
+              <ColorSwatches
+                t={t} choices={ZONE_COLOR_CHOICES} value={z.color} onChange={(c) => onUpdate(z.id, { color: c })}
+                customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); onUpdate(z.id, { color: c }); }} onRemoveCustom={onRemoveCustomColor}
+              />
               <CooledToggle t={t} on={zoneIsCooled(z)} onChange={(v) => onUpdate(z.id, { cooled: v })} />
               <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 8 }}>
                 {count} {count === 1 ? 'Artikel' : 'Artikel'}{zones.length > 1 ? ' · beim Entfernen wandern sie in den ersten Lagerort' : ''}
@@ -133,7 +136,10 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
               wrapperStyle={{ flex: 1, minWidth: 0 }}
             />
           </div>
-          <ColorSwatches choices={ZONE_COLOR_CHOICES} value={draft.color} onChange={(c) => setDraft((s) => ({ ...s, color: c }))} />
+          <ColorSwatches
+            t={t} choices={ZONE_COLOR_CHOICES} value={draft.color} onChange={(c) => setDraft((s) => ({ ...s, color: c }))}
+            customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); setDraft((s) => ({ ...s, color: c })); }} onRemoveCustom={onRemoveCustomColor}
+          />
           <CooledToggle t={t} on={draft.cooled} onChange={(v) => setDraft((s) => ({ ...s, cooled: v }))} />
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <button

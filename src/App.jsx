@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Package, ShoppingCart, Settings, Plus, X } from 'lucide-react';
 
 import { useSystemTheme, buildTheme } from './lib/theme.js';
-import { zonePalette } from './lib/colors.js';
+import { zonePalette, ZONE_COLOR_CHOICES, MHD_COLOR_CHOICES } from './lib/colors.js';
 import { btnCircle } from './lib/styles.js';
 import { useStorage } from './hooks/useStorage.js';
 import { useZones } from './hooks/useZones.js';
@@ -64,6 +64,23 @@ export default function App() {
     shoppingPos: 'top', settingsPos: 'top', addPos: 'bottom',
     autoShoppingOnRemove: true, dateFormat: 'dmy',
   });
+  const [customZoneColors, setCustomZoneColors] = useStorage('gt-custom-zone-colors-v1', []);
+  const [customMhdColors, setCustomMhdColors] = useStorage('gt-custom-mhd-colors-v1', []);
+
+  const addCustomZoneColor = (hex) => {
+    if (ZONE_COLOR_CHOICES.includes(hex)) return;
+    setCustomZoneColors((prev) => (prev.includes(hex) ? prev : [...prev, hex]));
+  };
+  const removeCustomZoneColor = (hex) => {
+    setCustomZoneColors((prev) => prev.filter((c) => c !== hex));
+  };
+  const addCustomMhdColor = (hex) => {
+    if (MHD_COLOR_CHOICES.includes(hex)) return;
+    setCustomMhdColors((prev) => (prev.includes(hex) ? prev : [...prev, hex]));
+  };
+  const removeCustomMhdColor = (hex) => {
+    setCustomMhdColors((prev) => prev.filter((c) => c !== hex));
+  };
 
   const [activeZone, setActiveZone] = useState(null);
   const [search, setSearch] = useState('');
@@ -763,12 +780,14 @@ export default function App() {
       <WarnSheet
         open={showWarnSettings} onClose={() => setShowWarnSettings(false)} t={t}
         warn={warn} onUpdateWarn={updateWarn} onSetNotify={setNotifyEnabled} notifySupported={notificationsSupported()}
+        customColors={customMhdColors} onAddCustomColor={addCustomMhdColor} onRemoveCustomColor={removeCustomMhdColor}
       />
 
       <ManageZonesSheet
         open={showZones} onClose={() => setShowZones(false)} t={t} dark={dark}
         zones={zones} countFor={countFor}
         onAdd={addZone} onUpdate={updateZone} onRemove={removeZoneWithReassign}
+        customColors={customZoneColors} onAddCustomColor={addCustomZoneColor} onRemoveCustomColor={removeCustomZoneColor}
       />
 
       <ManageCategoriesSheet
