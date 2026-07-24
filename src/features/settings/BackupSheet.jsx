@@ -345,7 +345,7 @@ export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items,
                   <span style={{ fontSize: 18 }}>{z.emoji}</span>
                   <span style={{
                     fontSize: 11, fontWeight: 700, color: active ? pal.accent : t.pillInactiveText,
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
+                    whiteSpace: 'normal', overflowWrap: 'break-word', maxWidth: '100%', lineHeight: 1.2, textAlign: 'center',
                   }}>
                     {z.label}
                   </span>
