@@ -254,6 +254,7 @@ const DE = {
     withoutNutrition: 'Ohne Nährwerte', scanTable: 'Tabelle scannen',
     changeZoneAria: 'Lagerort wechseln', namePlaceholder: 'Name ergänzen…', removeAria: 'Entfernen',
     piece: 'Stück', mhdLabel: 'MHD {{date}}', macrosOk: 'Nährwerte ✓',
+    quickMode: 'Nur Barcode', quickModeHint: 'MHD und Nährwerte werden übersprungen – direkt zum nächsten Barcode.',
   },
 };
 
@@ -505,6 +506,7 @@ const EN = {
     withoutNutrition: 'Without nutrition data', scanTable: 'Scan table',
     changeZoneAria: 'Change location', namePlaceholder: 'Add name…', removeAria: 'Remove',
     piece: 'pcs', mhdLabel: 'Best before {{date}}', macrosOk: 'Nutrition data ✓',
+    quickMode: 'Barcode only', quickModeHint: 'Best-before date and nutrition are skipped – straight to the next barcode.',
   },
 };
 

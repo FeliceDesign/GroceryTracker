@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Camera, SkipForward, Trash2, ScanLine, Utensils, Plus, Minus } from 'lucide-react';
+import { X, Camera, SkipForward, Trash2, ScanLine, Utensils, Plus, Minus, Zap } from 'lucide-react';
 import { BarcodeIcon } from '../../components/icons.jsx';
 import { CategoryPicker } from '../../components/CategoryPicker.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
@@ -27,11 +27,21 @@ export function ScanFlowSheet({ open, onClose, t, dark, lang = 'de', zones, cate
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const [scanError, setScanError] = useState('');
+  // Schnellmodus (nur Batch): MHD-/Nährwerte-Fotos komplett überspringen,
+  // jeder Barcode wird sofort übernommen und es geht direkt zum nächsten.
+  const [skipExtras, setSkipExtras] = useState(false);
+  const [scanGen, setScanGen] = useState(0);
 
   const barcodeStopRef = useRef(null);
   const detectedRef = useRef(false);
   const zoneRef = useRef(targetZone);
   zoneRef.current = targetZone;
+  // Ref statt State-Closure, weil handleBarcode als onDetected-Callback an den
+  // nativen Scanner übergeben wird und dessen Closure erst beim nächsten
+  // Phasenwechsel neu erstellt würde - ein Umschalten mitten im Scannen soll
+  // aber sofort beim nächsten Treffer wirken.
+  const skipExtrasRef = useRef(skipExtras);
+  skipExtrasRef.current = skipExtras;
 
   const zone = zones.find((z) => z.id === targetZone) || zones[0];
   const pal = zonePalette(zone.color, dark);
@@ -44,9 +54,14 @@ export function ScanFlowSheet({ open, onClose, t, dark, lang = 'de', zones, cate
     setCurrent(null);
     setStatus('');
     setScanError('');
+    setSkipExtras(false);
+    setScanGen(0);
   }, [open]);
 
-  // Barcode-Phase: nativer Live-Scanner
+  // Barcode-Phase: nativer Live-Scanner. `scanGen` ist ein reiner Neustart-
+  // Trigger für den Schnellmodus, der nach jedem Treffer in derselben Phase
+  // bleibt (phase ändert sich dort nicht, würde die Kamera also nicht neu
+  // starten) - siehe handleBarcode.
   useEffect(() => {
     if (!open || phase !== 'barcode') return undefined;
     let cancelled = false;
@@ -67,7 +82,7 @@ export function ScanFlowSheet({ open, onClose, t, dark, lang = 'de', zones, cate
       if (barcodeStopRef.current) { barcodeStopRef.current(); barcodeStopRef.current = null; }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, phase]);
+  }, [open, phase, scanGen]);
 
   const stopBarcode = async () => {
     if (barcodeStopRef.current) {
@@ -82,13 +97,23 @@ export function ScanFlowSheet({ open, onClose, t, dark, lang = 'de', zones, cate
     detectedRef.current = true;
     vibrate();
     await stopBarcode();
-    setCurrent({ barcode: value, name: '', category: 'Sonstiges', qty: 1, unit: 'stk', zone: zoneRef.current, mhd: null, macros: null });
+    const base = { barcode: value, name: '', category: 'Sonstiges', qty: 1, unit: 'stk', zone: zoneRef.current, mhd: null, macros: null };
+    const quick = skipExtrasRef.current;
+    setCurrent(base);
     setStatus(tr(lang, 'scan.searchingProduct'));
-    setPhase('mhd');
+    if (!quick) setPhase('mhd');
     let product = null;
     try { product = await lookupOpenFoodFacts(value); } catch { product = null; }
-    setCurrent((c) => (c ? { ...c, ...(product ? { name: product.name, category: product.category, qty: product.qty, unit: product.unit } : {}) } : c));
+    const resolved = { ...base, ...(product ? { name: product.name, category: product.category, qty: product.qty, unit: product.unit } : {}) };
     setStatus(product ? `✓ ${product.name}` : tr(lang, 'scan.noMatch', { value }));
+    if (quick) {
+      // Bleibt in der Barcode-Phase (phase ändert sich nicht) - Kamera per
+      // scanGen-Bump manuell neu starten statt auf den Phasenwechsel-Effekt zu warten.
+      commitCurrent({}, resolved);
+      setScanGen((g) => g + 1);
+    } else {
+      setCurrent(resolved);
+    }
   }
 
   // Ohne Barcode direkt zum MHD (z.B. lose Ware)
@@ -145,9 +170,12 @@ export function ScanFlowSheet({ open, onClose, t, dark, lang = 'de', zones, cate
   };
 
   // Aktuelles Produkt in die Sammelliste. Im Batch-Modus geht es direkt weiter
-  // zum nächsten Barcode, im Einzel-Modus zur Übernahme-Ansicht.
-  const commitCurrent = (patch = {}) => {
-    const item = { key: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), ...current, ...patch };
+  // zum nächsten Barcode, im Einzel-Modus zur Übernahme-Ansicht. `base` kann
+  // statt aus dem `current`-State explizit übergeben werden - nötig im
+  // Schnellmodus, wo direkt nach dem await der Produktsuche committet wird
+  // und der current-State-Closure zu diesem Zeitpunkt noch veraltet sein kann.
+  const commitCurrent = (patch = {}, base = current) => {
+    const item = { key: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), ...base, ...patch };
     setCollected((prev) => [...prev, item]);
     setCurrent(null);
     if (mode === 'single') {
@@ -254,6 +282,28 @@ export function ScanFlowSheet({ open, onClose, t, dark, lang = 'de', zones, cate
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', flexDirection: 'column' }}>
         <ScanTopBar onClose={close} title={tr(lang, 'scan.scanBarcodeTitle')} step="1" lang={lang} />
+        {mode === 'batch' && (
+          <div style={{ position: 'absolute', top: 'calc(66px + env(safe-area-inset-top))', left: 0, right: 0, zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '0 24px' }}>
+            <button
+              type="button"
+              onClick={() => setSkipExtras((v) => !v)}
+              aria-pressed={skipExtras}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 20, cursor: 'pointer',
+                border: `1.5px solid ${skipExtras ? pal.accent : 'rgba(255,255,255,0.5)'}`,
+                background: skipExtras ? pal.accent : 'rgba(0,0,0,0.35)',
+                color: skipExtras ? '#141210' : '#fff', fontSize: 12.5, fontWeight: 700,
+              }}
+            >
+              <Zap size={14} /> {tr(lang, 'scan.quickMode')}
+            </button>
+            {skipExtras && (
+              <div style={{ textAlign: 'center', fontSize: 11.5, color: 'rgba(255,255,255,0.85)', textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
+                {tr(lang, 'scan.quickModeHint')}
+              </div>
+            )}
+          </div>
+        )}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {scanError ? (
             <div style={{ textAlign: 'center', color: '#fff', padding: '0 32px' }}>
