@@ -41,12 +41,17 @@ export function Header({
             onClick={onZoneClick}
             style={{
               margin: 0, fontSize: 26, fontWeight: 800, color: t.headerText, letterSpacing: '-0.01em',
-              display: 'inline-flex', alignItems: 'center', gap: 9, minWidth: 0,
+              display: 'inline-flex', alignItems: 'center', minWidth: 0, position: 'relative',
               flex: center ? '0 1 auto' : '1 1 auto',
               cursor: onZoneClick ? 'pointer' : 'default',
             }}
           >
-            <span>{zone.emoji}</span>
+            {/* Im zentrierten Modus per absolute Positionierung links vom Text
+                platziert, damit nur der Text die Center-Berechnung bestimmt -
+                sonst wirkt der Text durch das Emoji-Gewicht nach rechts verschoben. */}
+            <span style={center ? { position: 'absolute', right: '100%', marginRight: 9, flexShrink: 0 } : { marginRight: 9, flexShrink: 0 }}>
+              {zone.emoji}
+            </span>
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{zone.label}</span>
           </h1>
 
