@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { Check, SunMoon, Plus, X } from 'lucide-react';
+import { tr } from '../lib/i18n.js';
 
 // Reihe anklickbarer Farbkreise zur Auswahl aus einer festen Palette
 // (Lagerorte, MHD-Warnstufen, …). `choices` ist ein Array von Hex-Werten.
@@ -9,7 +10,7 @@ import { Check, SunMoon, Plus, X } from 'lucide-react';
 // Palette um vom Nutzer selbst hinzugefügte Farben: ein "+"-Kreis öffnet den
 // nativen Farbwähler (`input[type=color]`), eigene Farben tragen zusätzlich
 // ein kleines "x" zum Entfernen (die feste Palette bleibt unantastbar).
-export function ColorSwatches({ choices, customChoices = [], value, onChange, allowAuto, onAddCustom, onRemoveCustom, t }) {
+export function ColorSwatches({ choices, customChoices = [], value, onChange, allowAuto, onAddCustom, onRemoveCustom, t, lang = 'de' }) {
   const colorInputRef = useRef(null);
 
   return (
@@ -18,7 +19,7 @@ export function ColorSwatches({ choices, customChoices = [], value, onChange, al
         <button
           type="button"
           onClick={() => onChange(null)}
-          aria-label="Automatisch (Theme-Standardfarbe)"
+          aria-label={tr(lang, 'colorSwatches.auto')}
           aria-pressed={value == null}
           style={{
             width: 26, height: 26, borderRadius: '50%', cursor: 'pointer',
@@ -36,7 +37,7 @@ export function ColorSwatches({ choices, customChoices = [], value, onChange, al
           key={c}
           type="button"
           onClick={() => onChange(c)}
-          aria-label={`Farbe ${c}`}
+          aria-label={tr(lang, 'colorSwatches.colorAria', { hex: c })}
           style={{
             width: 26, height: 26, borderRadius: '50%', background: c, cursor: 'pointer',
             border: value === c ? '3px solid rgba(255,255,255,0.9)' : '3px solid transparent',
@@ -53,7 +54,7 @@ export function ColorSwatches({ choices, customChoices = [], value, onChange, al
           <button
             type="button"
             onClick={() => onChange(c)}
-            aria-label={`Eigene Farbe ${c}`}
+            aria-label={tr(lang, 'colorSwatches.customColorAria', { hex: c })}
             style={{
               width: 26, height: 26, borderRadius: '50%', background: c, cursor: 'pointer',
               border: value === c ? '3px solid rgba(255,255,255,0.9)' : '3px solid transparent',
@@ -67,7 +68,7 @@ export function ColorSwatches({ choices, customChoices = [], value, onChange, al
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onRemoveCustom(c); }}
-              aria-label={`Eigene Farbe ${c} entfernen`}
+              aria-label={tr(lang, 'colorSwatches.removeCustomAria', { hex: c })}
               style={{
                 position: 'absolute', top: -5, right: -5, width: 15, height: 15, borderRadius: '50%', padding: 0,
                 border: `1.5px solid ${t ? t.card : '#fff'}`, background: t ? t.textFaint : '#999',
@@ -85,7 +86,7 @@ export function ColorSwatches({ choices, customChoices = [], value, onChange, al
           <button
             type="button"
             onClick={() => colorInputRef.current && colorInputRef.current.click()}
-            aria-label="Eigene Farbe hinzufügen"
+            aria-label={tr(lang, 'colorSwatches.addCustomAria')}
             style={{
               width: 26, height: 26, borderRadius: '50%', cursor: 'pointer', padding: 0,
               border: `1.5px dashed ${t ? t.border : '#aaa'}`, background: 'transparent',

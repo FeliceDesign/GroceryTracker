@@ -2,17 +2,18 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight, Utensils } from 'lucide-react';
 import { MacroEditor } from './MacroEditor.jsx';
 import { hasMacros, hasFoodData, macroSummary, basisLabel } from '../../lib/macros.js';
+import { tr } from '../../lib/i18n.js';
 
 // Aufklappbarer „Nährwerte, Zutaten und Haltbarkeit"-Abschnitt für das
 // Bearbeiten-/Anlegen-Sheet. Zeigt zugeklappt eine Kurz-Zusammenfassung,
 // aufgeklappt den Editor – sanft animiert und beim Öffnen ins Bild gescrollt.
-export function MacroSection({ name, macros, onChange, t, scanSupported, accent }) {
+export function MacroSection({ name, macros, onChange, t, lang = 'de', scanSupported, accent }) {
   const filled = hasFoodData(macros);
   const [open, setOpen] = useState(filled);
   const ref = useRef(null);
   const summary = hasMacros(macros)
-    ? `${macroSummary({ ...macros })} · ${basisLabel(macros)}`
-    : (filled ? 'Zutaten hinterlegt' : 'noch keine – tippen zum Erfassen');
+    ? `${macroSummary({ ...macros }, lang)} · ${basisLabel(macros, lang)}`
+    : (filled ? tr(lang, 'macroSection.ingredientsPresent') : tr(lang, 'macroSection.none'));
 
   useEffect(() => {
     if (!open || !ref.current) return undefined;
@@ -34,7 +35,7 @@ export function MacroSection({ name, macros, onChange, t, scanSupported, accent 
       >
         <Utensils size={17} color={filled ? (accent || t.text) : t.textMuted} />
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.text }}>Nährwerte, Zutaten und Haltbarkeit</span>
+          <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.text }}>{tr(lang, 'macroSection.title')}</span>
           <span style={{
             display: 'block', fontSize: 11.5, color: t.textFaint, marginTop: 1,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -54,6 +55,7 @@ export function MacroSection({ name, macros, onChange, t, scanSupported, accent 
               macros={macros}
               onChange={onChange}
               t={t}
+              lang={lang}
               scanSupported={scanSupported}
               accent={accent}
             />

@@ -1,9 +1,10 @@
 import { X } from 'lucide-react';
+import { tr } from '../lib/i18n.js';
 
 // Textfeld mit kleinem x-Button am rechten Rand zum Leeren.
 // `onChange` bekommt den neuen Wert als String (nicht das Event).
 // `wrapperStyle` steuert das Layout (z.B. flex: 1), `style` das Eingabefeld.
-export function ClearableInput({ value, onChange, t, style = {}, wrapperStyle = {}, inputRef, disabled, ...rest }) {
+export function ClearableInput({ value, onChange, t, lang = 'de', style = {}, wrapperStyle = {}, inputRef, disabled, ...rest }) {
   const show = typeof value === 'string' && value.length > 0 && !disabled;
   const basePaddingRight = style.paddingRight != null ? style.paddingRight : 14;
   return (
@@ -22,7 +23,7 @@ export function ClearableInput({ value, onChange, t, style = {}, wrapperStyle = 
           // preventDefault, damit der Fokus (und ein evtl. onBlur-Speichern) nicht verloren geht
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => onChange('')}
-          aria-label="Feld leeren"
+          aria-label={tr(lang, 'clearableInput.clearAria')}
           style={{
             position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
             width: 24, height: 24, borderRadius: '50%', border: 'none', cursor: 'pointer',

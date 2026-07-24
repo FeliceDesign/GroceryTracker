@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Camera, Copy, Check, ClipboardPaste, List, Clock } from 'lucide-react';
 import {
-  MACRO_FIELDS, BASIS_OPTIONS, hasMacros, mergeScanned, copyMacros, copyToClipboard, unsaturatedFat, fmtNum,
+  MACRO_FIELDS, basisOptions, hasMacros, mergeScanned, copyMacros, copyToClipboard, unsaturatedFat, fmtNum,
 } from '../../lib/macros.js';
 import { shelfLifeAfterOpening } from '../../lib/openedShelfLife.js';
 import { captureNutritionViaPhoto, captureTextViaPhoto } from '../../scan/camera.js';
 import { parseNutritionFacts } from '../../scan/nutrition.js';
 import { makeInputStyle } from '../../lib/styles.js';
+import { tr } from '../../lib/i18n.js';
 import { ShelfLifeDetails } from './ShelfLifeDetails.jsx';
 
 // Bearbeitungsformular für die Stammdaten eines Lebensmittels (Nährwerte +
@@ -14,7 +15,7 @@ import { ShelfLifeDetails } from './ShelfLifeDetails.jsx';
 // mischt Änderungen ein. Scannen, Text-Einfügen und Kopieren sind hier
 // gekapselt, damit alle Einbindungen gleich funktionieren.
 export function MacroEditor({
-  name, macros, onChange, t, scanSupported, accent,
+  name, macros, onChange, t, lang = 'de', scanSupported, accent,
 }) {
   const [busy, setBusy] = useState(false);
   const [ingBusy, setIngBusy] = useState(false);
@@ -39,15 +40,15 @@ export function MacroEditor({
       const { facts, text } = await captureNutritionViaPhoto();
       if (hasMacros(facts)) {
         onChange(mergeScanned(macros, facts));
-        setMsg('✓ Nährwerte erkannt – bitte kurz prüfen.');
+        setMsg(tr(lang, 'macroEditor.macrosRecognized'));
       } else if (text && text.trim()) {
         const snippet = text.trim().replace(/\s+/g, ' ').slice(0, 45);
-        setMsg(`Keine Nährwerte erkannt (gelesen: „${snippet}…"). Tabelle formatfüllend und scharf fotografieren.`);
+        setMsg(tr(lang, 'macroEditor.macrosNotRecognized', { snippet }));
       } else {
-        setMsg('Kein Text erkannt – näher ran und scharf stellen.');
+        setMsg(tr(lang, 'macroEditor.noTextRecognized'));
       }
     } catch (e) {
-      setMsg(e?.message || 'Erkennung fehlgeschlagen.');
+      setMsg(e?.message || tr(lang, 'macroEditor.recognitionFailed'));
     } finally {
       setBusy(false);
     }
@@ -58,11 +59,11 @@ export function MacroEditor({
     const facts = parseNutritionFacts(pasteText);
     if (hasMacros(facts)) {
       onChange(mergeScanned(macros, facts));
-      setMsg('✓ Werte aus Text übernommen – bitte kurz prüfen.');
+      setMsg(tr(lang, 'macroEditor.pasteApplied'));
       setPasteText('');
       setShowPaste(false);
     } else {
-      setMsg('Aus dem Text konnte ich keine Nährwerte lesen. Beispiel je Zeile: „Eiweiß 3,4 g".');
+      setMsg(tr(lang, 'macroEditor.pasteFailed'));
     }
   };
 
@@ -74,21 +75,21 @@ export function MacroEditor({
       const clean = (text || '').replace(/\s*\n\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
       if (clean) {
         onChange({ ingredients: clean });
-        setMsg('✓ Zutaten erkannt – bitte kurz prüfen.');
+        setMsg(tr(lang, 'macroEditor.ingredientsRecognized'));
       } else {
-        setMsg('Kein Text erkannt – Zutatenliste näher/schärfer fotografieren.');
+        setMsg(tr(lang, 'macroEditor.ingredientsNotRecognized'));
       }
     } catch (e) {
-      setMsg(e?.message || 'Erkennung fehlgeschlagen.');
+      setMsg(e?.message || tr(lang, 'macroEditor.recognitionFailed'));
     } finally {
       setIngBusy(false);
     }
   };
 
   const doCopy = async () => {
-    const ok = await copyMacros({ name, ...macros });
+    const ok = await copyMacros({ name, ...macros }, lang);
     setCopied(ok);
-    setMsg(ok ? '' : 'Kopieren nicht möglich.');
+    setMsg(ok ? '' : tr(lang, 'macroEditor.copyFailed'));
     if (ok) setTimeout(() => setCopied(false), 1600);
   };
 
@@ -108,7 +109,7 @@ export function MacroEditor({
   return (
     <div>
       <div style={{ display: 'flex', gap: 6, background: t.cardAlt, borderRadius: 12, padding: 4 }}>
-        {BASIS_OPTIONS.map((o) => {
+        {basisOptions(lang).map((o) => {
           const active = (macros.basis || '100g') === o.value;
           return (
             <button
@@ -131,13 +132,13 @@ export function MacroEditor({
 
       {macros.basis === 'portion' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
-          <span style={{ fontSize: 13, color: t.textMuted, flex: 1 }}>Portionsgröße</span>
+          <span style={{ fontSize: 13, color: t.textMuted, flex: 1 }}>{tr(lang, 'macroEditor.portionSize')}</span>
           <input
             type="number"
             inputMode="decimal"
             value={macros.portionSize ?? ''}
             onChange={(e) => onChange({ portionSize: e.target.value === '' ? null : Math.max(0, parseFloat(e.target.value.replace(',', '.')) || 0) })}
-            placeholder="z.B. 30"
+            placeholder={tr(lang, 'macroEditor.portionPlaceholder')}
             style={{ ...inputStyle, marginTop: 0, width: 100, textAlign: 'right' }}
           />
           <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted, width: 18 }}>g</span>
@@ -146,6 +147,7 @@ export function MacroEditor({
 
       <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {MACRO_FIELDS.map((f) => {
+          const fieldLabel = tr(lang, `macros.${f.key}`);
           const row = (
             <div key={f.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{
@@ -153,7 +155,7 @@ export function MacroEditor({
                 fontWeight: f.indent ? 500 : 600, paddingLeft: f.indent ? 12 : 0,
                 fontStyle: f.indent ? 'italic' : 'normal',
               }}>
-                {f.indent ? '– ' : ''}{f.label}
+                {f.indent ? '– ' : ''}{fieldLabel}
               </span>
               <input
                 type="number"
@@ -175,14 +177,14 @@ export function MacroEditor({
             return [row, (
               <div key="unsat" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ flex: 1, fontSize: 13.5, color: t.textFaint, fontWeight: 500, paddingLeft: 12, fontStyle: 'italic' }}>
-                  – davon ungesättigt
+                  {tr(lang, 'macroEditor.unsaturated')}
                 </span>
                 <input
                   type="text"
                   disabled
                   readOnly
                   value={u != null ? fmtNum(u) : '—'}
-                  aria-label="davon ungesättigt (berechnet)"
+                  aria-label={tr(lang, 'macros.unsaturated')}
                   style={{ ...inputStyle, marginTop: 0, width: 96, textAlign: 'right', padding: '9px 10px', color: t.textFaint, cursor: 'default' }}
                 />
                 <span style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, width: 30 }}>g</span>
@@ -199,22 +201,22 @@ export function MacroEditor({
             type="button"
             onClick={scan}
             disabled={busy}
-            aria-label={busy ? 'Lese Nährwerttabelle…' : 'Nährwerttabelle scannen'}
-            title="Nährwerttabelle scannen"
+            aria-label={busy ? tr(lang, 'macroEditor.reading') : tr(lang, 'macroEditor.scanTable')}
+            title={tr(lang, 'macroEditor.scanTable')}
             style={secondaryBtn({ padding: '12px', width: 46, flexShrink: 0, color: accent || t.textMuted, opacity: busy ? 0.6 : 1, cursor: busy ? 'default' : 'pointer' })}
           >
             <Camera size={16} />
           </button>
         )}
         <button type="button" onClick={() => { setShowPaste((v) => !v); setMsg(''); }} style={secondaryBtn({ flex: 1 })}>
-          <ClipboardPaste size={16} /> Text einfügen
+          <ClipboardPaste size={16} /> {tr(lang, 'macroEditor.pasteText')}
         </button>
         <button
           type="button"
           onClick={doCopy}
           disabled={!showCopy}
-          aria-label="Nährwerttabelle kopieren"
-          title={showCopy ? 'Nährwerttabelle kopieren' : 'Keine Nährwerte zum Kopieren'}
+          aria-label={tr(lang, 'macroEditor.copyTable')}
+          title={showCopy ? tr(lang, 'macroEditor.copyTable') : tr(lang, 'macroEditor.noCopyTable')}
           style={secondaryBtn({ color: copied ? t.success : t.textMuted, padding: '12px', width: 46, flexShrink: 0, opacity: showCopy ? 1 : 0.4, cursor: showCopy ? 'pointer' : 'default' })}
         >
           {copied ? <Check size={17} /> : <Copy size={16} />}
@@ -226,7 +228,7 @@ export function MacroEditor({
           <textarea
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
-            placeholder={'Nährwerttabelle als Text einfügen…\nz.B.\nEnergie 64 kcal\nEiweiß 3,4 g\nKohlenhydrate 4,8 g\nFett 3,5 g'}
+            placeholder={tr(lang, 'macroEditor.pastePlaceholder')}
             rows={5}
             style={{ ...inputStyle, marginTop: 0, resize: 'vertical', fontSize: 13 }}
           />
@@ -240,7 +242,7 @@ export function MacroEditor({
               cursor: pasteText.trim() ? 'pointer' : 'default', opacity: pasteText.trim() ? 1 : 0.5,
             }}
           >
-            Werte übernehmen
+            {tr(lang, 'macroEditor.applyValues')}
           </button>
         </div>
       )}
@@ -248,13 +250,13 @@ export function MacroEditor({
       {/* Zutatenliste */}
       <div style={{ marginTop: 18 }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, color: t.text }}>
-          <List size={16} /> Zutaten
+          <List size={16} /> {tr(lang, 'macroEditor.ingredients')}
         </span>
         <div style={{ position: 'relative', marginTop: 8 }}>
           <textarea
             value={macros.ingredients || ''}
             onChange={(e) => onChange({ ingredients: e.target.value })}
-            placeholder="z.B. Weizenmehl, Zucker, Palmöl, Haselnüsse (13 %), …"
+            placeholder={tr(lang, 'macroEditor.ingredientsPlaceholder')}
             rows={3}
             style={{ ...inputStyle, marginTop: 0, resize: 'vertical', fontSize: 13, lineHeight: 1.45, paddingRight: 42 }}
           />
@@ -263,8 +265,8 @@ export function MacroEditor({
               type="button"
               onClick={scanIngredients}
               disabled={ingBusy}
-              aria-label={ingBusy ? 'Lese Zutaten…' : 'Zutaten scannen'}
-              title="Zutaten scannen"
+              aria-label={ingBusy ? tr(lang, 'macroEditor.readingIngredients') : tr(lang, 'macroEditor.scanIngredients')}
+              title={tr(lang, 'macroEditor.scanIngredients')}
               style={{
                 position: 'absolute', right: 8, top: 8,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -283,8 +285,8 @@ export function MacroEditor({
                 type="button"
                 onClick={doCopyIngredients}
                 disabled={!hasIngredients}
-                aria-label="Zutaten kopieren"
-                title={hasIngredients ? 'Zutaten kopieren' : 'Keine Zutaten zum Kopieren'}
+                aria-label={tr(lang, 'macroEditor.copyIngredients')}
+                title={hasIngredients ? tr(lang, 'macroEditor.copyIngredients') : tr(lang, 'macroEditor.noCopyIngredients')}
                 style={{
                   position: 'absolute', right: 8, bottom: 8,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -303,7 +305,7 @@ export function MacroEditor({
       {/* Haltbarkeit nach dem Öffnen (Override der Regel-Tabelle) */}
       <div style={{ marginTop: 18 }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, color: t.text }}>
-          <Clock size={16} /> Haltbarkeit nach dem Öffnen
+          <Clock size={16} /> {tr(lang, 'macroEditor.openedShelfLife')}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
           <input
@@ -311,13 +313,13 @@ export function MacroEditor({
             inputMode="numeric"
             value={macros.openedDays ?? ''}
             onChange={(e) => onChange({ openedDays: e.target.value === '' ? null : Math.max(0, parseInt(e.target.value, 10) || 0) })}
-            placeholder={ruleDays != null ? `Standard: ${ruleDays}` : 'z.B. 5'}
+            placeholder={ruleDays != null ? tr(lang, 'macroEditor.openedDaysDefault', { n: ruleDays }) : tr(lang, 'macroEditor.openedDaysPlaceholder')}
             style={{ ...inputStyle, marginTop: 0, width: 160, textAlign: 'right' }}
           />
-          <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>Tage</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>{tr(lang, 'common.days')}</span>
         </div>
         <div style={{ marginTop: 10 }}>
-          <ShelfLifeDetails name={name} food={macros} zone={null} t={t} defaultOpen />
+          <ShelfLifeDetails name={name} food={macros} zone={null} t={t} lang={lang} defaultOpen />
         </div>
       </div>
 

@@ -1,94 +1,105 @@
-import { Boxes, Tags, Utensils, Clock, ListOrdered, Sprout, Download, Sun, Moon, SunMoon, LayoutGrid, SlidersHorizontal, AlertTriangle } from 'lucide-react';
+import { Boxes, Tags, Utensils, Clock, ListOrdered, Sprout, Download, Sun, Moon, SunMoon, LayoutGrid, SlidersHorizontal, AlertTriangle, Languages } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { Row } from '../../components/Row.jsx';
+import { tr, LANGUAGES } from '../../lib/i18n.js';
 
 const sectionLabel = (t) => ({
   fontSize: 12, fontWeight: 800, color: t.textMuted, textTransform: 'uppercase',
   letterSpacing: '0.06em', margin: '30px 2px 10px',
 });
 
-// Haupt-Einstellungen: nur noch Theme direkt sichtbar (am häufigsten
-// genutzt), alles andere über Untermenüs (Layout, Verhalten, MHD-Warnungen,
-// Struktur, Daten) – vorher ein sehr langer, flacher Scroll-Bereich.
+// Haupt-Einstellungen: nur noch Theme + Sprache direkt sichtbar (am
+// häufigsten genutzt), alles andere über Untermenüs (Layout, Verhalten,
+// MHD-Warnungen, Struktur, Daten) – vorher ein sehr langer, flacher
+// Scroll-Bereich.
 export function SettingsSheet({
-  open, onClose, t, themeOverride, setThemeOverride,
+  open, onClose, t, lang = 'de', onSetLang, themeOverride, setThemeOverride,
   onManageZones, onManageCategories, onManageFoods, onOpenShelfLife, onOpenExpiringView, onOpenProduceStorage,
   onOpenLayout, onOpenBehavior, onOpenWarnSettings, onOpenBackup,
   stats,
 }) {
   return (
-    <Modal open={open} onClose={onClose} t={t} title="Einstellungen">
-      <div style={sectionLabel(t)}>Darstellung</div>
+    <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'settings.title')}>
+      <div style={sectionLabel(t)}>{tr(lang, 'settings.appearance')}</div>
       <Segmented
         t={t}
         value={themeOverride}
         onChange={setThemeOverride}
         options={[
-          { value: null, label: 'System', icon: <SunMoon size={15} /> },
-          { value: 'light', label: 'Hell', icon: <Sun size={15} /> },
-          { value: 'dark', label: 'Dunkel', icon: <Moon size={15} /> },
+          { value: null, label: tr(lang, 'settings.system'), icon: <SunMoon size={15} /> },
+          { value: 'light', label: tr(lang, 'settings.light'), icon: <Sun size={15} /> },
+          { value: 'dark', label: tr(lang, 'settings.dark'), icon: <Moon size={15} /> },
         ]}
       />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
-        <Row t={t} icon={<LayoutGrid size={19} />} label="Layout" sub="Kopfzeile, Titel, Button-Positionen" onClick={onOpenLayout} />
-        <Row t={t} icon={<SlidersHorizontal size={19} />} label="Verhalten" sub="Einkaufsliste, Mengen, Formate" onClick={onOpenBehavior} />
-        <Row t={t} icon={<AlertTriangle size={19} />} label="MHD-Warnungen" sub="Schwellwerte, Farben, Erinnerungen" onClick={onOpenWarnSettings} />
+
+      <div style={{ ...sectionLabel(t), marginTop: 20 }}>{tr(lang, 'settings.language')}</div>
+      <Segmented
+        t={t}
+        value={lang}
+        onChange={onSetLang}
+        options={LANGUAGES.map((l) => ({ value: l.value, label: l.label, icon: <Languages size={15} /> }))}
+      />
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20 }}>
+        <Row t={t} icon={<LayoutGrid size={19} />} label={tr(lang, 'settings.layout')} sub={tr(lang, 'settings.layoutSub')} onClick={onOpenLayout} />
+        <Row t={t} icon={<SlidersHorizontal size={19} />} label={tr(lang, 'settings.behavior')} sub={tr(lang, 'settings.behaviorSub')} onClick={onOpenBehavior} />
+        <Row t={t} icon={<AlertTriangle size={19} />} label={tr(lang, 'settings.warnings')} sub={tr(lang, 'settings.warningsSub')} onClick={onOpenWarnSettings} />
       </div>
 
-      <div style={sectionLabel(t)}>Struktur</div>
+      <div style={sectionLabel(t)}>{tr(lang, 'settings.structure')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <Row
           t={t}
           icon={<Boxes size={19} />}
-          label="Lagerorte verwalten"
-          sub={`${stats.zones} Lagerorte`}
+          label={tr(lang, 'settings.zonesTitle')}
+          sub={tr(lang, 'settings.zonesSub', { count: stats.zones })}
           onClick={onManageZones}
         />
         <Row
           t={t}
           icon={<Tags size={19} />}
-          label="Kategorien verwalten"
-          sub={`${stats.categories} Kategorien`}
+          label={tr(lang, 'settings.categoriesTitle')}
+          sub={tr(lang, 'settings.categoriesSub', { count: stats.categories })}
           onClick={onManageCategories}
         />
         <Row
           t={t}
           icon={<Utensils size={19} />}
-          label="Stammdaten / Makros"
-          sub={`Nährwerte für ${stats.foods} Lebensmittel`}
+          label={tr(lang, 'settings.foodsTitle')}
+          sub={tr(lang, 'settings.foodsSub', { count: stats.foods })}
           onClick={onManageFoods}
         />
         <Row
           t={t}
           icon={<Clock size={19} />}
-          label="Haltbarkeits-Ratgeber"
-          sub="Geöffnet, ungeöffnet, tiefgefroren"
+          label={tr(lang, 'settings.shelfLifeTitle')}
+          sub={tr(lang, 'settings.shelfLifeSub')}
           onClick={onOpenShelfLife}
         />
         <Row
           t={t}
           icon={<ListOrdered size={19} />}
-          label="Alle Artikel nach MHD"
-          sub="Zonenübergreifend, nach Ablaufdatum sortiert"
+          label={tr(lang, 'settings.expiringTitle')}
+          sub={tr(lang, 'settings.expiringSub')}
           onClick={onOpenExpiringView}
         />
         <Row
           t={t}
           icon={<Sprout size={19} />}
-          label="Obst-&-Gemüse-Ratgeber"
-          sub="Kühlen, Ethylen, Verpackung"
+          label={tr(lang, 'settings.produceTitle')}
+          sub={tr(lang, 'settings.produceSub')}
           onClick={onOpenProduceStorage}
         />
       </div>
 
-      <div style={sectionLabel(t)}>Daten</div>
+      <div style={sectionLabel(t)}>{tr(lang, 'settings.data')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <Row t={t} icon={<Download size={19} />} label="Backup & Export" sub={`${stats.items} Artikel · Sichern, Teilen, Bestandsliste`} onClick={onOpenBackup} />
+        <Row t={t} icon={<Download size={19} />} label={tr(lang, 'settings.backupTitle')} sub={tr(lang, 'settings.backupSub', { count: stats.items })} onClick={onOpenBackup} />
       </div>
 
       <div style={{ textAlign: 'center', fontSize: 11.5, color: t.textFaint, marginTop: 24 }}>
-        Stock-Tracker · lokal gespeichert auf diesem Gerät
+        {tr(lang, 'settings.footer')}
       </div>
     </Modal>
   );

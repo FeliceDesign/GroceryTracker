@@ -3,13 +3,14 @@ import { zonePalette } from '../lib/colors.js';
 import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel } from '../lib/date.js';
 import { openedUntil } from '../lib/openedShelfLife.js';
 import { btnCircle } from '../lib/styles.js';
+import { tr } from '../lib/i18n.js';
 
 // Eine Artikelzeile. `zone` ist das aufgelöste Lagerort-Objekt (oder undefined,
 // falls der Lagerort inzwischen entfernt wurde – dann neutraler Fallback).
 // `openedShelfDays` = aufgelöste Haltbarkeit nach dem Öffnen (oder null).
 // `warnColors` optional: { soon, critical, expired } – eigene Farben aus den Einstellungen.
 export function ItemRow({
-  item, zone, t, dark, yellowDays = 3, orangeDays = 1, warnColors = {}, openedShelfDays = null,
+  item, zone, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = {}, openedShelfDays = null,
   justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast, showWarnDot = true,
 }) {
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
@@ -25,7 +26,7 @@ export function ItemRow({
   const openLevel = openDays != null ? expiryLevel(openDays, yellowDays, orangeDays) : null;
   const openColor = openLevel ? levelColor(openLevel, t, warnColors) : levelColor('soon', t, warnColors);
   const openBg = openLevel ? levelBg(openLevel, t, warnColors) : levelBg('soon', t, warnColors);
-  const remLabel = openDays == null ? '' : openDays < 0 ? `${Math.abs(openDays)}T überfällig` : openDays === 0 ? 'heute' : openDays === 1 ? 'morgen' : `noch ${openDays}T`;
+  const remLabel = openDays == null ? '' : openDays < 0 ? tr(lang, 'common.overdue', { n: Math.abs(openDays) }) : openDays === 0 ? tr(lang, 'common.today') : openDays === 1 ? tr(lang, 'common.tomorrow') : tr(lang, 'common.remainingDays', { n: openDays });
 
   // Warn-Punkt vor dem Namen richtet sich nach dem frühesten (effektiven) Datum.
   const effDays = [days, openDays].filter((d) => d != null);
@@ -75,7 +76,7 @@ export function ItemRow({
               background: mhdWarn ? mhdBg : 'transparent',
               padding: '1px 7px', borderRadius: 6,
             }}>
-              MHD {mhdLabel(days)}
+              {tr(lang, 'itemRow.mhdPrefix')} {mhdLabel(days, lang)}
             </span>
           )}
           {/* „geöffnet"-Badge – nur sichtbar, wenn im Bearbeiten-Menü aktiviert;
@@ -88,14 +89,14 @@ export function ItemRow({
               padding: '1px 7px', borderRadius: 6,
             }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: openColor }} aria-hidden="true" />
-              {openDays != null ? `geöffnet · ${remLabel}` : 'geöffnet'}
+              {openDays != null ? tr(lang, 'itemRow.openedWith', { rem: remLabel }) : tr(lang, 'itemRow.opened')}
             </span>
           )}
         </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-        <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText)} aria-label={`${item.name} Menge verringern`}>
+        <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText)} aria-label={tr(lang, 'itemRow.decreaseAria', { name: item.name })}>
           <Minus size={14} strokeWidth={2.5} />
         </button>
         <span
@@ -108,10 +109,10 @@ export function ItemRow({
         >
           {item.unit === 'stk' ? `${item.qty}x` : `${item.qty}${item.unit}`}
         </span>
-        <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent)} aria-label={`${item.name} Menge erhöhen`}>
+        <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent)} aria-label={tr(lang, 'itemRow.increaseAria', { name: item.name })}>
           <Plus size={14} strokeWidth={2.5} />
         </button>
-        <button onClick={() => onRemove(item.id)} style={{ ...btnCircle('transparent', t.danger), marginLeft: 2 }} aria-label={`${item.name} entfernen`}>
+        <button onClick={() => onRemove(item.id)} style={{ ...btnCircle('transparent', t.danger), marginLeft: 2 }} aria-label={tr(lang, 'itemRow.removeAria', { name: item.name })}>
           <Trash2 size={14} strokeWidth={2} />
         </button>
       </div>

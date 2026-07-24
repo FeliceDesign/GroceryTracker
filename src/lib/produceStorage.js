@@ -15,6 +15,13 @@
 // State University Extension, UC Davis Postharvest Center) – keine
 // erfundenen Angaben. Phase 1: 10 sehr gängige, gut abgesicherte Sorten.
 // Phase 2: 13 weitere Sorten.
+//
+// `label`/`reason`/`packaging` sind Deutsch, `label_en`/`reason_en`/
+// `packaging_en` die Übersetzungen fürs englische UI (siehe lib/i18n.js).
+// `keys` (fürs Matching auf den – immer noch deutschen – Artikelnamen)
+// bleiben unverändert, unabhängig von der UI-Sprache.
+
+import { tr } from './i18n.js';
 
 export const PRODUCE_RULES = [
   {
@@ -236,8 +243,9 @@ export function produceRule(name) {
   return null;
 }
 
-const ETHYLENE_LABELS = { high: 'hoch', medium: 'mittel', low: 'gering', none: 'keins' };
+const ETHYLENE_KEYS = { high: 'produce.ethyleneHigh', medium: 'produce.ethyleneMedium', low: 'produce.ethyleneLow', none: 'produce.ethyleneNone' };
 
-export function ethyleneLabel(level) {
-  return ETHYLENE_LABELS[level] || '—';
+export function ethyleneLabel(level, lang = 'de') {
+  const key = ETHYLENE_KEYS[level];
+  return key ? tr(lang, key) : '—';
 }

@@ -1,8 +1,9 @@
 import { zonePalette } from '../lib/colors.js';
+import { tr } from '../lib/i18n.js';
 
 // Auswahl des Lagerorts als Chip-Reihe (Formulare). Passt sich an beliebig
 // viele Lagerorte an (umbruch- und scrollfähig).
-export function ZonePicker({ zones, value, onChange, t, dark, label }) {
+export function ZonePicker({ zones, value, onChange, t, dark, lang = 'de', label }) {
   return (
     <div>
       {label && (
@@ -22,7 +23,7 @@ export function ZonePicker({ zones, value, onChange, t, dark, label }) {
               key={z.id}
               type="button"
               onClick={() => onChange(z.id)}
-              aria-label={`Lagerort ${z.label}`}
+              aria-label={tr(lang, 'zonePicker.locationAria', { label: z.label })}
               style={{
                 flex: '1 0 auto', minWidth: 80,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,

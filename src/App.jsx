@@ -15,6 +15,7 @@ import { daysUntil, todayISO } from './lib/date.js';
 import { isScanSupported } from './scan/scan.js';
 import { captureMhdViaPhoto } from './scan/camera.js';
 import { ensureNotifyPermission, syncExpiryNotifications, notificationsSupported } from './lib/notify.js';
+import { tr } from './lib/i18n.js';
 
 import { Header } from './components/Header.jsx';
 import { ZoneTabs } from './components/ZoneTabs.jsx';
@@ -62,8 +63,10 @@ export default function App() {
     shoppingCount: true, stepGml: 'auto', showSlider: true,
     headerAlign: 'left', appTitle: '', showWarnDot: true,
     shoppingPos: 'top', settingsPos: 'top', addPos: 'bottom',
-    autoShoppingOnRemove: true, dateFormat: 'dmy',
+    autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de',
   });
+  const lang = (prefs && prefs.language) || 'de';
+  const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
   const [customZoneColors, setCustomZoneColors] = useStorage('gt-custom-zone-colors-v1', []);
   const [customMhdColors, setCustomMhdColors] = useStorage('gt-custom-mhd-colors-v1', []);
 
@@ -295,15 +298,15 @@ export default function App() {
       if (date) {
         if (target === 'edit') setEditItem((s) => ({ ...s, mhd: date }));
         else setNewItem((s) => ({ ...s, mhd: date }));
-        setScanMsg('✓ Datum erkannt.');
+        setScanMsg(tr(lang, 'scanCapture.dateRecognized'));
       } else if (text && text.trim()) {
         const snippet = text.trim().replace(/\s+/g, ' ').slice(0, 45);
-        setScanMsg(`Kein Datum erkannt (gelesen: „${snippet}…"). Datum mittig ins Bild holen und erneut fotografieren.`);
+        setScanMsg(tr(lang, 'scanCapture.noDateFound', { snippet }));
       } else {
-        setScanMsg('Kein Text erkannt – Etikett schärfer/näher fotografieren.');
+        setScanMsg(tr(lang, 'scanCapture.noTextFound'));
       }
     } catch (e) {
-      setScanMsg(e?.message || 'Foto-Erkennung fehlgeschlagen.');
+      setScanMsg(e?.message || tr(lang, 'scanCapture.photoFailed'));
     } finally {
       setScanBusy(false);
     }
@@ -455,10 +458,10 @@ export default function App() {
     try {
       data = JSON.parse(text);
     } catch {
-      return { ok: false, message: 'Ungültiges JSON – bitte den kompletten Backup-Text einfügen.' };
+      return { ok: false, message: tr(lang, 'backup.invalidJson') };
     }
     if (!data || !Array.isArray(data.items) || !Array.isArray(data.zones)) {
-      return { ok: false, message: 'Backup unvollständig (zones/items fehlen).' };
+      return { ok: false, message: tr(lang, 'backup.incompleteBackup') };
     }
     return {
       ok: true,
@@ -477,10 +480,10 @@ export default function App() {
     try {
       data = JSON.parse(text);
     } catch {
-      return { ok: false, message: 'Ungültiges JSON – bitte den kompletten Backup-Text einfügen.' };
+      return { ok: false, message: tr(lang, 'backup.invalidJson') };
     }
     if (!data || !Array.isArray(data.items) || !Array.isArray(data.zones)) {
-      return { ok: false, message: 'Backup unvollständig (zones/items fehlen).' };
+      return { ok: false, message: tr(lang, 'backup.incompleteBackup') };
     }
     setZones(data.zones);
     if (Array.isArray(data.categories)) setCategories(data.categories);
@@ -488,7 +491,7 @@ export default function App() {
     setItems(data.items);
     setShopping(Array.isArray(data.shopping) ? data.shopping : []);
     if (data.warn && typeof data.warn === 'object') setWarn(data.warn);
-    return { ok: true, message: `${data.items.length} Artikel wiederhergestellt.` };
+    return { ok: true, message: tr(lang, 'backup.restored', { count: data.items.length }) };
   };
 
   // -- MHD-Warnungen ----------------------------------------------------------
@@ -551,7 +554,7 @@ export default function App() {
   if (!ready) {
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: t.bg, color: t.textMuted, fontFamily: 'system-ui, sans-serif' }}>
-        Lade Bestand…
+        {tr(lang, 'app.loading')}
       </div>
     );
   }
@@ -567,7 +570,7 @@ export default function App() {
       {/* Kopf + Tabs bleiben oben kleben */}
       <div style={{ position: 'sticky', top: 0, zIndex: 10, background: t.bg }}>
         <Header
-          zone={zone} dark={dark} t={t}
+          zone={zone} dark={dark} t={t} lang={lang}
           totalInZone={totalInZone}
           shoppingCount={shopping.length}
           showShoppingCount={prefs.shoppingCount}
@@ -583,31 +586,31 @@ export default function App() {
         <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={(id) => { setActiveZone(id); setExpiringView(false); }} t={t} dark={dark} />
       </div>
 
-      <ExpiringBanner expiring={expiringSoon} t={t} onOpen={() => { setExpiringView(true); setSearch(''); }} />
+      <ExpiringBanner expiring={expiringSoon} t={t} lang={lang} onOpen={() => { setExpiringView(true); setSearch(''); }} />
 
       {expiringView ? (
         <div style={{ maxWidth: 480, margin: '14px auto 0', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>Nach MHD sortiert · alle Lagerorte</span>
-          <button onClick={() => setExpiringView(false)} aria-label="Schließen" style={btnCircle(t.cardAlt, t.pillInactiveText, 30)}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>{tr(lang, 'app.expiringSortLabel')}</span>
+          <button onClick={() => setExpiringView(false)} aria-label={tr(lang, 'common.close')} style={btnCircle(t.cardAlt, t.pillInactiveText, 30)}>
             <X size={14} />
           </button>
         </div>
       ) : (
-        <SearchBar value={search} onChange={setSearch} t={t} />
+        <SearchBar value={search} onChange={setSearch} t={t} lang={lang} />
       )}
 
       {/* Liste */}
       <div style={{ maxWidth: 480, margin: '0 auto', padding: '18px 20px 0' }}>
         {expiringView ? (
           allByExpiry.length === 0 ? (
-            <Empty t={t} label="Kein Artikel mit bekanntem MHD" />
+            <Empty t={t} label={tr(lang, 'app.emptyNoMhd')} />
           ) : (
             <>
               {expiringSoon.length > 0 && (
-                <Section t={t} title={`Bald ablaufend (${expiringSoon.length})`}>
+                <Section t={t} title={tr(lang, 'app.soonSection', { count: expiringSoon.length })}>
                   {expiringSoon.map((item, idx) => (
                     <ItemRow
-                      key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
+                      key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                       justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                       showZoneBadge isLast={idx === expiringSoon.length - 1} showWarnDot={prefs.showWarnDot !== false}
                     />
@@ -615,10 +618,10 @@ export default function App() {
                 </Section>
               )}
               {expiringLater.length > 0 && (
-                <Section t={t} title={`Weitere Artikel nach MHD (${expiringLater.length})`}>
+                <Section t={t} title={tr(lang, 'app.laterSection', { count: expiringLater.length })}>
                   {expiringLater.map((item, idx) => (
                     <ItemRow
-                      key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
+                      key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                       justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                       showZoneBadge isLast={idx === expiringLater.length - 1} showWarnDot={prefs.showWarnDot !== false}
                     />
@@ -629,12 +632,12 @@ export default function App() {
           )
         ) : searchResults !== null ? (
           searchResults.length === 0 ? (
-            <Empty t={t} label={`Nichts gefunden für „${search}"`} />
+            <Empty t={t} label={tr(lang, 'app.emptyNothingFoundFor', { query: search })} />
           ) : (
-            <Section t={t} title={`${searchResults.length} ${searchResults.length === 1 ? 'Treffer' : 'Treffer'}`}>
+            <Section t={t} title={tr(lang, 'app.hitsSection', { count: searchResults.length })}>
               {searchResults.map((item, idx) => (
                 <ItemRow
-                  key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
+                  key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                   justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                   showZoneBadge isLast={idx === searchResults.length - 1} showWarnDot={prefs.showWarnDot !== false}
                 />
@@ -642,13 +645,13 @@ export default function App() {
             </Section>
           )
         ) : grouped.length === 0 ? (
-          <Empty t={t} label="— leer —" />
+          <Empty t={t} label={tr(lang, 'app.emptyList')} />
         ) : (
           grouped.map(([cat, list]) => (
             <Section key={cat} t={t} title={cat}>
               {list.map((item, idx) => (
                 <ItemRow
-                  key={item.id} item={item} zone={zone} t={t} dark={dark} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
+                  key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                   justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                   isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false}
                 />
@@ -664,19 +667,19 @@ export default function App() {
           (prefs.addPos || 'bottom') === 'bottom' && {
             key: 'add', size: 60, primary: true,
             onClick: openAdd,
-            ariaLabel: 'Neuen Artikel hinzufügen',
+            ariaLabel: tr(lang, 'app.addAria'),
             icon: <Plus size={28} strokeWidth={2.6} />,
           },
           prefs.settingsPos === 'bottom' && {
             key: 'settings', size: 48,
             onClick: () => setShowSettings(true),
-            ariaLabel: 'Einstellungen öffnen',
+            ariaLabel: tr(lang, 'app.settingsAria'),
             icon: <Settings size={19} strokeWidth={2.2} />,
           },
           prefs.shoppingPos === 'bottom' && {
             key: 'shopping', size: 48,
             onClick: () => setShowShopping(true),
-            ariaLabel: `Einkaufsliste öffnen${shopping.length > 0 ? ` (${shopping.length})` : ''}`,
+            ariaLabel: `${tr(lang, 'app.shoppingAria')}${shopping.length > 0 ? ` (${shopping.length})` : ''}`,
             icon: <ShoppingCart size={19} strokeWidth={2.2} />,
             badge: (
               <CountBadge
@@ -694,8 +697,8 @@ export default function App() {
       {deletedItem && (
         <Toast
           t={t}
-          message={`„${deletedItem.name}" entfernt · auf Einkaufsliste`}
-          actionLabel="Rückgängig"
+          message={tr(lang, 'app.toastRemoved', { name: deletedItem.name })}
+          actionLabel={tr(lang, 'app.undo')}
           onAction={undoDelete}
         />
       )}
@@ -703,14 +706,14 @@ export default function App() {
       {!deletedItem && deletedZone && (
         <Toast
           t={t}
-          message={`Lagerort „${deletedZone.zone.label}" entfernt`}
-          actionLabel="Rückgängig"
+          message={tr(lang, 'app.toastZoneRemoved', { name: deletedZone.zone.label })}
+          actionLabel={tr(lang, 'app.undo')}
           onAction={undoZoneDelete}
         />
       )}
 
       <AddItemSheet
-        open={showAdd} onClose={closeAdd} t={t} dark={dark}
+        open={showAdd} onClose={closeAdd} t={t} dark={dark} lang={lang}
         zones={zones} categories={categories} onAddCategory={addCategory}
         newItem={newItem} setNewItem={setNewItem}
         scanSupported={scanSupported} scanBusy={scanBusy} scanMsg={scanMsg}
@@ -719,20 +722,20 @@ export default function App() {
 
       <EditItemSheet
         editItem={editItem} setEditItem={setEditItem} onClose={() => { setEditItem(null); setScanMsg(''); }}
-        t={t} dark={dark} zones={zones} categories={categories} onAddCategory={addCategory}
+        t={t} dark={dark} lang={lang} zones={zones} categories={categories} onAddCategory={addCategory}
         scanSupported={scanSupported} scanBusy={scanBusy} scanMsg={scanMsg} stepGml={prefs.stepGml} showSlider={prefs.showSlider}
         onScanDate={handleScanDate} onSave={saveEdit} onDelete={deleteFromEdit}
       />
 
       <ShoppingSheet
-        open={showShopping} onClose={() => setShowShopping(false)} t={t} dark={dark} zones={zones}
+        open={showShopping} onClose={() => setShowShopping(false)} t={t} dark={dark} lang={lang} zones={zones}
         shopping={shopping} shoppingInput={shoppingInput} setShoppingInput={setShoppingInput}
         onAddManual={addManualShopping} onCheck={checkAndRestore} onRemove={removeFromShopping}
         onClearAll={clearShopping} justChecked={justChecked} showCount={prefs.shoppingCount}
       />
 
       <SettingsSheet
-        open={showSettings} onClose={() => setShowSettings(false)} t={t}
+        open={showSettings} onClose={() => setShowSettings(false)} t={t} lang={lang} onSetLang={setLang}
         themeOverride={themeOverride} setThemeOverride={setThemeOverride}
         onManageZones={() => { setShowSettings(false); setShowZones(true); }}
         onManageCategories={() => { setShowSettings(false); setShowCategories(true); }}
@@ -748,7 +751,7 @@ export default function App() {
       />
 
       <LayoutSheet
-        open={showLayout} onClose={() => setShowLayout(false)} t={t}
+        open={showLayout} onClose={() => setShowLayout(false)} t={t} lang={lang}
         headerAlign={prefs.headerAlign || 'left'}
         onSetHeaderAlign={(v) => setPrefs((p) => ({ ...p, headerAlign: v }))}
         appTitle={prefs.appTitle || ''}
@@ -762,7 +765,7 @@ export default function App() {
       />
 
       <BehaviorSheet
-        open={showBehavior} onClose={() => setShowBehavior(false)} t={t}
+        open={showBehavior} onClose={() => setShowBehavior(false)} t={t} lang={lang}
         showShoppingCount={prefs.shoppingCount}
         onToggleShoppingCount={(on) => setPrefs((p) => ({ ...p, shoppingCount: on }))}
         autoShoppingOnRemove={prefs.autoShoppingOnRemove !== false}
@@ -778,34 +781,34 @@ export default function App() {
       />
 
       <WarnSheet
-        open={showWarnSettings} onClose={() => setShowWarnSettings(false)} t={t}
+        open={showWarnSettings} onClose={() => setShowWarnSettings(false)} t={t} lang={lang}
         warn={warn} onUpdateWarn={updateWarn} onSetNotify={setNotifyEnabled} notifySupported={notificationsSupported()}
         customColors={customMhdColors} onAddCustomColor={addCustomMhdColor} onRemoveCustomColor={removeCustomMhdColor}
       />
 
       <ManageZonesSheet
-        open={showZones} onClose={() => setShowZones(false)} t={t} dark={dark}
+        open={showZones} onClose={() => setShowZones(false)} t={t} dark={dark} lang={lang}
         zones={zones} countFor={countFor}
         onAdd={addZone} onUpdate={updateZone} onRemove={removeZoneWithReassign}
         customColors={customZoneColors} onAddCustomColor={addCustomZoneColor} onRemoveCustomColor={removeCustomZoneColor}
       />
 
       <ManageCategoriesSheet
-        open={showCategories} onClose={() => setShowCategories(false)} t={t}
+        open={showCategories} onClose={() => setShowCategories(false)} t={t} lang={lang}
         categories={categories} countFor={countForCategory}
         onAdd={addCategory} onRename={renameCategory} onRemove={removeCategoryWithReassign}
       />
 
       <ManageFoodsSheet
-        open={showFoods} onClose={() => setShowFoods(false)} t={t}
+        open={showFoods} onClose={() => setShowFoods(false)} t={t} lang={lang}
         foods={foods} onUpsert={upsertFood} onRemove={removeFood}
         scanSupported={scanSupported}
       />
 
-      <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} />
-      <ProduceStorageSheet open={showProduceStorage} onClose={() => setShowProduceStorage(false)} t={t} />
+      <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} lang={lang} />
+      <ProduceStorageSheet open={showProduceStorage} onClose={() => setShowProduceStorage(false)} t={t} lang={lang} />
       <BackupSheet
-        open={showBackup} onClose={() => setShowBackup(false)} t={t} dark={dark} zones={zones} items={items}
+        open={showBackup} onClose={() => setShowBackup(false)} t={t} dark={dark} lang={lang} zones={zones} items={items}
         stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
         buildBackup={buildBackup} restoreBackup={restoreBackup} previewBackup={previewBackup}
       />
@@ -814,7 +817,7 @@ export default function App() {
         open={!!detailLive} item={detailLive}
         zone={detailLive ? resolveZone(detailLive.zone) : null}
         food={detailLive ? getFood(detailLive.name) : null}
-        t={t} dark={dark} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors} dateFormat={prefs.dateFormat || 'dmy'}
+        t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors} dateFormat={prefs.dateFormat || 'dmy'}
         onClose={() => setDetailItem(null)}
         onEdit={(it) => { setDetailItem(null); openEdit(it); }}
         onChangeQty={changeQty}
@@ -828,7 +831,7 @@ export default function App() {
         damit während des transparenten Live-Barcode-Scans nur sein Overlay
         über dem Kamerabild sichtbar ist. */}
     <ScanFlowSheet
-      open={showScanFlow} onClose={() => setShowScanFlow(false)} t={t} dark={dark} dateFormat={prefs.dateFormat || 'dmy'}
+      open={showScanFlow} onClose={() => setShowScanFlow(false)} t={t} dark={dark} lang={lang} dateFormat={prefs.dateFormat || 'dmy'}
       zones={zones} categories={categories} onAddCategory={addCategory}
       targetZone={scanZone || activeZone} mode={scanMode}
       onCommit={commitScanFlow}

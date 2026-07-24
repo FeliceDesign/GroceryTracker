@@ -14,6 +14,7 @@
 // beeinflussen.
 
 import { daysUntil } from './date.js';
+import { tr } from './i18n.js';
 
 export const OPENED_SHELF_RULES = [
   // — Feinkost-/Mayo-Salate & streichfähige Rohwurst —
@@ -129,10 +130,10 @@ export function openedDaysFor(name, food) {
   return shelfLifeAfterOpening(name);
 }
 
-export function storageLabel(storage) {
-  if (storage === 'room') return 'Raumtemperatur';
-  if (storage === 'both') return 'Raumtemp. oder Kühlschrank';
-  return 'Kühlschrank';
+export function storageLabel(storage, lang = 'de') {
+  if (storage === 'room') return tr(lang, 'shelfLife.room');
+  if (storage === 'both') return tr(lang, 'shelfLife.both');
+  return tr(lang, 'shelfLife.fridge');
 }
 
 // Ist ein Lagerort „kalt"? Nutzt das Flag `cooled`, sonst eine Namens-Heuristik.
@@ -143,11 +144,11 @@ export function zoneIsCooled(zone) {
 }
 
 // Passt der Lagerort zur Empfehlung? Gibt einen Hinweistext zurück oder null.
-export function storageMismatch(storage, zone) {
+export function storageMismatch(storage, zone, lang = 'de') {
   if (!storage || !zone) return null;
   const cooled = zoneIsCooled(zone);
-  if (storage === 'room' && cooled) return 'Gehört eigentlich nicht in den Kühlschrank.';
-  if (storage === 'fridge' && !cooled) return 'Sollte gekühlt gelagert werden.';
+  if (storage === 'room' && cooled) return tr(lang, 'shelfLife.mismatchRoom');
+  if (storage === 'fridge' && !cooled) return tr(lang, 'shelfLife.mismatchFridge');
   return null;
 }
 

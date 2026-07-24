@@ -4,19 +4,20 @@ import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
+import { tr } from '../../lib/i18n.js';
 
 // Einkaufsliste. Aufgebrauchte Artikel landen automatisch hier; abhaken legt
 // sie zurück in den Bestand. Freie Einträge lassen sich manuell ergänzen.
 export function ShoppingSheet({
-  open, onClose, t, dark, zones,
+  open, onClose, t, dark, lang = 'de', zones,
   shopping, shoppingInput, setShoppingInput, onAddManual, onCheck, onRemove, onClearAll, justChecked,
   showCount = true,
 }) {
   const inputStyle = makeInputStyle(t);
   const [confirmClear, setConfirmClear] = useState(false);
   const subtitle = shopping.length === 0
-    ? 'Alles erledigt'
-    : (showCount ? `${shopping.length} offen` : 'offen');
+    ? tr(lang, 'shopping.allDone')
+    : (showCount ? `${shopping.length} ${tr(lang, 'shopping.open')}` : tr(lang, 'shopping.open'));
 
   // Bestätigung zurücksetzen, sobald das Sheet auf-/zugeht oder die Liste leer wird
   useEffect(() => {
@@ -24,21 +25,22 @@ export function ShoppingSheet({
   }, [open, shopping.length]);
 
   return (
-    <Modal open={open} onClose={onClose} t={t} title="Einkaufsliste" subtitle={subtitle}>
+    <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'shopping.title')} subtitle={subtitle}>
       <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
         <ClearableInput
           t={t}
+          lang={lang}
           value={shoppingInput}
           onChange={setShoppingInput}
           onKeyDown={(e) => e.key === 'Enter' && onAddManual()}
-          placeholder="Etwas hinzufügen…"
+          placeholder={tr(lang, 'shopping.placeholder')}
           style={{ ...inputStyle, marginTop: 0 }}
           wrapperStyle={{ flex: 1, minWidth: 0 }}
         />
         <button
           type="button"
           onClick={onAddManual}
-          aria-label="Hinzufügen"
+          aria-label={tr(lang, 'shopping.addAria')}
           style={{ flexShrink: 0, border: 'none', borderRadius: 12, padding: '0 16px', background: t.btnPrimary, color: t.btnPrimaryText, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
         >
           <Plus size={18} strokeWidth={2.6} />
@@ -59,14 +61,14 @@ export function ShoppingSheet({
               color: t.danger, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', padding: '4px 2px',
             }}
           >
-            <Trash2 size={14} /> {confirmClear ? `Wirklich alle ${shopping.length} löschen?` : 'Alle löschen'}
+            <Trash2 size={14} /> {confirmClear ? tr(lang, 'shopping.confirmClearAll', { count: shopping.length }) : tr(lang, 'shopping.clearAll')}
           </button>
         </div>
       )}
 
       {shopping.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: t.textFaint, fontSize: 14 }}>
-          Deine Einkaufsliste ist leer.
+          {tr(lang, 'shopping.empty')}
         </div>
       ) : (
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -86,7 +88,7 @@ export function ShoppingSheet({
                 <button
                   type="button"
                   onClick={() => onCheck(s)}
-                  aria-label={`${s.name} abhaken`}
+                  aria-label={tr(lang, 'shopping.checkAria', { name: s.name })}
                   style={{
                     flexShrink: 0, width: 30, height: 30, borderRadius: '50%', cursor: 'pointer',
                     border: `2px solid ${checked ? t.success : t.border}`,
@@ -100,10 +102,10 @@ export function ShoppingSheet({
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14.5, color: t.text, fontWeight: 500 }}>{s.name}</div>
                   <div style={{ fontSize: 11, color: pal ? pal.accent : t.textFaint, fontWeight: 700, marginTop: 1 }}>
-                    {z ? `${z.emoji} ${z.label}` : 'frei'}
+                    {z ? `${z.emoji} ${z.label}` : tr(lang, 'shopping.free')}
                   </div>
                 </div>
-                <button type="button" onClick={() => onRemove(s.id)} style={btnCircle('transparent', t.textFaint, 30)} aria-label="Von der Liste entfernen">
+                <button type="button" onClick={() => onRemove(s.id)} style={btnCircle('transparent', t.textFaint, 30)} aria-label={tr(lang, 'shopping.removeAria')}>
                   <X size={15} />
                 </button>
               </div>

@@ -6,9 +6,10 @@ import { ColorSwatches } from '../../components/ColorSwatches.jsx';
 import { ZONE_COLOR_CHOICES, zonePalette } from '../../lib/colors.js';
 import { zoneIsCooled } from '../../lib/openedShelfLife.js';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
+import { tr } from '../../lib/i18n.js';
 
 // Kleiner „gekühlt"-Umschalter (für Lager-Hinweise bei geöffneten Artikeln).
-function CooledToggle({ on, onChange, t }) {
+function CooledToggle({ on, onChange, t, lang }) {
   return (
     <button
       type="button"
@@ -22,13 +23,13 @@ function CooledToggle({ on, onChange, t }) {
         color: on ? (t.info || '#3B7A9E') : t.textMuted,
       }}
     >
-      <Snowflake size={14} /> {on ? 'Gekühlt' : 'Nicht gekühlt'}
+      <Snowflake size={14} /> {on ? tr(lang, 'zones.cooled') : tr(lang, 'zones.notCooled')}
     </button>
   );
 }
 
 // Lagerorte verwalten: umbenennen, Emoji/Farbe ändern, hinzufügen, entfernen.
-export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAdd, onUpdate, onRemove, customColors, onAddCustomColor, onRemoveCustomColor }) {
+export function ManageZonesSheet({ open, onClose, t, dark, lang = 'de', zones, countFor, onAdd, onUpdate, onRemove, customColors, onAddCustomColor, onRemoveCustomColor }) {
   const inputStyle = makeInputStyle(t);
   const [draft, setDraft] = useState({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], cooled: false });
   const [showAdd, setShowAdd] = useState(false);
@@ -42,7 +43,7 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
   };
 
   return (
-    <Modal open={open} onClose={onClose} t={t} title="Lagerorte" subtitle="Anpassen, hinzufügen oder entfernen">
+    <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'zones.title')} subtitle={tr(lang, 'zones.subtitle')}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
         {zones.map((z) => {
           const pal = zonePalette(z.color, dark);
@@ -53,14 +54,15 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
                 <input
                   value={z.emoji}
                   onChange={(e) => onUpdate(z.id, { emoji: e.target.value.slice(0, 3) })}
-                  aria-label="Emoji"
+                  aria-label={tr(lang, 'zones.emojiAria')}
                   style={{ ...inputStyle, marginTop: 0, width: 52, textAlign: 'center', padding: '10px 4px', fontSize: 20, flexShrink: 0 }}
                 />
                 <ClearableInput
                   t={t}
+                  lang={lang}
                   value={z.label}
                   onChange={(v) => onUpdate(z.id, { label: v })}
-                  aria-label="Name des Lagerorts"
+                  aria-label={tr(lang, 'zones.nameAria')}
                   style={{ ...inputStyle, marginTop: 0, borderColor: pal.accent }}
                   wrapperStyle={{ flex: 1, minWidth: 0 }}
                 />
@@ -68,19 +70,19 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
                   type="button"
                   onClick={() => setConfirmRemoveId(z.id)}
                   disabled={zones.length <= 1}
-                  aria-label={`${z.label} entfernen`}
+                  aria-label={tr(lang, 'zones.removeAria', { label: z.label })}
                   style={{ ...btnCircle('transparent', zones.length <= 1 ? t.textFaint : t.danger, 40), opacity: zones.length <= 1 ? 0.4 : 1, cursor: zones.length <= 1 ? 'default' : 'pointer' }}
                 >
                   <Trash2 size={16} />
                 </button>
               </div>
               <ColorSwatches
-                t={t} choices={ZONE_COLOR_CHOICES} value={z.color} onChange={(c) => onUpdate(z.id, { color: c })}
+                t={t} lang={lang} choices={ZONE_COLOR_CHOICES} value={z.color} onChange={(c) => onUpdate(z.id, { color: c })}
                 customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); onUpdate(z.id, { color: c }); }} onRemoveCustom={onRemoveCustomColor}
               />
-              <CooledToggle t={t} on={zoneIsCooled(z)} onChange={(v) => onUpdate(z.id, { cooled: v })} />
+              <CooledToggle t={t} lang={lang} on={zoneIsCooled(z)} onChange={(v) => onUpdate(z.id, { cooled: v })} />
               <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 8 }}>
-                {count} {count === 1 ? 'Artikel' : 'Artikel'}{zones.length > 1 ? ' · beim Entfernen wandern sie in den ersten Lagerort' : ''}
+                {zones.length > 1 ? tr(lang, 'zones.itemsCountMoveHint', { count }) : tr(lang, 'zones.itemsCount', { count })}
               </div>
               {confirmRemoveId === z.id && (
                 <div style={{
@@ -89,7 +91,7 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
                   background: t.dangerBg, border: `1.5px solid ${t.dangerBorder}`,
                 }}>
                   <span style={{ fontSize: 12.5, fontWeight: 700, color: t.danger }}>
-                    „{z.label}" wirklich entfernen?
+                    {tr(lang, 'zones.confirmRemove', { label: z.label })}
                   </span>
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                     <button
@@ -97,14 +99,14 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
                       onClick={() => setConfirmRemoveId(null)}
                       style={{ border: 'none', background: 'transparent', color: t.textMuted, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: '6px 4px' }}
                     >
-                      Abbrechen
+                      {tr(lang, 'zones.cancel')}
                     </button>
                     <button
                       type="button"
                       onClick={() => { onRemove(z.id); setConfirmRemoveId(null); }}
                       style={{ border: 'none', background: 'transparent', color: t.danger, fontWeight: 800, fontSize: 12.5, cursor: 'pointer', padding: '6px 4px' }}
                     >
-                      Entfernen
+                      {tr(lang, 'zones.remove')}
                     </button>
                   </div>
                 </div>
@@ -121,33 +123,34 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
               value={draft.emoji}
               onChange={(e) => setDraft((s) => ({ ...s, emoji: e.target.value.slice(0, 3) }))}
               placeholder="📦"
-              aria-label="Emoji"
+              aria-label={tr(lang, 'zones.emojiAria')}
               style={{ ...inputStyle, marginTop: 0, width: 52, textAlign: 'center', padding: '10px 4px', fontSize: 20, flexShrink: 0 }}
             />
             <ClearableInput
               t={t}
+              lang={lang}
               value={draft.label}
               onChange={(v) => setDraft((s) => ({ ...s, label: v }))}
               onKeyDown={(e) => e.key === 'Enter' && submitAdd()}
-              placeholder="z.B. Keller"
+              placeholder={tr(lang, 'zones.newZonePlaceholder')}
               autoFocus
-              aria-label="Name des Lagerorts"
+              aria-label={tr(lang, 'zones.nameAria')}
               style={{ ...inputStyle, marginTop: 0 }}
               wrapperStyle={{ flex: 1, minWidth: 0 }}
             />
           </div>
           <ColorSwatches
-            t={t} choices={ZONE_COLOR_CHOICES} value={draft.color} onChange={(c) => setDraft((s) => ({ ...s, color: c }))}
+            t={t} lang={lang} choices={ZONE_COLOR_CHOICES} value={draft.color} onChange={(c) => setDraft((s) => ({ ...s, color: c }))}
             customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); setDraft((s) => ({ ...s, color: c })); }} onRemoveCustom={onRemoveCustomColor}
           />
-          <CooledToggle t={t} on={draft.cooled} onChange={(v) => setDraft((s) => ({ ...s, cooled: v }))} />
+          <CooledToggle t={t} lang={lang} on={draft.cooled} onChange={(v) => setDraft((s) => ({ ...s, cooled: v }))} />
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <button
               type="button"
               onClick={() => { setShowAdd(false); setDraft({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0] }); }}
               style={{ flex: 1, padding: '12px', borderRadius: 12, border: `1.5px solid ${t.border}`, background: 'transparent', color: t.textMuted, fontWeight: 700, cursor: 'pointer' }}
             >
-              Abbrechen
+              {tr(lang, 'zones.cancel')}
             </button>
             <button
               type="button"
@@ -155,7 +158,7 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
               disabled={!draft.label.trim()}
               style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: t.btnPrimary, color: t.btnPrimaryText, fontWeight: 700, cursor: draft.label.trim() ? 'pointer' : 'default', opacity: draft.label.trim() ? 1 : 0.5 }}
             >
-              Hinzufügen
+              {tr(lang, 'common.add')}
             </button>
           </div>
         </div>
@@ -169,7 +172,7 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
             background: 'transparent', color: t.textMuted, fontWeight: 700, fontSize: 14.5, cursor: 'pointer',
           }}
         >
-          <Plus size={18} /> Neuer Lagerort
+          <Plus size={18} /> {tr(lang, 'zones.addZone')}
         </button>
       )}
     </Modal>

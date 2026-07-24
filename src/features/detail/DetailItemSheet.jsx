@@ -11,24 +11,26 @@ import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel, formatDateDispla
 import { MACRO_FIELDS, fmtNum, unsaturatedFat, hasMacros, basisLabel, copyMacros } from '../../lib/macros.js';
 import { openedDaysFor, openedUntil } from '../../lib/openedShelfLife.js';
 import { btnCircle, primaryButtonStyle, makeInputStyle, pillStyle } from '../../lib/styles.js';
+import { tr } from '../../lib/i18n.js';
 
-const SHELF_TABS = [
-  { id: 'opened', label: 'Geöffnet' },
-  { id: 'unopened', label: 'Ungeöffnet' },
-  { id: 'frozen', label: 'Tiefgefroren' },
+const SHELF_TABS = (lang) => [
+  { id: 'opened', label: tr(lang, 'detail.tabOpened') },
+  { id: 'unopened', label: tr(lang, 'detail.tabUnopened') },
+  { id: 'frozen', label: tr(lang, 'detail.tabFrozen') },
 ];
 
 // Schreibgeschützte Detail-Ansicht eines Artikels (Nährwerte, Zutaten,
 // Haltbarkeit). „Bearbeiten" öffnet das Formular. `warnColors` optional:
 // { soon, critical, expired } – eigene Farben aus den Einstellungen.
 export function DetailItemSheet({
-  open, item, zone, food, t, dark, yellowDays = 3, orangeDays = 1, warnColors = {}, dateFormat = 'dmy',
+  open, item, zone, food, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = {}, dateFormat = 'dmy',
   onClose, onEdit, onChangeQty, onRemove, onToggleOpened, onChangeMhd,
 }) {
   const [copied, setCopied] = useState(false);
   const [shelfTab, setShelfTab] = useState('opened');
   if (!open || !item) return null;
   const inputStyle = makeInputStyle(t);
+  const shelfTabs = SHELF_TABS(lang);
 
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
   const rawDays = daysUntil(item.mhd);
@@ -41,12 +43,13 @@ export function DetailItemSheet({
   const openLevel = openDays != null ? expiryLevel(openDays, yellowDays, orangeDays) : null;
   const openColor = openLevel ? levelColor(openLevel, t, warnColors) : levelColor('soon', t, warnColors);
   const openBg = openLevel ? levelBg(openLevel, t, warnColors) : levelBg('soon', t, warnColors);
+  const remLabel = openDays == null ? '' : openDays < 0 ? tr(lang, 'detail.overdue', { n: Math.abs(openDays) }) : openDays === 0 ? tr(lang, 'detail.today') : openDays === 1 ? tr(lang, 'detail.tomorrow') : tr(lang, 'detail.remaining', { n: openDays });
 
   const showMacros = hasMacros(food);
   const unsat = unsaturatedFat(food);
 
   const doCopy = async () => {
-    const ok = await copyMacros({ ...food, name: item.name });
+    const ok = await copyMacros({ ...food, name: item.name }, lang);
     if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); }
   };
 
@@ -62,16 +65,16 @@ export function DetailItemSheet({
           border: `1.5px solid ${t.dangerBorder}`, background: t.dangerBg, color: t.danger, fontWeight: 700, fontSize: 14.5, cursor: 'pointer',
         }}
       >
-        <Trash2 size={17} /> Entfernen
+        <Trash2 size={17} /> {tr(lang, 'detail.remove')}
       </button>
       <button onClick={() => onEdit(item)} style={{ ...primaryButtonStyle(t), display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-        <Pencil size={17} /> Bearbeiten
+        <Pencil size={17} /> {tr(lang, 'detail.edit')}
       </button>
     </div>
   );
 
   return (
-    <Modal open={open} onClose={onClose} t={t} title={item.name} subtitle={item.category} footer={footer}>
+    <Modal open={open} onClose={onClose} t={t} lang={lang} title={item.name} subtitle={item.category} footer={footer}>
       {/* Lagerort + Menge */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
         {zone && (
@@ -80,13 +83,13 @@ export function DetailItemSheet({
           </span>
         )}
         <div style={{ flex: 1 }} />
-        <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText, 34)} aria-label="weniger">
+        <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText, 34)} aria-label={tr(lang, 'detail.fewerAria')}>
           <Minus size={15} strokeWidth={2.5} />
         </button>
         <span style={{ minWidth: 54, textAlign: 'center', fontSize: 16, fontWeight: 800, color: t.text }}>
           {item.unit === 'stk' ? `${item.qty}×` : `${item.qty} ${item.unit}`}
         </span>
-        <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent, 34)} aria-label="mehr">
+        <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent, 34)} aria-label={tr(lang, 'detail.moreAria')}>
           <Plus size={15} strokeWidth={2.5} />
         </button>
       </div>
@@ -95,12 +98,12 @@ export function DetailItemSheet({
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
         {item.mhd && (
           <span style={{ fontSize: 12.5, fontWeight: 700, color: levelColor(mhdLevel, t, warnColors), background: mhdWarn ? levelBg(mhdLevel, t, warnColors) : t.cardAlt, padding: '5px 11px', borderRadius: 8 }}>
-            MHD {mhdLabel(rawDays)} ({formatDateDisplay(item.mhd, dateFormat)})
+            {tr(lang, 'itemRow.mhdPrefix')} {mhdLabel(rawDays, lang)} ({formatDateDisplay(item.mhd, dateFormat)})
           </span>
         )}
         {item.opened && (
           <span style={{ fontSize: 12.5, fontWeight: 700, color: openColor, background: openBg, padding: '5px 11px', borderRadius: 8 }}>
-            Geöffnet{openDays != null ? ` · ${openDays < 0 ? `${Math.abs(openDays)}T überfällig` : openDays === 0 ? 'heute' : openDays === 1 ? 'morgen' : `noch ${openDays}T`}` : ''}
+            {openDays != null ? tr(lang, 'itemRow.openedWith', { rem: remLabel }) : tr(lang, 'itemRow.opened')}
           </span>
         )}
       </div>
@@ -108,9 +111,10 @@ export function DetailItemSheet({
       {/* MHD direkt ändern – ohne ins Bearbeiten zu wechseln */}
       {onChangeMhd && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
-          <span style={{ fontSize: 13, color: t.textMuted, flexShrink: 0 }}>MHD ändern</span>
+          <span style={{ fontSize: 13, color: t.textMuted, flexShrink: 0 }}>{tr(lang, 'detail.changeMhd')}</span>
           <ClearableInput
             t={t}
+            lang={lang}
             type="date"
             value={item.mhd || ''}
             onChange={(v) => onChangeMhd(item.id, v)}
@@ -134,7 +138,7 @@ export function DetailItemSheet({
             color: item.opened ? t.warning : t.textMuted,
           }}
         >
-          <PackageOpen size={17} /> {item.opened ? 'Als ungeöffnet markieren' : 'Als geöffnet markieren'}
+          <PackageOpen size={17} /> {item.opened ? tr(lang, 'detail.markUnopened') : tr(lang, 'detail.markOpened')}
         </button>
       )}
 
@@ -143,14 +147,14 @@ export function DetailItemSheet({
         <div style={section}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ ...secLabel, marginBottom: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Utensils size={13} /> Nährwerte · {basisLabel(food)}
+              <Utensils size={13} /> {tr(lang, 'detail.macros')} · {basisLabel(food, lang)}
             </span>
             <button
               type="button"
               onClick={doCopy}
               style={{ display: 'flex', alignItems: 'center', gap: 6, border: `1.5px solid ${t.border}`, background: 'transparent', color: copied ? t.success : t.textMuted, fontWeight: 700, fontSize: 12.5, borderRadius: 10, padding: '7px 12px', cursor: 'pointer' }}
             >
-              {copied ? <Check size={15} /> : <Copy size={14} />} {copied ? 'Kopiert' : 'Kopieren'}
+              {copied ? <Check size={15} /> : <Copy size={14} />} {copied ? tr(lang, 'common.copied') : tr(lang, 'common.copy')}
             </button>
           </div>
           <div style={{ background: t.cardAlt, borderRadius: 12, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -160,7 +164,7 @@ export function DetailItemSheet({
                 rows.push(
                   <div key={f.key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5 }}>
                     <span style={{ color: f.indent ? t.textFaint : t.text, fontStyle: f.indent ? 'italic' : 'normal', paddingLeft: f.indent ? 12 : 0 }}>
-                      {f.indent ? '– ' : ''}{f.label}
+                      {f.indent ? '– ' : ''}{tr(lang, `macros.${f.key === 'satFat' ? 'satFat' : f.key}`)}
                     </span>
                     <span style={{ fontWeight: 700, color: t.text, fontVariantNumeric: 'tabular-nums' }}>{fmtNum(food[f.key])} {f.unit}</span>
                   </div>,
@@ -169,7 +173,7 @@ export function DetailItemSheet({
               if (f.key === 'satFat' && unsat != null) {
                 rows.push(
                   <div key="unsat" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5 }}>
-                    <span style={{ color: t.textFaint, fontStyle: 'italic', paddingLeft: 12 }}>– davon ungesättigt</span>
+                    <span style={{ color: t.textFaint, fontStyle: 'italic', paddingLeft: 12 }}>{tr(lang, 'detail.unsaturated')}</span>
                     <span style={{ fontWeight: 700, color: t.textFaint, fontVariantNumeric: 'tabular-nums' }}>{fmtNum(unsat)} g</span>
                   </div>,
                 );
@@ -183,7 +187,7 @@ export function DetailItemSheet({
       {/* Zutaten */}
       {food && food.ingredients && String(food.ingredients).trim() && (
         <div style={section}>
-          <div style={{ ...secLabel, display: 'inline-flex', alignItems: 'center', gap: 6 }}><List size={13} /> Zutaten</div>
+          <div style={{ ...secLabel, display: 'inline-flex', alignItems: 'center', gap: 6 }}><List size={13} /> {tr(lang, 'detail.ingredients')}</div>
           <div style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.5, background: t.cardAlt, borderRadius: 12, padding: '10px 14px' }}>
             {food.ingredients}
           </div>
@@ -194,24 +198,24 @@ export function DetailItemSheet({
           vorhandenem Regel-Treffer (die Komponente rendert sonst nichts). */}
       {(item.category === 'Obst' || item.category === 'Gemüse') && (
         <div style={section}>
-          <div style={secLabel}>Lagerung (Obst &amp; Gemüse)</div>
-          <ProduceStorageDetails name={item.name} zone={zone} t={t} />
+          <div style={secLabel}>{tr(lang, 'detail.produceStorage')}</div>
+          <ProduceStorageDetails name={item.name} zone={zone} t={t} lang={lang} />
         </div>
       )}
 
       {/* Haltbarkeit: Geöffnet / Ungeöffnet / Tiefgefroren */}
       <div style={section}>
-        <div style={secLabel}>Haltbarkeit</div>
+        <div style={secLabel}>{tr(lang, 'detail.shelfLife')}</div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-          {SHELF_TABS.map((tab) => (
+          {shelfTabs.map((tab) => (
             <button key={tab.id} type="button" onClick={() => setShelfTab(tab.id)} style={pillStyle(shelfTab === tab.id, t)}>
               {tab.label}
             </button>
           ))}
         </div>
-        {shelfTab === 'opened' && <ShelfLifeDetails name={item.name} food={food} zone={zone} t={t} />}
-        {shelfTab === 'unopened' && <UnopenedShelfLifeDetails name={item.name} t={t} />}
-        {shelfTab === 'frozen' && <FrozenShelfLifeDetails name={item.name} t={t} />}
+        {shelfTab === 'opened' && <ShelfLifeDetails name={item.name} food={food} zone={zone} t={t} lang={lang} />}
+        {shelfTab === 'unopened' && <UnopenedShelfLifeDetails name={item.name} t={t} lang={lang} />}
+        {shelfTab === 'frozen' && <FrozenShelfLifeDetails name={item.name} t={t} lang={lang} />}
       </div>
     </Modal>
   );

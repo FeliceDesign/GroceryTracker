@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Plus, Check } from 'lucide-react';
 import { ClearableInput } from './ClearableInput.jsx';
 import { makeInputStyle } from '../lib/styles.js';
+import { tr } from '../lib/i18n.js';
 
 // Dropdown zur Kategorieauswahl mit Möglichkeit, direkt eine neue Kategorie
 // anzulegen.
-export function CategoryPicker({ value, onChange, categories, onAddCategory, t }) {
+export function CategoryPicker({ value, onChange, categories, onAddCategory, t, lang = 'de' }) {
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState('');
@@ -65,11 +66,12 @@ export function CategoryPicker({ value, onChange, categories, onAddCategory, t }
               <div style={{ display: 'flex', gap: 8, padding: '10px 12px', borderTop: `1px solid ${t.border}` }}>
                 <ClearableInput
                   t={t}
+                  lang={lang}
                   autoFocus
                   value={draft}
                   onChange={setDraft}
                   onKeyDown={(e) => e.key === 'Enter' && confirmAdd()}
-                  placeholder="Neue Kategorie"
+                  placeholder={tr(lang, 'categoryPicker.newCategoryPlaceholder')}
                   style={{ ...inputStyle, marginTop: 0 }}
                   wrapperStyle={{ flex: 1, minWidth: 0 }}
                 />
@@ -81,7 +83,7 @@ export function CategoryPicker({ value, onChange, categories, onAddCategory, t }
                     background: t.btnPrimary, color: t.btnPrimaryText, fontWeight: 700, cursor: 'pointer',
                   }}
                 >
-                  OK
+                  {tr(lang, 'common.ok')}
                 </button>
               </div>
             ) : (
@@ -94,7 +96,7 @@ export function CategoryPicker({ value, onChange, categories, onAddCategory, t }
                   background: 'transparent', color: t.textMuted, fontWeight: 700, fontSize: 14, cursor: 'pointer',
                 }}
               >
-                <Plus size={15} /> Neue Kategorie
+                <Plus size={15} /> {tr(lang, 'categoryPicker.addNew')}
               </button>
             )}
           </div>

@@ -10,15 +10,11 @@ import { Row } from '../../components/Row.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { makeInputStyle, pillStyle } from '../../lib/styles.js';
 import { DownloadsSaver } from '../../lib/downloadsSaver.js';
-
-const TABS = [
-  { id: 'backup', label: 'Backup' },
-  { id: 'list', label: 'Bestandsliste' },
-];
+import { tr } from '../../lib/i18n.js';
 
 // Menschenlesbare Tabelle (Kategorie | Artikel) je ausgewähltem Lagerort –
 // zum schnellen Teilen (z.B. per Nachricht), kein Backup zum Wiederherstellen.
-function buildInventoryText(items, zones, selectedIds) {
+function buildInventoryText(items, zones, selectedIds, lang) {
   const selected = zones.filter((z) => selectedIds.includes(z.id));
   if (selected.length === 0) return '';
   const blocks = selected.map((z) => {
@@ -27,10 +23,12 @@ function buildInventoryText(items, zones, selectedIds) {
       .slice()
       .sort((a, b) => (a.category || '').localeCompare(b.category || '', 'de') || a.name.localeCompare(b.name, 'de'));
     const header = `${z.emoji} ${z.label.toUpperCase()} (${z.id})`;
-    if (zoneItems.length === 0) return `${header}\n\nKeine Artikel.`;
-    const catWidth = Math.max(9, ...zoneItems.map((i) => (i.category || 'Sonstiges').length));
+    if (zoneItems.length === 0) return `${header}\n\n${tr(lang, 'backup.noItemsInZone')}`;
+    const catCol = tr(lang, 'backup.category');
+    const itemCol = tr(lang, 'backup.articleCol');
+    const catWidth = Math.max(catCol.length, ...zoneItems.map((i) => (i.category || 'Sonstiges').length));
     const lines = [
-      `${'KATEGORIE'.padEnd(catWidth)} | ARTIKEL`,
+      `${catCol.padEnd(catWidth)} | ${itemCol}`,
       `${'-'.repeat(catWidth)}|${'-'.repeat(30)}`,
       ...zoneItems.map((i) => `${(i.category || 'Sonstiges').padEnd(catWidth)} | ${i.name}`),
     ];
@@ -39,10 +37,15 @@ function buildInventoryText(items, zones, selectedIds) {
   return blocks.join('\n\n\n');
 }
 
+const TABS = (lang) => [
+  { id: 'backup', label: tr(lang, 'backup.tabBackup') },
+  { id: 'list', label: tr(lang, 'backup.tabList') },
+];
+
 // Konsolidierte Backup-/Export-Ansicht: JSON-Backup (Sichern/Teilen/
 // Zwischenablage/Import) auf einem Tab, dazu eine separate, zonen-
 // filterbare Bestandsliste als reine Lesetabelle auf einem zweiten Tab.
-export function BackupSheet({ open, onClose, t, dark, zones, items, stats, buildBackup, restoreBackup, previewBackup }) {
+export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items, stats, buildBackup, restoreBackup, previewBackup }) {
   const [tab, setTab] = useState('backup');
   const [importing, setImporting] = useState(false);
   const [importText, setImportText] = useState('');
@@ -52,6 +55,7 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
   const [selectedZoneIds, setSelectedZoneIds] = useState(() => zones.map((z) => z.id));
   const fileRef = useRef(null);
   const inputStyle = makeInputStyle(t);
+  const tabs = TABS(lang);
 
   const flashMsg = (m) => { setMsg(m); setTimeout(() => setMsg(''), 3000); };
 
@@ -77,7 +81,7 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => preview(String(reader.result || ''));
-    reader.onerror = () => { setMsg('Datei konnte nicht gelesen werden.'); };
+    reader.onerror = () => { setMsg(tr(lang, 'backup.fileReadFailed')); };
     reader.readAsText(file);
     e.target.value = ''; // gleiche Datei erneut wählbar machen
   };
@@ -98,9 +102,9 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
     if (Capacitor.isNativePlatform()) {
       try {
         await DownloadsSaver.save({ filename, content: json });
-        flashMsg(`✓ Gespeichert: Downloads/${filename}`);
+        flashMsg(tr(lang, 'backup.savedTo', { filename }));
       } catch {
-        flashMsg('Backup konnte nicht gespeichert werden.');
+        flashMsg(tr(lang, 'backup.saveFailed'));
       }
       return;
     }
@@ -116,9 +120,9 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      flashMsg('✓ Backup heruntergeladen.');
+      flashMsg(tr(lang, 'backup.downloaded'));
     } catch {
-      flashMsg('Backup konnte nicht erstellt werden.');
+      flashMsg(tr(lang, 'backup.createFailed'));
     }
   };
 
@@ -132,9 +136,9 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
       try {
         await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Cache, encoding: Encoding.UTF8 });
         const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
-        await Share.share({ title: 'Backup teilen', url: uri, dialogTitle: 'Backup teilen…' });
+        await Share.share({ title: tr(lang, 'backup.shareBackup'), url: uri, dialogTitle: `${tr(lang, 'backup.shareBackup')}…` });
       } catch (e) {
-        if (!e?.message?.includes('cancel')) flashMsg('Teilen fehlgeschlagen.');
+        if (!e?.message?.includes('cancel')) flashMsg(tr(lang, 'backup.shareFailed'));
       }
       return;
     }
@@ -142,12 +146,12 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
     if (navigator.share) {
       try {
         const file = new File([json], filename, { type: 'application/json' });
-        await navigator.share({ files: [file], title: 'Backup teilen' });
+        await navigator.share({ files: [file], title: tr(lang, 'backup.shareBackup') });
       } catch {
         // Abgebrochen oder nicht unterstützt – keine Fehlermeldung nötig
       }
     } else {
-      flashMsg('Teilen ist in der Browser-Vorschau nicht verfügbar.');
+      flashMsg(tr(lang, 'backup.shareUnavailable'));
     }
   };
 
@@ -156,15 +160,15 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
     const json = buildBackup(exportMacros);
     try {
       await navigator.clipboard.writeText(json);
-      flashMsg('✓ Backup in Zwischenablage kopiert.');
+      flashMsg(tr(lang, 'backup.copiedBackup'));
     } catch {
-      flashMsg('Kopieren nicht möglich.');
+      flashMsg(tr(lang, 'backup.copyFailed'));
     }
   };
 
   const inventoryText = useMemo(
-    () => buildInventoryText(items, zones, selectedZoneIds),
-    [items, zones, selectedZoneIds],
+    () => buildInventoryText(items, zones, selectedZoneIds, lang),
+    [items, zones, selectedZoneIds, lang],
   );
 
   const toggleZone = (id) => {
@@ -174,16 +178,16 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
   const doCopyList = async () => {
     try {
       await navigator.clipboard.writeText(inventoryText);
-      flashMsg('✓ Bestandsliste in Zwischenablage kopiert.');
+      flashMsg(tr(lang, 'backup.copiedList'));
     } catch {
-      flashMsg('Kopieren nicht möglich.');
+      flashMsg(tr(lang, 'backup.copyFailed'));
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} t={t} title="Backup & Export" subtitle="Sichern, Teilen, Bestandsliste">
+    <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'backup.title')} subtitle={tr(lang, 'backup.subtitle')}>
       <div style={{ display: 'flex', gap: 8, marginTop: 4, marginBottom: 16 }}>
-        {TABS.map((tb) => (
+        {tabs.map((tb) => (
           <button key={tb.id} type="button" onClick={() => setTab(tb.id)} style={pillStyle(tab === tb.id, t)}>
             {tb.label}
           </button>
@@ -195,14 +199,14 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <SettingRow
               t={t}
-              label="Makros mit exportieren"
-              sub={`Nährwerte von ${stats.foods} Lebensmitteln ins Backup aufnehmen.`}
+              label={tr(lang, 'backup.exportMacros')}
+              sub={tr(lang, 'backup.exportMacrosHint', { count: stats.foods })}
               control={<Toggle t={t} on={exportMacros} onChange={setExportMacros} />}
             />
-            <Row t={t} icon={<Download size={19} />} label="Backup exportieren" sub={`${stats.items} Artikel als JSON${exportMacros ? ' inkl. Makros' : ' ohne Makros'} · als Datei speichern`} onClick={doExport} />
-            <Row t={t} icon={<Share2 size={19} />} label="Backup teilen" sub="An eine App senden (Mail, Drive, Messenger, …)" onClick={doShareExport} />
-            <Row t={t} icon={<ClipboardCopy size={19} />} label="In Zwischenablage kopieren" sub="Zum Einfügen beim Import" onClick={doCopyExport} />
-            <Row t={t} icon={<Upload size={19} />} label="Backup importieren" sub="Aus Datei oder JSON – mit Bestätigung" onClick={() => { setImporting((v) => !v); setPending(null); }} />
+            <Row t={t} icon={<Download size={19} />} label={tr(lang, 'backup.exportBackup')} sub={tr(lang, 'backup.exportBackupHint', { count: stats.items, macros: exportMacros ? tr(lang, 'backup.withMacros') : tr(lang, 'backup.withoutMacros') })} onClick={doExport} />
+            <Row t={t} icon={<Share2 size={19} />} label={tr(lang, 'backup.shareBackup')} sub={tr(lang, 'backup.shareBackupHint')} onClick={doShareExport} />
+            <Row t={t} icon={<ClipboardCopy size={19} />} label={tr(lang, 'backup.copyToClipboard')} sub={tr(lang, 'backup.copyToClipboardHint')} onClick={doCopyExport} />
+            <Row t={t} icon={<Upload size={19} />} label={tr(lang, 'backup.importBackup')} sub={tr(lang, 'backup.importBackupHint')} onClick={() => { setImporting((v) => !v); setPending(null); }} />
           </div>
 
           {importing && (
@@ -218,15 +222,15 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
                   marginBottom: 10,
                 }}
               >
-                <Upload size={17} /> Datei auswählen (.json)
+                <Upload size={17} /> {tr(lang, 'backup.pickFile')}
               </button>
               <div style={{ fontSize: 11.5, color: t.textFaint, marginBottom: 10, textAlign: 'center' }}>
-                oder JSON-Text einfügen:
+                {tr(lang, 'backup.orPasteJson')}
               </div>
               <textarea
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
-                placeholder="Backup-JSON hier einfügen…"
+                placeholder={tr(lang, 'backup.pastePlaceholder')}
                 rows={5}
                 style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: 12.5 }}
               />
@@ -240,20 +244,22 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
                   cursor: importText.trim() ? 'pointer' : 'default', opacity: importText.trim() ? 1 : 0.5,
                 }}
               >
-                Text prüfen
+                {tr(lang, 'backup.checkText')}
               </button>
             </div>
           )}
 
           {pending && (
             <div style={{ marginTop: 12, background: t.cardAlt, borderRadius: 14, padding: 14, border: `1.5px solid ${t.dangerBorder}` }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: t.text, marginBottom: 6 }}>Backup wirklich übernehmen?</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: t.text, marginBottom: 6 }}>{tr(lang, 'backup.confirmRestore')}</div>
               <div style={{ fontSize: 12.5, color: t.textMuted, lineHeight: 1.5 }}>
-                {pending.summary.exportedAt ? `Stand: ${new Date(pending.summary.exportedAt).toLocaleString('de-DE')}` : 'Ohne Datum'}<br />
-                <b>{pending.summary.items}</b> Artikel · <b>{pending.summary.foods}</b> Makro-Datensätze · <b>{pending.summary.zones}</b> Lagerorte · <b>{pending.summary.categories}</b> Kategorien
+                {pending.summary.exportedAt ? tr(lang, 'backup.restoreStamp', { date: new Date(pending.summary.exportedAt).toLocaleString(lang === 'en' ? 'en-US' : 'de-DE') }) : tr(lang, 'backup.noDate')}<br />
+                {tr(lang, 'backup.restoreSummary', { items: pending.summary.items, foods: pending.summary.foods, zones: pending.summary.zones, categories: pending.summary.categories }).split(/(\d+)/).map((part, i) => (
+                  /^\d+$/.test(part) ? <b key={i}>{part}</b> : part
+                ))}
               </div>
               <div style={{ fontSize: 12, color: t.danger, marginTop: 8, lineHeight: 1.4 }}>
-                ⚠️ Ersetzt deinen aktuellen Bestand vollständig.
+                {tr(lang, 'backup.restoreWarning')}
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                 <button
@@ -261,14 +267,14 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
                   onClick={() => setPending(null)}
                   style={{ flex: 1, padding: '12px', borderRadius: 12, border: `1.5px solid ${t.border}`, background: 'transparent', color: t.textMuted, fontWeight: 700, cursor: 'pointer' }}
                 >
-                  Abbrechen
+                  {tr(lang, 'backup.cancel')}
                 </button>
                 <button
                   type="button"
                   onClick={confirmImport}
                   style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: t.danger, color: '#fff', fontWeight: 700, cursor: 'pointer' }}
                 >
-                  Ersetzen
+                  {tr(lang, 'backup.replace')}
                 </button>
               </div>
             </div>
@@ -279,7 +285,7 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
       {tab === 'list' && (
         <>
           <div style={{ fontSize: 11.5, color: t.textFaint, lineHeight: 1.5, marginBottom: 12 }}>
-            Lesbare Tabelle für ausgewählte Lagerorte, z.B. zum Teilen per Nachricht – kein Backup zum Wiederherstellen.
+            {tr(lang, 'backup.listHint')}
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
@@ -315,20 +321,20 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
               onClick={() => setSelectedZoneIds(zones.map((z) => z.id))}
               style={{ flex: 1, padding: '10px', borderRadius: 12, border: `1.5px solid ${t.border}`, background: 'transparent', color: t.text, fontWeight: 700, cursor: 'pointer' }}
             >
-              Alle
+              {tr(lang, 'backup.all')}
             </button>
             <button
               type="button"
               onClick={() => setSelectedZoneIds([])}
               style={{ flex: 1, padding: '10px', borderRadius: 12, border: `1.5px solid ${t.border}`, background: 'transparent', color: t.text, fontWeight: 700, cursor: 'pointer' }}
             >
-              Keine
+              {tr(lang, 'backup.none')}
             </button>
           </div>
 
           <textarea
             readOnly
-            value={inventoryText || 'Keine Lagerorte ausgewählt.'}
+            value={inventoryText || tr(lang, 'backup.noZonesSelected')}
             rows={12}
             style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: 11.5, whiteSpace: 'pre' }}
           />
@@ -343,7 +349,7 @@ export function BackupSheet({ open, onClose, t, dark, zones, items, stats, build
               cursor: inventoryText ? 'pointer' : 'default', opacity: inventoryText ? 1 : 0.5,
             }}
           >
-            In Zwischenablage kopieren
+            {tr(lang, 'backup.copyList')}
           </button>
         </>
       )}

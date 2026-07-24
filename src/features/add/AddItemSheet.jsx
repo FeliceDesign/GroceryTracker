@@ -8,11 +8,12 @@ import { MacroSection } from '../macros/MacroSection.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { emptyMacros, defaultBasisForUnit } from '../../lib/macros.js';
 import { makeInputStyle, makeLabelStyle, pillStyle, btnCircle, primaryButtonStyle } from '../../lib/styles.js';
+import { tr } from '../../lib/i18n.js';
 
 // Erfassungs-Formular. Bewusst so aufgebaut, dass die häufig genutzten
 // Aktionen – Scannen und Hinzufügen – unten in Daumenreichweite sitzen.
 export function AddItemSheet({
-  open, onClose, t, dark,
+  open, onClose, t, dark, lang = 'de',
   zones, categories, onAddCategory,
   newItem, setNewItem,
   scanSupported, scanBusy, scanMsg,
@@ -51,8 +52,8 @@ export function AddItemSheet({
       )}
       {scanSupported && (
         <div style={{ display: 'flex', gap: 8 }}>
-          {scanBtn(onScanBarcode, (<><BarcodeIcon size={18} color={pal.accent} /> {scanBusy ? 'Scanne…' : 'Barcode'}</>), true)}
-          {scanBtn(onOpenBatch, (<><Layers size={17} /> Mehrere</>), false)}
+          {scanBtn(onScanBarcode, (<><BarcodeIcon size={18} color={pal.accent} /> {scanBusy ? tr(lang, 'add.scanning') : tr(lang, 'add.barcode')}</>), true)}
+          {scanBtn(onOpenBatch, (<><Layers size={17} /> {tr(lang, 'add.multiple')}</>), false)}
         </div>
       )}
       <button
@@ -60,19 +61,20 @@ export function AddItemSheet({
         disabled={!canSubmit}
         style={{ ...primaryButtonStyle(t), opacity: canSubmit ? 1 : 0.45, cursor: canSubmit ? 'pointer' : 'default' }}
       >
-        Hinzufügen
+        {tr(lang, 'add.submit')}
       </button>
     </div>
   );
 
   return (
-    <Modal open={open} onClose={onClose} t={t} title="Neuer Artikel" footer={footer}>
-      <label style={{ ...labelStyle, marginTop: 4 }}>Name</label>
+    <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'add.title')} footer={footer}>
+      <label style={{ ...labelStyle, marginTop: 4 }}>{tr(lang, 'add.name')}</label>
       <ClearableInput
         t={t}
+        lang={lang}
         value={newItem.name}
         onChange={(v) => setNewItem((s) => ({ ...s, name: v }))}
-        placeholder="z.B. Frischmilch"
+        placeholder={tr(lang, 'add.namePlaceholder')}
         style={inputStyle}
         wrapperStyle={{ marginTop: 6 }}
         autoFocus
@@ -85,20 +87,22 @@ export function AddItemSheet({
           onChange={(id) => setNewItem((s) => ({ ...s, zone: id }))}
           t={t}
           dark={dark}
-          label="Lagerort"
+          lang={lang}
+          label={tr(lang, 'add.location')}
         />
       </div>
 
-      <label style={labelStyle}>Kategorie</label>
+      <label style={labelStyle}>{tr(lang, 'add.category')}</label>
       <CategoryPicker
         value={newItem.category}
         onChange={(c) => setNewItem((s) => ({ ...s, category: c }))}
         categories={categories}
         onAddCategory={onAddCategory}
         t={t}
+        lang={lang}
       />
 
-      <label style={labelStyle}>Einheit</label>
+      <label style={labelStyle}>{tr(lang, 'add.unit')}</label>
       <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
         {['stk', 'g', 'ml'].map((u) => (
           <button
@@ -107,12 +111,12 @@ export function AddItemSheet({
             onClick={() => setNewItem((s) => ({ ...s, unit: u, qty: u === 'stk' ? 1 : 500 }))}
             style={pillStyle(newItem.unit === u, t)}
           >
-            {u === 'stk' ? 'Stück' : u}
+            {u === 'stk' ? tr(lang, 'add.piece') : u}
           </button>
         ))}
       </div>
 
-      <label style={labelStyle}>Menge</label>
+      <label style={labelStyle}>{tr(lang, 'add.quantity')}</label>
       {newItem.unit === 'stk' ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
           <button type="button" onClick={() => setNewItem((s) => ({ ...s, qty: Math.max(1, s.qty - 1) }))} style={btnCircle(t.cardAlt, t.pillInactiveText, 38)}>
@@ -136,7 +140,7 @@ export function AddItemSheet({
         </div>
       )}
 
-      <label style={labelStyle}>Mindesthaltbarkeitsdatum (optional)</label>
+      <label style={labelStyle}>{tr(lang, 'add.mhd')}</label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
         <input
           type="date"
@@ -149,7 +153,7 @@ export function AddItemSheet({
             type="button"
             onClick={() => onScanDate('add')}
             disabled={scanBusy}
-            aria-label="MHD per Foto einlesen"
+            aria-label={tr(lang, 'add.photoAria')}
             style={{
               flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
               padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${t.border}`,
@@ -157,7 +161,7 @@ export function AddItemSheet({
               cursor: scanBusy ? 'default' : 'pointer', opacity: scanBusy ? 0.6 : 1,
             }}
           >
-            <Camera size={17} /> Foto
+            <Camera size={17} /> {tr(lang, 'add.photo')}
           </button>
         )}
       </div>
@@ -167,6 +171,7 @@ export function AddItemSheet({
         macros={newItem.macros || emptyMacros(defaultBasisForUnit(newItem.unit))}
         onChange={(patch) => setNewItem((s) => ({ ...s, macros: { ...(s.macros || emptyMacros(defaultBasisForUnit(s.unit))), ...patch } }))}
         t={t}
+        lang={lang}
         scanSupported={scanSupported}
         accent={pal.accent}
       />

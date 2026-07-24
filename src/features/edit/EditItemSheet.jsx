@@ -10,9 +10,10 @@ import { zonePalette } from '../../lib/colors.js';
 import { emptyMacros, defaultBasisForUnit } from '../../lib/macros.js';
 import { todayISO } from '../../lib/date.js';
 import { makeInputStyle, makeLabelStyle, pillStyle, btnCircle, primaryButtonStyle } from '../../lib/styles.js';
+import { tr } from '../../lib/i18n.js';
 
 export function EditItemSheet({
-  editItem, setEditItem, onClose, t, dark,
+  editItem, setEditItem, onClose, t, dark, lang = 'de',
   zones, categories, onAddCategory,
   scanSupported, scanBusy, scanMsg, stepGml, showSlider, onScanDate, onSave, onDelete,
 }) {
@@ -80,18 +81,19 @@ export function EditItemSheet({
             background: t.dangerBg, color: t.danger, fontWeight: 700, fontSize: 14.5, cursor: 'pointer',
           }}
         >
-          <Trash2 size={17} /> Entfernen
+          <Trash2 size={17} /> {tr(lang, 'edit.remove')}
         </button>
-        <button onClick={onSave} style={primaryButtonStyle(t)}>Speichern</button>
+        <button onClick={onSave} style={primaryButtonStyle(t)}>{tr(lang, 'edit.save')}</button>
       </div>
     </div>
   );
 
   return (
-    <Modal open={!!editItem} onClose={onClose} t={t} title="Artikel bearbeiten" footer={footer}>
-      <label style={{ ...labelStyle, marginTop: 4 }}>Name</label>
+    <Modal open={!!editItem} onClose={onClose} t={t} lang={lang} title={tr(lang, 'edit.title')} footer={footer}>
+      <label style={{ ...labelStyle, marginTop: 4 }}>{tr(lang, 'edit.name')}</label>
       <ClearableInput
         t={t}
+        lang={lang}
         value={editItem.name}
         onChange={(v) => setEditItem((s) => ({ ...s, name: v }))}
         style={inputStyle}
@@ -105,20 +107,22 @@ export function EditItemSheet({
           onChange={(id) => setEditItem((s) => ({ ...s, zone: id }))}
           t={t}
           dark={dark}
-          label="Lagerort"
+          lang={lang}
+          label={tr(lang, 'edit.location')}
         />
       </div>
 
-      <label style={labelStyle}>Kategorie</label>
+      <label style={labelStyle}>{tr(lang, 'edit.category')}</label>
       <CategoryPicker
         value={editItem.category}
         onChange={(c) => setEditItem((s) => ({ ...s, category: c }))}
         categories={categories}
         onAddCategory={onAddCategory}
         t={t}
+        lang={lang}
       />
 
-      <label style={labelStyle}>Einheit</label>
+      <label style={labelStyle}>{tr(lang, 'edit.unit')}</label>
       <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
         {['stk', 'g', 'ml'].map((u) => (
           <button
@@ -127,12 +131,12 @@ export function EditItemSheet({
             onClick={() => setEditItem((s) => ({ ...s, unit: u, qty: u === 'stk' ? Math.max(1, Math.round(s.qty) || 1) : (s.unit === 'stk' ? 500 : s.qty) }))}
             style={pillStyle(editItem.unit === u, t)}
           >
-            {u === 'stk' ? 'Stück' : u}
+            {u === 'stk' ? tr(lang, 'edit.piece') : u}
           </button>
         ))}
       </div>
 
-      <label style={labelStyle}>Menge</label>
+      <label style={labelStyle}>{tr(lang, 'edit.quantity')}</label>
       {editItem.unit === 'stk' ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
           <button type="button" onClick={() => setEditItem((s) => ({ ...s, qty: Math.max(0, s.qty - 1) }))} style={btnCircle(t.cardAlt, t.pillInactiveText, 38)}>
@@ -143,7 +147,7 @@ export function EditItemSheet({
             inputMode="numeric"
             value={editItem.qty}
             onChange={(e) => setEditItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
-            aria-label="Menge"
+            aria-label={tr(lang, 'edit.quantityAria')}
             style={{ ...inputStyle, marginTop: 0, width: 72, textAlign: 'center', fontSize: 18, fontWeight: 800, padding: '8px 6px' }}
           />
           <button type="button" onClick={() => setEditItem((s) => ({ ...s, qty: s.qty + 1 }))} style={btnCircle(pal.accentBg, pal.accent, 38)}>
@@ -164,7 +168,7 @@ export function EditItemSheet({
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => armSign('-')}
                   aria-pressed={qtySign === '-'}
-                  aria-label="Menge abziehen (Delta)"
+                  aria-label={tr(lang, 'edit.decreaseDeltaAria')}
                   style={btnCircle(qtySign === '-' ? pal.accentBg : t.cardAlt, qtySign === '-' ? pal.accent : t.pillInactiveText, 34)}
                 >
                   <Minus size={15} strokeWidth={2.5} />
@@ -174,7 +178,7 @@ export function EditItemSheet({
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => armSign('+')}
                   aria-pressed={qtySign === '+'}
-                  aria-label="Menge addieren (Delta)"
+                  aria-label={tr(lang, 'edit.increaseDeltaAria')}
                   style={btnCircle(qtySign === '+' ? pal.accentBg : t.cardAlt, qtySign === '+' ? pal.accent : t.pillInactiveText, 34)}
                 >
                   <Plus size={15} strokeWidth={2.5} />
@@ -191,8 +195,8 @@ export function EditItemSheet({
                   onChange={(e) => setQtyDraft(e.target.value)}
                   onBlur={commitQtyDraft}
                   onKeyDown={(e) => { if (e.key === 'Enter') { commitQtyDraft(); e.target.blur(); } }}
-                  placeholder={qtySign ? 'Betrag' : undefined}
-                  aria-label={qtySign ? `Betrag zum ${qtySign === '-' ? 'Abziehen' : 'Addieren'}` : 'Menge'}
+                  placeholder={qtySign ? tr(lang, 'edit.amountPlaceholder') : undefined}
+                  aria-label={qtySign ? tr(lang, 'edit.amountAria', { op: tr(lang, qtySign === '-' ? 'edit.subtract' : 'edit.addOp') }) : tr(lang, 'edit.quantity')}
                   style={{ ...inputStyle, marginTop: 0 }}
                 />
                 <span style={{ fontSize: 15, fontWeight: 700, color: t.textMuted }}>{editItem.unit}</span>
@@ -205,7 +209,7 @@ export function EditItemSheet({
                   step={step}
                   value={Math.min(editItem.qty, sliderMax)}
                   onChange={(e) => setEditItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
-                  aria-label="Menge per Schieberegler"
+                  aria-label={tr(lang, 'edit.sliderAria')}
                   style={{ width: '100%', marginTop: 12, accentColor: pal.accent }}
                 />
               )}
@@ -214,10 +218,11 @@ export function EditItemSheet({
         })()
       )}
 
-      <label style={labelStyle}>Mindesthaltbarkeitsdatum</label>
+      <label style={labelStyle}>{tr(lang, 'edit.mhd')}</label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
         <ClearableInput
           t={t}
+          lang={lang}
           type="date"
           value={editItem.mhd || ''}
           onChange={(v) => setEditItem((s) => ({ ...s, mhd: v || null }))}
@@ -229,8 +234,8 @@ export function EditItemSheet({
             type="button"
             onClick={() => onScanDate('edit')}
             disabled={scanBusy}
-            aria-label={scanBusy ? 'Lese MHD…' : 'MHD per Foto einlesen'}
-            title="MHD per Foto einlesen"
+            aria-label={scanBusy ? tr(lang, 'edit.reading') : tr(lang, 'edit.photoAria')}
+            title={tr(lang, 'edit.photoAria')}
             style={{
               flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: 46, height: 46, borderRadius: 12, border: `1.5px solid ${t.border}`,
@@ -243,7 +248,7 @@ export function EditItemSheet({
         )}
       </div>
 
-      <label style={labelStyle}>Status</label>
+      <label style={labelStyle}>{tr(lang, 'edit.status')}</label>
       <button
         type="button"
         onClick={() => setEditItem((s) => ({ ...s, opened: !s.opened, openedAt: !s.opened ? (s.openedAt || todayISO()) : null }))}
@@ -257,12 +262,12 @@ export function EditItemSheet({
         }}
       >
         <PackageOpen size={18} />
-        {editItem.opened ? 'Geöffnet' : 'Als geöffnet markieren'}
+        {editItem.opened ? tr(lang, 'edit.opened') : tr(lang, 'edit.markOpened')}
       </button>
 
       {editItem.opened && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
-          <span style={{ fontSize: 13, color: t.textMuted, flexShrink: 0 }}>Geöffnet am</span>
+          <span style={{ fontSize: 13, color: t.textMuted, flexShrink: 0 }}>{tr(lang, 'edit.openedOn')}</span>
           <input
             type="date"
             value={editItem.openedAt || todayISO()}
@@ -278,6 +283,7 @@ export function EditItemSheet({
         macros={editItem.macros || emptyMacros(defaultBasisForUnit(editItem.unit))}
         onChange={(patch) => setEditItem((s) => ({ ...s, macros: { ...(s.macros || emptyMacros(defaultBasisForUnit(s.unit))), ...patch } }))}
         t={t}
+        lang={lang}
         scanSupported={scanSupported}
         accent={pal.accent}
       />

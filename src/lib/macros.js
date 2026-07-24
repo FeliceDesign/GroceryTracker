@@ -4,8 +4,11 @@
 // auf eine Bezugsgröße (pro 100 g / 100 ml / Portion) und ist über den
 // normalisierten Namen mit den Bestands-Artikeln verknüpft. So bleiben die
 // Werte erhalten, auch wenn ein Artikel aufgebraucht/gelöscht wird.
+import { tr } from './i18n.js';
 
 // Reihenfolge = Anzeige-/Kopier-Reihenfolge. `indent` markiert „davon"-Zeilen.
+// `label`/`tableLabel` bleiben Deutsch als interner Fallback/Schlüssel für
+// formatMacroTable() (Klartext-Export); die UI übersetzt über macros.<key>.
 export const MACRO_FIELDS = [
   { key: 'kcal', label: 'Kalorien', unit: 'kcal', decimals: 0 },
   { key: 'protein', label: 'Protein', unit: 'g' },
@@ -17,11 +20,13 @@ export const MACRO_FIELDS = [
   { key: 'salt', label: 'Salz', unit: 'g' },
 ];
 
-export const BASIS_OPTIONS = [
-  { value: '100g', label: '100 g' },
-  { value: '100ml', label: '100 ml' },
-  { value: 'portion', label: 'Portion' },
-];
+export function basisOptions(lang = 'de') {
+  return [
+    { value: '100g', label: tr(lang, 'macros.basis100g') },
+    { value: '100ml', label: tr(lang, 'macros.basis100ml') },
+    { value: 'portion', label: tr(lang, 'macros.basisPortion') },
+  ];
+}
 
 // Normalisierter Schlüssel: kleingeschrieben, getrimmt, Mehrfach-Leerzeichen
 // zusammengefasst. Verknüpft Artikel-Name <-> Stammdaten-Datensatz.
@@ -40,13 +45,13 @@ export function fmtNum(n) {
   return String(num).replace('.', ',');
 }
 
-export function basisLabel(food) {
+export function basisLabel(food, lang = 'de') {
   if (!food) return '';
-  if (food.basis === '100ml') return 'pro 100 ml';
+  if (food.basis === '100ml') return tr(lang, 'macros.per100ml');
   if (food.basis === 'portion') {
-    return food.portionSize ? `pro Portion (${fmtNum(food.portionSize)} g)` : 'pro Portion';
+    return food.portionSize ? tr(lang, 'macros.perPortionSize', { size: fmtNum(food.portionSize) }) : tr(lang, 'macros.perPortion');
   }
-  return 'pro 100 g';
+  return tr(lang, 'macros.per100g');
 }
 
 // Leerer Bearbeitungs-Entwurf.
@@ -113,34 +118,41 @@ export function unsaturatedFat(m) {
 }
 
 // Kompakte Zusammenfassung für Listen (z.B. „64 kcal · 3,4 g EW · …").
-export function macroSummary(food) {
+const SUMMARY_ABBR = {
+  de: { protein: 'P', carbs: 'KH', fat: 'F' },
+  en: { protein: 'P', carbs: 'C', fat: 'F' },
+};
+
+export function macroSummary(food, lang = 'de') {
   if (!food) return '';
+  const abbr = SUMMARY_ABBR[lang] || SUMMARY_ABBR.de;
   const parts = [];
   if (food.kcal != null) parts.push(`${fmtNum(food.kcal)} kcal`);
-  if (food.protein != null) parts.push(`${fmtNum(food.protein)} g P`);
-  if (food.carbs != null) parts.push(`${fmtNum(food.carbs)} g KH`);
-  if (food.fat != null) parts.push(`${fmtNum(food.fat)} g F`);
+  if (food.protein != null) parts.push(`${fmtNum(food.protein)} g ${abbr.protein}`);
+  if (food.carbs != null) parts.push(`${fmtNum(food.carbs)} g ${abbr.carbs}`);
+  if (food.fat != null) parts.push(`${fmtNum(food.fat)} g ${abbr.fat}`);
   return parts.join(' · ');
 }
 
 // Mehrzeilige Nährwerttabelle zum Kopieren (an „:" ausgerichtet).
-export function formatMacroTable(food) {
+export function formatMacroTable(food, lang = 'de') {
   const name = (food.name || '').trim();
   const rows = [];
   MACRO_FIELDS.forEach((f) => {
     if (food[f.key] != null && food[f.key] !== '') {
+      const label = f.key === 'satFat' ? tr(lang, 'macros.satFatTable') : tr(lang, `macros.${f.key}`);
       rows.push({
-        label: (f.indent ? ' – ' : '') + (f.tableLabel || f.label) + ':',
+        label: (f.indent ? ' – ' : '') + label + ':',
         value: `${fmtNum(food[f.key])} ${f.unit}`,
       });
     }
     // Abgeleitete „davon ungesättigt"-Zeile direkt hinter „davon gesättigt".
     if (f.key === 'satFat') {
       const u = unsaturatedFat(food);
-      if (u != null) rows.push({ label: ' – davon ungesättigt:', value: `${fmtNum(u)} g` });
+      if (u != null) rows.push({ label: ` – ${tr(lang, 'macros.unsaturated')}:`, value: `${fmtNum(u)} g` });
     }
   });
-  const header = `${name} — ${basisLabel(food)}`;
+  const header = `${name} — ${basisLabel(food, lang)}`;
   if (rows.length === 0) return header;
   const width = Math.max(...rows.map((r) => r.label.length)) + 2;
   const body = rows.map((r) => r.label.padEnd(width) + r.value).join('\n');
@@ -175,6 +187,6 @@ export async function copyToClipboard(text) {
   }
 }
 
-export async function copyMacros(food) {
-  return copyToClipboard(formatMacroTable(food));
+export async function copyMacros(food, lang = 'de') {
+  return copyToClipboard(formatMacroTable(food, lang));
 }

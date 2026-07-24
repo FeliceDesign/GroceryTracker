@@ -4,6 +4,7 @@ import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { MacroEditor } from './MacroEditor.jsx';
 import { makeInputStyle, primaryButtonStyle } from '../../lib/styles.js';
+import { tr } from '../../lib/i18n.js';
 import {
   emptyMacros, foodToMacros, macrosToFood, macroSummary, basisLabel,
   hasMacros, hasFoodData, normalizeName, copyMacros,
@@ -11,7 +12,7 @@ import {
 
 // Stammdaten / Makros verwalten: alle Nährwert-Datensätze durchsuchen,
 // bearbeiten, neu anlegen, kopieren und löschen.
-export function ManageFoodsSheet({ open, onClose, t, foods, onUpsert, onRemove, scanSupported }) {
+export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpsert, onRemove, scanSupported }) {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null); // { name, macros } oder null
   const [copiedKey, setCopiedKey] = useState(null);
@@ -50,7 +51,7 @@ export function ManageFoodsSheet({ open, onClose, t, foods, onUpsert, onRemove, 
   };
 
   const copyRow = async (food) => {
-    const ok = await copyMacros(food);
+    const ok = await copyMacros(food, lang);
     if (ok) {
       setCopiedKey(food.key);
       setTimeout(() => setCopiedKey((k) => (k === food.key ? null : k)), 1600);
@@ -70,7 +71,7 @@ export function ManageFoodsSheet({ open, onClose, t, foods, onUpsert, onRemove, 
               background: t.dangerBg, color: t.danger, fontWeight: 700, fontSize: 14.5, cursor: 'pointer',
             }}
           >
-            <Trash2 size={17} /> Löschen
+            <Trash2 size={17} /> {tr(lang, 'foods.delete')}
           </button>
         )}
         <button
@@ -78,20 +79,21 @@ export function ManageFoodsSheet({ open, onClose, t, foods, onUpsert, onRemove, 
           disabled={!(editing.name || '').trim()}
           style={{ ...primaryButtonStyle(t), opacity: (editing.name || '').trim() ? 1 : 0.45 }}
         >
-          Speichern
+          {tr(lang, 'foods.save')}
         </button>
       </div>
     );
     return (
-      <Modal open={open} onClose={() => setEditing(null)} t={t} title={editing.key ? 'Nährwerte bearbeiten' : 'Neues Lebensmittel'} footer={footer}>
+      <Modal open={open} onClose={() => setEditing(null)} t={t} lang={lang} title={editing.key ? tr(lang, 'foods.editTitle') : tr(lang, 'foods.newTitle')} footer={footer}>
         <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 4 }}>
-          Name
+          {tr(lang, 'foods.name')}
         </label>
         <ClearableInput
           t={t}
+          lang={lang}
           value={editing.name}
           onChange={(v) => setEditing((s) => ({ ...s, name: v }))}
-          placeholder="z.B. Frischmilch"
+          placeholder={tr(lang, 'foods.namePlaceholder')}
           style={inputStyle}
           wrapperStyle={{ marginTop: 6, marginBottom: 16 }}
         />
@@ -100,6 +102,7 @@ export function ManageFoodsSheet({ open, onClose, t, foods, onUpsert, onRemove, 
           macros={editing.macros}
           onChange={(patch) => setEditing((s) => ({ ...s, macros: { ...s.macros, ...patch } }))}
           t={t}
+          lang={lang}
           scanSupported={scanSupported}
         />
       </Modal>
@@ -108,13 +111,13 @@ export function ManageFoodsSheet({ open, onClose, t, foods, onUpsert, onRemove, 
 
   // ----- Listen-Ansicht ------------------------------------------------------
   return (
-    <Modal open={open} onClose={onClose} t={t} title="Stammdaten / Makros" subtitle={`${(foods || []).length} Lebensmittel`}>
+    <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'foods.title')} subtitle={tr(lang, 'foods.subtitle', { count: (foods || []).length })}>
       <div style={{ position: 'relative', marginTop: 4, marginBottom: 12 }}>
         <Search size={16} color={t.textFaint} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Lebensmittel suchen…"
+          placeholder={tr(lang, 'foods.searchPlaceholder')}
           style={{ ...inputStyle, marginTop: 0, paddingLeft: 36 }}
         />
       </div>
@@ -129,12 +132,12 @@ export function ManageFoodsSheet({ open, onClose, t, foods, onUpsert, onRemove, 
           marginBottom: 14,
         }}
       >
-        <Plus size={17} /> Lebensmittel anlegen
+        <Plus size={17} /> {tr(lang, 'foods.addNew')}
       </button>
 
       {list.length === 0 ? (
         <div style={{ textAlign: 'center', color: t.textFaint, padding: '32px 12px', fontSize: 13.5 }}>
-          {search.trim() ? 'Nichts gefunden.' : 'Noch keine Nährwerte erfasst.'}
+          {search.trim() ? tr(lang, 'foods.nothingFound') : tr(lang, 'foods.noneYet')}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -150,15 +153,15 @@ export function ManageFoodsSheet({ open, onClose, t, foods, onUpsert, onRemove, 
                 </span>
                 <span style={{ display: 'block', fontSize: 11.5, color: t.textFaint, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {hasMacros(food)
-                    ? `${macroSummary(food)} · ${basisLabel(food)}`
-                    : (hasFoodData(food) ? 'Zutaten hinterlegt' : 'keine Werte')}
+                    ? `${macroSummary(food, lang)} · ${basisLabel(food, lang)}`
+                    : (hasFoodData(food) ? tr(lang, 'foods.ingredientsPresent') : tr(lang, 'foods.noValues'))}
                 </span>
               </button>
               {hasMacros(food) && (
                 <button
                   type="button"
                   onClick={() => copyRow(food)}
-                  aria-label="Nährwerte kopieren"
+                  aria-label={tr(lang, 'foods.copyAria')}
                   style={{
                     flexShrink: 0, width: 36, height: 36, borderRadius: 10, border: 'none', cursor: 'pointer',
                     background: 'transparent', color: copiedKey === food.key ? t.success : t.textMuted,

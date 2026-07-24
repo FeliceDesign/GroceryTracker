@@ -4,6 +4,7 @@ import { Modal } from '../../components/Modal.jsx';
 import { PRODUCE_RULES, ethyleneLabel } from '../../lib/produceStorage.js';
 import { storageLabel } from '../../lib/openedShelfLife.js';
 import { makeInputStyle } from '../../lib/styles.js';
+import { tr } from '../../lib/i18n.js';
 
 function StorageIcon({ storage, size = 14, color }) {
   if (storage === 'room') return <Home size={size} color={color} />;
@@ -12,7 +13,7 @@ function StorageIcon({ storage, size = 14, color }) {
 }
 
 // Nachschlage-Übersicht der Obst-&-Gemüse-Lagerhinweise.
-export function ProduceStorageSheet({ open, onClose, t }) {
+export function ProduceStorageSheet({ open, onClose, t, lang = 'de' }) {
   const [q, setQ] = useState('');
   const inputStyle = makeInputStyle(t);
 
@@ -25,38 +26,43 @@ export function ProduceStorageSheet({ open, onClose, t }) {
   }, [q]);
 
   return (
-    <Modal open={open} onClose={onClose} t={t} title="Obst-&-Gemüse-Ratgeber" subtitle="Lagerung, Ethylen, Verpackung">
+    <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'produce.title')} subtitle={tr(lang, 'produce.subtitle')}>
       <div style={{ position: 'relative', marginTop: 4, marginBottom: 12 }}>
         <Search size={16} color={t.textFaint} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Sorte suchen…" style={{ ...inputStyle, marginTop: 0, paddingLeft: 36 }} />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr(lang, 'produce.searchPlaceholder')} style={{ ...inputStyle, marginTop: 0, paddingLeft: 36 }} />
       </div>
 
       <div style={{ fontSize: 11.5, color: t.textFaint, lineHeight: 1.5, marginBottom: 12 }}>
-        Ethylen: hoher/mittlerer Ausstoß beschleunigt die Reifung empfindlicher Sorten in der Nähe – getrennt lagern.{' '}
-        <Snowflake size={11} style={{ verticalAlign: 'middle' }} /> Kühlschrank ·{' '}
-        <ThermometerSun size={11} style={{ verticalAlign: 'middle' }} /> beides · <Home size={11} style={{ verticalAlign: 'middle' }} /> Raumtemperatur.
+        {tr(lang, 'produce.hint')}{' '}
+        <Snowflake size={11} style={{ verticalAlign: 'middle' }} /> {tr(lang, 'produce.fridge')} ·{' '}
+        <ThermometerSun size={11} style={{ verticalAlign: 'middle' }} /> {tr(lang, 'produce.both')} · <Home size={11} style={{ verticalAlign: 'middle' }} /> {tr(lang, 'produce.room')}.
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {list.map((r) => (
-          <div key={r.label} style={{ background: t.cardAlt, borderRadius: 12, padding: '11px 13px' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: t.text }}>{r.label}</span>
+        {list.map((r) => {
+          const label = lang === 'en' && r.label_en ? r.label_en : r.label;
+          const reason = lang === 'en' && r.reason_en ? r.reason_en : r.reason;
+          const packaging = lang === 'en' && r.packaging_en ? r.packaging_en : r.packaging;
+          return (
+            <div key={r.label} style={{ background: t.cardAlt, borderRadius: 12, padding: '11px 13px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: t.text }}>{label}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, fontSize: 11.5, fontWeight: 700, color: t.textMuted }}>
+                <StorageIcon storage={r.storage} color={t.textMuted} /> {storageLabel(r.storage, lang)}
+                <span style={{ color: t.textFaint, fontWeight: 500 }}>
+                  · {tr(lang, 'produce.ethylene', { produces: ethyleneLabel(r.ethyleneProduces, lang), sensitive: ethyleneLabel(r.ethyleneSensitive, lang) })}
+                </span>
+              </div>
+              <div style={{ fontSize: 12, color: t.textFaint, marginTop: 5, lineHeight: 1.45 }}>{reason}</div>
+              <div style={{ fontSize: 12, color: t.textFaint, marginTop: 4, lineHeight: 1.45 }}>
+                <b>{tr(lang, 'produce.packaging')}</b> {packaging}
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, fontSize: 11.5, fontWeight: 700, color: t.textMuted }}>
-              <StorageIcon storage={r.storage} color={t.textMuted} /> {storageLabel(r.storage)}
-              <span style={{ color: t.textFaint, fontWeight: 500 }}>
-                · Ethylen: produziert {ethyleneLabel(r.ethyleneProduces)} / empfindlich {ethyleneLabel(r.ethyleneSensitive)}
-              </span>
-            </div>
-            <div style={{ fontSize: 12, color: t.textFaint, marginTop: 5, lineHeight: 1.45 }}>{r.reason}</div>
-            <div style={{ fontSize: 12, color: t.textFaint, marginTop: 4, lineHeight: 1.45 }}>
-              <b>Verpackung:</b> {r.packaging}
-            </div>
-          </div>
-        ))}
+          );
+        })}
         {list.length === 0 && (
-          <div style={{ textAlign: 'center', color: t.textFaint, padding: '28px 12px', fontSize: 13.5 }}>Nichts gefunden.</div>
+          <div style={{ textAlign: 'center', color: t.textFaint, padding: '28px 12px', fontSize: 13.5 }}>{tr(lang, 'produce.nothingFound')}</div>
         )}
       </div>
     </Modal>

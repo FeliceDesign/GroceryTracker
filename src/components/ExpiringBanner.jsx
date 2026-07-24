@@ -1,8 +1,9 @@
 import { AlertTriangle } from 'lucide-react';
 import { mhdLabel } from '../lib/date.js';
+import { tr } from '../lib/i18n.js';
 
 // Hinweisbanner für Artikel, die heute/morgen ablaufen oder überfällig sind.
-export function ExpiringBanner({ expiring, t, onOpen }) {
+export function ExpiringBanner({ expiring, t, lang = 'de', onOpen }) {
   if (expiring.length === 0) return null;
   return (
     <div style={{ maxWidth: 480, margin: '14px auto 0', padding: '0 20px' }}>
@@ -16,9 +17,9 @@ export function ExpiringBanner({ expiring, t, onOpen }) {
       >
         <AlertTriangle size={16} color={t.danger} strokeWidth={2} style={{ flexShrink: 0 }} />
         <span style={{ fontSize: 12.5, color: t.danger, lineHeight: 1.4 }}>
-          <strong>{expiring.length} Artikel</strong> {expiring.length === 1 ? 'läuft' : 'laufen'} bald ab:{' '}
-          {expiring.slice(0, 3).map((i) => `${i.name} (${mhdLabel(i.days)})`).join(', ')}
-          {expiring.length > 3 ? `, +${expiring.length - 3} weitere` : ''}
+          <strong>{tr(lang, expiring.length === 1 ? 'expiringBanner.oneExpires' : 'expiringBanner.manyExpire', { count: expiring.length })}</strong>{' '}
+          {expiring.slice(0, 3).map((i) => `${i.name} (${mhdLabel(i.days, lang)})`).join(', ')}
+          {expiring.length > 3 ? tr(lang, 'expiringBanner.moreSuffix', { count: expiring.length - 3 }) : ''}
         </span>
       </button>
     </div>

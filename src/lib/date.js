@@ -1,6 +1,7 @@
 // Mindesthaltbarkeitsdatum (MHD) – Berechnung und Darstellung.
 // Ein MHD ist optional und pro Artikel im Format JJJJ-MM-TT gespeichert.
 import { rgba } from './colors.js';
+import { tr } from './i18n.js';
 
 // Heutiges Datum als JJJJ-MM-TT (lokale Zeitzone).
 export function todayISO() {
@@ -51,12 +52,12 @@ export function levelBg(level, t, colors = {}) {
   return 'transparent';
 }
 
-export function mhdLabel(days) {
+export function mhdLabel(days, lang = 'de') {
   if (days === null) return '';
-  if (days < 0) return `${Math.abs(days)}T überfällig`;
-  if (days === 0) return 'heute';
-  if (days === 1) return 'morgen';
-  return `in ${days}T`;
+  if (days < 0) return tr(lang, 'date.overdue', { n: Math.abs(days) });
+  if (days === 0) return tr(lang, 'date.today');
+  if (days === 1) return tr(lang, 'date.tomorrow');
+  return tr(lang, 'date.dueIn', { n: days });
 }
 
 // Formatiert ein ISO-Datum (JJJJ-MM-TT) für eigene Text-Anzeigen (Badges
