@@ -921,7 +921,7 @@ export default function App() {
         open={showAdd} onClose={closeAdd} t={t} dark={dark} lang={lang}
         zones={zones} categories={categories} onAddCategory={addCategory}
         newItem={newItem} setNewItem={setNewItem}
-        scanSupported={scanSupported} scanBusy={scanBusy} scanMsg={scanMsg}
+        scanSupported={scanSupported} scanBusy={scanBusy} scanMsg={scanMsg} stepGml={prefs.stepGml} showSlider={prefs.showSlider}
         onScanBarcode={() => openScanFlow('single')} onScanDate={handleScanDate} onOpenBatch={() => openScanFlow('batch')} onSubmit={addItem}
       />
 

@@ -16,7 +16,7 @@ export function AddItemSheet({
   open, onClose, t, dark, lang = 'de',
   zones, categories, onAddCategory,
   newItem, setNewItem,
-  scanSupported, scanBusy, scanMsg,
+  scanSupported, scanBusy, scanMsg, stepGml, showSlider,
   onScanBarcode, onScanDate, onOpenBatch, onSubmit,
 }) {
   const labelStyle = makeLabelStyle(t);
@@ -128,16 +128,39 @@ export function AddItemSheet({
           </button>
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
-          <input
-            type="number"
-            inputMode="numeric"
-            value={newItem.qty}
-            onChange={(e) => setNewItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
-            style={{ ...inputStyle, marginTop: 0 }}
-          />
-          <span style={{ fontSize: 15, fontWeight: 700, color: t.textMuted }}>{newItem.unit}</span>
-        </div>
+        (() => {
+          const step = stepGml && stepGml !== 'auto' ? Number(stepGml) : 10;
+          // Feste Obergrenze, unabhängig von der aktuellen Menge – sonst
+          // verschiebt sich die Skala bei jeder Änderung mit (gleiches Muster
+          // wie im Bearbeiten-Dialog).
+          const sliderMax = 1000;
+          return (
+            <div style={{ marginTop: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={newItem.qty}
+                  onChange={(e) => setNewItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
+                  style={{ ...inputStyle, marginTop: 0 }}
+                />
+                <span style={{ fontSize: 15, fontWeight: 700, color: t.textMuted }}>{newItem.unit}</span>
+              </div>
+              {showSlider !== false && (
+                <input
+                  type="range"
+                  min={0}
+                  max={sliderMax}
+                  step={step}
+                  value={Math.min(newItem.qty, sliderMax)}
+                  onChange={(e) => setNewItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
+                  aria-label={tr(lang, 'edit.sliderAria')}
+                  style={{ width: '100%', marginTop: 12, accentColor: pal.accent }}
+                />
+              )}
+            </div>
+          );
+        })()
       )}
 
       <label style={labelStyle}>{tr(lang, 'add.mhd')}</label>
