@@ -54,7 +54,7 @@ export default function App() {
   const { categories, loaded: catsLoaded, addCategory, removeCategory, setCategories } = useCategories();
   const { foods, setFoods, loaded: foodsLoaded, getFood, upsertFood, removeFood } = useFoods();
   const {
-    favorites, loaded: favoritesLoaded, isFavorite, addFavorite, removeFavorite, removeFavoriteByName,
+    favorites, loaded: favoritesLoaded, isFavorite, addFavorite, updateFavorite, removeFavorite, removeFavoriteByName,
     clearFavorites, restoreFavorites,
   } = useFavorites();
   const [items, setItems, itemsLoaded] = useStorage('gt-items-v1', SEED);
@@ -108,6 +108,7 @@ export default function App() {
   const [showCategories, setShowCategories] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showFoods, setShowFoods] = useState(false);
+  const [editFoodName, setEditFoodName] = useState(null);
   const [showShelfLife, setShowShelfLife] = useState(false);
   const [showProduceStorage, setShowProduceStorage] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
@@ -260,7 +261,8 @@ export default function App() {
   // Alle aktuellen Bestandsartikel als Favoriten anlegen (Settings ->
   // Favoriten verwalten). Bereits gemerkte Namen werden übersprungen, bei
   // Duplikaten im Bestand (gleicher Name, mehrere Zonen) zählt der erste
-  // Treffer. Gibt die Anzahl neu angelegter Favoriten zurück.
+  // Treffer. Übernimmt die aktuelle Menge des Artikels als Standard-Menge.
+  // Gibt die Anzahl neu angelegter Favoriten zurück.
   const addAllInventoryToFavorites = () => {
     const existing = new Set(favorites.map((f) => f.name.toLowerCase()));
     const seen = new Set();
@@ -270,7 +272,7 @@ export default function App() {
       if (existing.has(key) || seen.has(key)) return;
       seen.add(key);
       added += 1;
-      addFavorite({ name: i.name, zone: i.zone, category: i.category, unit: i.unit });
+      addFavorite({ name: i.name, zone: i.zone, category: i.category, unit: i.unit, qty: i.qty });
     });
     return added;
   };
@@ -926,16 +928,17 @@ export default function App() {
 
       <ManageFavoritesSheet
         open={showFavorites} onClose={() => setShowFavorites(false)} t={t} dark={dark} lang={lang}
-        favorites={favorites} zones={zones} onRemove={removeFavorite}
+        favorites={favorites} zones={zones} onRemove={removeFavorite} onUpdate={updateFavorite}
         onAddToInventory={addFavoriteToInventory} onAddToShopping={addFavoriteToShopping}
         hasInventoryItems={items.length > 0} onAddAllFromInventory={addAllInventoryToFavorites}
         onClearAll={clearAllFavorites}
+        onEditFood={(name) => { setShowFavorites(false); setEditFoodName(name); setShowFoods(true); }}
       />
 
       <ManageFoodsSheet
-        open={showFoods} onClose={() => setShowFoods(false)} t={t} lang={lang}
+        open={showFoods} onClose={() => { setShowFoods(false); setEditFoodName(null); }} t={t} lang={lang}
         foods={foods} onUpsert={upsertFood} onRemove={removeFood}
-        scanSupported={scanSupported}
+        scanSupported={scanSupported} initialEditName={editFoodName}
       />
 
       <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} lang={lang} />

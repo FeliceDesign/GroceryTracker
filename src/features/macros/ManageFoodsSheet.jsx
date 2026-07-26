@@ -11,21 +11,31 @@ import {
 } from '../../lib/macros.js';
 
 // Stammdaten / Makros verwalten: alle Nährwert-Datensätze durchsuchen,
-// bearbeiten, neu anlegen, kopieren und löschen.
-export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpsert, onRemove, scanSupported }) {
+// bearbeiten, neu anlegen, kopieren und löschen. `initialEditName` springt
+// beim Öffnen direkt in den Editor für diesen Namen (z.B. von einem
+// Favoriten aus) - vorhandene Stammdaten werden geladen, sonst leer angelegt.
+export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpsert, onRemove, scanSupported, initialEditName }) {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null); // { name, macros } oder null
   const [copiedKey, setCopiedKey] = useState(null);
   const inputStyle = makeInputStyle(t);
 
-  // Beim Schließen den Editor-/Suchzustand zurücksetzen.
+  // Beim Schließen den Editor-/Suchzustand zurücksetzen; beim Öffnen mit
+  // initialEditName direkt den passenden Editor aufmachen.
   useEffect(() => {
     if (!open) {
       setEditing(null);
       setSearch('');
       setCopiedKey(null);
+    } else if (initialEditName) {
+      const existing = (foods || []).find((f) => normalizeName(f.name) === normalizeName(initialEditName));
+      setEditing(existing
+        ? { key: existing.key, name: existing.name, macros: foodToMacros(existing) }
+        : { name: initialEditName, macros: emptyMacros('100g') });
     }
-  }, [open]);
+    // foods absichtlich ausgelassen - nur open/initialEditName sollen den Einstieg auslösen
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialEditName]);
 
   const list = useMemo(() => {
     const q = search.trim().toLowerCase();
