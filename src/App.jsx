@@ -240,6 +240,24 @@ export default function App() {
     });
   };
 
+  // Alle aktuellen Bestandsartikel als Favoriten anlegen (Settings ->
+  // Favoriten verwalten). Bereits gemerkte Namen werden übersprungen, bei
+  // Duplikaten im Bestand (gleicher Name, mehrere Zonen) zählt der erste
+  // Treffer. Gibt die Anzahl neu angelegter Favoriten zurück.
+  const addAllInventoryToFavorites = () => {
+    const existing = new Set(favorites.map((f) => f.name.toLowerCase()));
+    const seen = new Set();
+    let added = 0;
+    items.forEach((i) => {
+      const key = i.name.toLowerCase();
+      if (existing.has(key) || seen.has(key)) return;
+      seen.add(key);
+      added += 1;
+      addFavorite({ name: i.name, zone: i.zone, category: i.category, unit: i.unit });
+    });
+    return added;
+  };
+
   const removeItem = (id) => {
     const removed = items.find((i) => i.id === id);
     if (!removed) return;
@@ -863,6 +881,7 @@ export default function App() {
       <ManageFavoritesSheet
         open={showFavorites} onClose={() => setShowFavorites(false)} t={t} dark={dark} lang={lang}
         favorites={favorites} zones={zones} onRemove={removeFavorite}
+        hasInventoryItems={items.length > 0} onAddAllFromInventory={addAllInventoryToFavorites}
       />
 
       <ManageFoodsSheet
