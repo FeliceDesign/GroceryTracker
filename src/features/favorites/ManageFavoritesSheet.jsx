@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Trash2, ListPlus, PackagePlus, ShoppingCart, Check, Pencil, Minus, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
+import { Toggle } from '../../components/Toggle.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { btnCircle, pillStyle, makeInputStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
@@ -183,10 +184,11 @@ export function ManageFavoritesSheet({
   const [confirmAddAll, setConfirmAddAll] = useState(false);
   const [addAllMsg, setAddAllMsg] = useState('');
   const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [onlyWithMacros, setOnlyWithMacros] = useState(false);
 
   // Zustand zurücksetzen, sobald das Sheet zugeht.
   useEffect(() => {
-    if (!open) { setConfirmAddAll(false); setAddAllMsg(''); setConfirmClearAll(false); }
+    if (!open) { setConfirmAddAll(false); setAddAllMsg(''); setConfirmClearAll(false); setOnlyWithMacros(false); }
   }, [open]);
 
   useEffect(() => {
@@ -198,8 +200,10 @@ export function ManageFavoritesSheet({
   const handleAddAll = () => {
     if (!confirmAddAll) { setConfirmAddAll(true); return; }
     setConfirmAddAll(false);
-    const added = onAddAllFromInventory();
-    setAddAllMsg(added > 0 ? tr(lang, 'favorites.addAllDone', { count: added }) : tr(lang, 'favorites.addAllNone'));
+    const added = onAddAllFromInventory(onlyWithMacros);
+    setAddAllMsg(added > 0
+      ? tr(lang, 'favorites.addAllDone', { count: added })
+      : tr(lang, onlyWithMacros ? 'favorites.addAllNoneMacros' : 'favorites.addAllNone'));
   };
 
   const handleClearAll = () => {
@@ -212,6 +216,10 @@ export function ManageFavoritesSheet({
     <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'favorites.title')} subtitle={tr(lang, 'favorites.subtitle', { count: favorites.length })}>
       {hasInventoryItems && (
         <div style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, padding: '0 2px' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: t.textMuted }}>{tr(lang, 'favorites.onlyWithMacros')}</span>
+            <Toggle t={t} on={onlyWithMacros} onChange={setOnlyWithMacros} />
+          </div>
           <button
             type="button"
             onClick={handleAddAll}

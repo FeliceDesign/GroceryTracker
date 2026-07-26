@@ -268,13 +268,14 @@ export default function App() {
   // Duplikaten im Bestand (gleicher Name, mehrere Zonen) zählt der erste
   // Treffer. Übernimmt die aktuelle Menge des Artikels als Standard-Menge.
   // Gibt die Anzahl neu angelegter Favoriten zurück.
-  const addAllInventoryToFavorites = () => {
+  const addAllInventoryToFavorites = (onlyWithMacros = false) => {
     const existing = new Set(favorites.map((f) => f.name.toLowerCase()));
     const seen = new Set();
     let added = 0;
     items.forEach((i) => {
       const key = i.name.toLowerCase();
       if (existing.has(key) || seen.has(key)) return;
+      if (onlyWithMacros && !hasFoodData(getFood(i.name))) return;
       seen.add(key);
       added += 1;
       addFavorite({ name: i.name, zone: i.zone, category: i.category, unit: i.unit, qty: i.qty });
