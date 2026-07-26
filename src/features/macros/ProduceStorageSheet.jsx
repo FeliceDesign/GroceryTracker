@@ -61,8 +61,16 @@ export function ProduceStorageSheet({ open, onClose, t, lang = 'de' }) {
           const reason = lang === 'en' && r.reason_en ? r.reason_en : r.reason;
           const packaging = lang === 'en' && r.packaging_en ? r.packaging_en : r.packaging;
           return (
-            <div key={r.label} style={{ background: t.cardAlt, borderRadius: 12, padding: '11px 13px' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <div key={r.label} style={{ background: t.cardAlt, border: `1px solid ${t.border}`, borderRadius: 12, padding: '11px 13px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {r.emoji && (
+                  <span style={{
+                    flexShrink: 0, width: 32, height: 32, borderRadius: '50%', background: t.card,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17,
+                  }}>
+                    {r.emoji}
+                  </span>
+                )}
                 <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: t.text }}>{label}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, fontSize: 11.5, fontWeight: 700, color: t.textMuted }}>
