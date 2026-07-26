@@ -48,15 +48,6 @@ export function ShoppingSheet({
         </button>
       </div>
 
-      {favorites && favorites.length > 0 && (
-        <div style={{ marginTop: 12 }}>
-          <FavoriteChips
-            favorites={favorites} zones={zones} dark={dark} t={t} lang={lang} onTap={onTapFavorite}
-            label={tr(lang, 'shopping.favoritesLabel')} collapsed={favoritesCollapsed} onToggleCollapse={onToggleFavoritesCollapsed}
-          />
-        </div>
-      )}
-
       {shopping.length > 0 && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
           <button
@@ -121,6 +112,15 @@ export function ShoppingSheet({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {favorites && favorites.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <FavoriteChips
+            favorites={favorites} zones={zones} dark={dark} t={t} lang={lang} onTap={onTapFavorite}
+            label={tr(lang, 'shopping.favoritesLabel')} collapsed={favoritesCollapsed} onToggleCollapse={onToggleFavoritesCollapsed}
+          />
         </div>
       )}
     </Modal>
