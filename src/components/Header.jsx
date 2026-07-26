@@ -6,6 +6,7 @@ import { CountBadge } from './CountBadge.jsx';
 export function Header({
   zone, dark, t, lang = 'de', totalInZone, shoppingCount, showShoppingCount = true, align = 'left', title,
   onShopping, onSettings, onAdd, onZoneClick, showShoppingButton = true, showSettingsButton = true, showAddButton = false,
+  emojiBothSides = false,
 }) {
   const pal = zonePalette(zone.color, dark);
   const center = align === 'center';
@@ -46,13 +47,19 @@ export function Header({
               cursor: onZoneClick ? 'pointer' : 'default',
             }}
           >
-            {/* Im zentrierten Modus per absolute Positionierung links vom Text
-                platziert, damit nur der Text die Center-Berechnung bestimmt -
-                sonst wirkt der Text durch das Emoji-Gewicht nach rechts verschoben. */}
-            <span style={center ? { position: 'absolute', right: '100%', marginRight: 9, flexShrink: 0 } : { marginRight: 9, flexShrink: 0 }}>
+            {/* Im zentrierten Modus (ohne beidseitiges Emoji) per absolute
+                Positionierung links vom Text platziert, damit nur der Text die
+                Center-Berechnung bestimmt - sonst wirkt der Text durch das
+                Emoji-Gewicht nach rechts verschoben. Mit beidseitigem Emoji
+                zählt das linke Emoji stattdessen mit, da beide Seiten dann
+                symmetrisch sind und das Gesamtpaket zentriert werden soll. */}
+            <span style={center && !emojiBothSides ? { position: 'absolute', right: '100%', marginRight: 9, flexShrink: 0 } : { marginRight: 9, flexShrink: 0 }}>
               {zone.emoji}
             </span>
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{zone.label}</span>
+            {emojiBothSides && (
+              <span style={{ marginLeft: 9, flexShrink: 0 }}>{zone.emoji}</span>
+            )}
           </h1>
 
           {buttonCount > 0 && (

@@ -68,7 +68,7 @@ export default function App() {
     headerAlign: 'left', appTitle: '', showWarnDot: true,
     shoppingPos: 'top', settingsPos: 'top', addPos: 'bottom',
     autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
-    favoritesCollapsed: false,
+    favoritesCollapsed: false, zoneEmojiBothSides: false,
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -619,7 +619,7 @@ export default function App() {
           totalInZone={totalInZone}
           shoppingCount={shopping.length}
           showShoppingCount={prefs.shoppingCount}
-          align={prefs.headerAlign} title={prefs.appTitle}
+          align={prefs.headerAlign} title={prefs.appTitle} emojiBothSides={prefs.zoneEmojiBothSides}
           onShopping={() => setShowShopping(true)}
           onSettings={() => setShowSettings(true)}
           onAdd={openAdd}
@@ -819,6 +819,8 @@ export default function App() {
         onSetSettingsPos={(v) => setPrefs((p) => ({ ...p, settingsPos: v }))}
         addPos={prefs.addPos || 'bottom'}
         onSetAddPos={(v) => setPrefs((p) => ({ ...p, addPos: v }))}
+        zoneEmojiBothSides={prefs.zoneEmojiBothSides === true}
+        onToggleZoneEmojiBothSides={(on) => setPrefs((p) => ({ ...p, zoneEmojiBothSides: on }))}
       />
 
       <BehaviorSheet

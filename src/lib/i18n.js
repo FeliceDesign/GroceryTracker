@@ -156,6 +156,7 @@ const DE = {
     titlePlaceholder: 'Stock-Tracker', left: 'Links', center: 'Mittig',
     buttons: 'Buttons platzieren', buttonsHint: 'Jeder Button einzeln oben (Kopfzeile) oder unten (schwebend, stapeln sich in fester Reihenfolge).',
     shopping: 'Einkaufsliste', settings: 'Einstellungen', addButton: 'Hinzufügen (+)', top: 'Oben', bottom: 'Unten',
+    zoneEmojiBothSides: 'Zonen-Emoji auf beiden Seiten', zoneEmojiBothSidesSub: 'Zeigt das Lagerort-Emoji in der Kopfzeile zusätzlich rechts vom Namen.',
   },
   behavior: {
     title: 'Verhalten', subtitle: 'Einkaufsliste, Mengen, Formate',
@@ -418,6 +419,7 @@ const EN = {
     titlePlaceholder: 'Stock-Tracker', left: 'Left', center: 'Center',
     buttons: 'Button placement', buttonsHint: 'Each button individually at the top (header) or bottom (floating, stacked in a fixed order).',
     shopping: 'Shopping list', settings: 'Settings', addButton: 'Add (+)', top: 'Top', bottom: 'Bottom',
+    zoneEmojiBothSides: 'Zone emoji on both sides', zoneEmojiBothSidesSub: 'Also shows the location emoji to the right of the name in the header.',
   },
   behavior: {
     title: 'Behavior', subtitle: 'Shopping list, quantities, formats',

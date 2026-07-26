@@ -1,5 +1,7 @@
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
+import { Toggle } from '../../components/Toggle.jsx';
+import { SettingRow } from '../../components/SettingRow.jsx';
 import { makeInputStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 
@@ -9,6 +11,7 @@ import { tr } from '../../lib/i18n.js';
 export function LayoutSheet({
   open, onClose, t, lang = 'de', headerAlign, onSetHeaderAlign, appTitle, onSetAppTitle,
   shoppingPos, onSetShoppingPos, settingsPos, onSetSettingsPos, addPos, onSetAddPos,
+  zoneEmojiBothSides, onToggleZoneEmojiBothSides,
 }) {
   const inputStyle = makeInputStyle(t);
 
@@ -32,6 +35,15 @@ export function LayoutSheet({
             { value: 'left', label: tr(lang, 'layout.left') },
             { value: 'center', label: tr(lang, 'layout.center') },
           ]}
+        />
+      </div>
+
+      <div style={{ marginTop: 10 }}>
+        <SettingRow
+          t={t}
+          label={tr(lang, 'layout.zoneEmojiBothSides')}
+          sub={tr(lang, 'layout.zoneEmojiBothSidesSub')}
+          control={<Toggle t={t} on={zoneEmojiBothSides === true} onChange={onToggleZoneEmojiBothSides} />}
         />
       </div>
 
