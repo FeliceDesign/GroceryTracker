@@ -493,6 +493,7 @@ export default function App() {
 
   const removeFromShopping = (id) => setShopping((prev) => prev.filter((s) => s.id !== id));
   const clearShopping = () => setShopping([]);
+  const updateShoppingItem = (id, patch) => setShopping((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
 
   // -- Kategorien -------------------------------------------------------------
   const countForCategory = (name) => (items ? items.filter((i) => i.category === name).length : 0);
@@ -924,7 +925,7 @@ export default function App() {
       <ShoppingSheet
         open={showShopping} onClose={() => setShowShopping(false)} t={t} dark={dark} lang={lang} zones={zones}
         shopping={shopping} shoppingInput={shoppingInput} setShoppingInput={setShoppingInput}
-        onAddManual={addManualShopping} onCheck={checkAndRestore} onRemove={removeFromShopping}
+        onAddManual={addManualShopping} onCheck={checkAndRestore} onRemove={removeFromShopping} onUpdate={updateShoppingItem}
         onClearAll={clearShopping} justChecked={justChecked} showCount={(prefs.shoppingBadgeMode || 'count') !== 'off'}
         favorites={sortedFavorites} onTapFavorite={addFavoriteToShopping} showFavoriteChips={prefs.showFavoriteChips !== false}
         favoritesCollapsed={prefs.favoritesCollapsed} onToggleFavoritesCollapsed={toggleFavoritesCollapsed}
