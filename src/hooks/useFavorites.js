@@ -36,5 +36,10 @@ export function useFavorites() {
     [setFavorites],
   );
 
-  return { favorites, loaded, isFavorite, addFavorite, removeFavorite, removeFavoriteByName };
+  const clearFavorites = useCallback(() => setFavorites([]), [setFavorites]);
+
+  // Für Undo nach "Alle löschen" - stellt den übergebenen Stand wieder her.
+  const restoreFavorites = useCallback((list) => setFavorites(list), [setFavorites]);
+
+  return { favorites, loaded, isFavorite, addFavorite, removeFavorite, removeFavoriteByName, clearFavorites, restoreFavorites };
 }

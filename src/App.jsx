@@ -54,7 +54,10 @@ export default function App() {
   const { zones, loaded: zonesLoaded, addZone, updateZone, setZones } = useZones();
   const { categories, loaded: catsLoaded, addCategory, removeCategory, setCategories } = useCategories();
   const { foods, setFoods, loaded: foodsLoaded, getFood, upsertFood, removeFood } = useFoods();
-  const { favorites, loaded: favoritesLoaded, isFavorite, addFavorite, removeFavorite, removeFavoriteByName } = useFavorites();
+  const {
+    favorites, loaded: favoritesLoaded, isFavorite, addFavorite, removeFavorite, removeFavoriteByName,
+    clearFavorites, restoreFavorites,
+  } = useFavorites();
   const [items, setItems, itemsLoaded] = useStorage('gt-items-v1', SEED);
   const [shopping, setShopping, shoppingLoaded] = useStorage('gt-shopping-v1', []);
   const [warn, setWarn, warnLoaded] = useStorage('gt-warn-v1', {
@@ -124,12 +127,14 @@ export default function App() {
   // Toast / Feedback
   const [deletedItem, setDeletedItem] = useState(null);
   const [deletedZone, setDeletedZone] = useState(null);
+  const [deletedFavorites, setDeletedFavorites] = useState(null);
   const [justChanged, setJustChanged] = useState(null);
   const [justChecked, setJustChecked] = useState(null);
   const [shoppingInput, setShoppingInput] = useState('');
 
   const undoTimerRef = useRef(null);
   const zoneUndoTimerRef = useRef(null);
+  const favoritesUndoTimerRef = useRef(null);
   const flashTimerRef = useRef(null);
   const checkedTimerRef = useRef(null);
 
@@ -147,6 +152,7 @@ export default function App() {
 
   useEffect(() => () => {
     clearTimeout(undoTimerRef.current);
+    clearTimeout(favoritesUndoTimerRef.current);
     clearTimeout(flashTimerRef.current);
     clearTimeout(checkedTimerRef.current);
   }, []);
@@ -256,6 +262,21 @@ export default function App() {
       addFavorite({ name: i.name, zone: i.zone, category: i.category, unit: i.unit });
     });
     return added;
+  };
+
+  // Alle Favoriten löschen (Verwaltungs-Sheet, mit Zwei-Tap-Bestätigung
+  // dort) - Undo per Toast wie beim Löschen eines Artikels/Lagerorts.
+  const clearAllFavorites = () => {
+    setDeletedFavorites(favorites);
+    clearFavorites();
+    clearTimeout(favoritesUndoTimerRef.current);
+    favoritesUndoTimerRef.current = setTimeout(() => setDeletedFavorites(null), 5000);
+  };
+
+  const undoFavoritesDelete = () => {
+    if (!deletedFavorites) return;
+    restoreFavorites(deletedFavorites);
+    setDeletedFavorites(null);
   };
 
   const removeItem = (id) => {
@@ -784,6 +805,15 @@ export default function App() {
         />
       )}
 
+      {!deletedItem && !deletedZone && deletedFavorites && (
+        <Toast
+          t={t}
+          message={tr(lang, 'favorites.toastAllCleared', { count: deletedFavorites.length })}
+          actionLabel={tr(lang, 'app.undo')}
+          onAction={undoFavoritesDelete}
+        />
+      )}
+
       <AddItemSheet
         open={showAdd} onClose={closeAdd} t={t} dark={dark} lang={lang}
         zones={zones} categories={categories} onAddCategory={addCategory}
@@ -883,6 +913,7 @@ export default function App() {
         favorites={favorites} zones={zones} onRemove={removeFavorite}
         onAddToInventory={addFavoriteToInventory} onAddToShopping={addFavoriteToShopping}
         hasInventoryItems={items.length > 0} onAddAllFromInventory={addAllInventoryToFavorites}
+        onClearAll={clearAllFavorites}
       />
 
       <ManageFoodsSheet

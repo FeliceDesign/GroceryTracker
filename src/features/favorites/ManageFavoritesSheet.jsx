@@ -53,14 +53,15 @@ function FavoriteRow({ fav, zone, dark, t, lang, onRemove, onAddToInventory, onA
 // "Bestand übernehmen"-Button hier, kein eigenes Anlegen-Formular.
 export function ManageFavoritesSheet({
   open, onClose, t, dark, lang = 'de', favorites, zones, onRemove, onAddToInventory, onAddToShopping,
-  hasInventoryItems = false, onAddAllFromInventory,
+  hasInventoryItems = false, onAddAllFromInventory, onClearAll,
 }) {
   const [confirmAddAll, setConfirmAddAll] = useState(false);
   const [addAllMsg, setAddAllMsg] = useState('');
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
 
   // Zustand zurücksetzen, sobald das Sheet zugeht.
   useEffect(() => {
-    if (!open) { setConfirmAddAll(false); setAddAllMsg(''); }
+    if (!open) { setConfirmAddAll(false); setAddAllMsg(''); setConfirmClearAll(false); }
   }, [open]);
 
   useEffect(() => {
@@ -74,6 +75,12 @@ export function ManageFavoritesSheet({
     setConfirmAddAll(false);
     const added = onAddAllFromInventory();
     setAddAllMsg(added > 0 ? tr(lang, 'favorites.addAllDone', { count: added }) : tr(lang, 'favorites.addAllNone'));
+  };
+
+  const handleClearAll = () => {
+    if (!confirmClearAll) { setConfirmClearAll(true); return; }
+    setConfirmClearAll(false);
+    onClearAll();
   };
 
   return (
@@ -104,14 +111,30 @@ export function ManageFavoritesSheet({
           {tr(lang, 'favorites.none')}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-          {favorites.map((f) => (
-            <FavoriteRow
-              key={f.id} fav={f} zone={zones.find((z) => z.id === f.zone)} dark={dark} t={t} lang={lang}
-              onRemove={onRemove} onAddToInventory={onAddToInventory} onAddToShopping={onAddToShopping}
-            />
-          ))}
-        </div>
+        <>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+            <button
+              type="button"
+              onClick={handleClearAll}
+              onBlur={() => setConfirmClearAll(false)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent',
+                color: t.danger, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', padding: '4px 2px',
+              }}
+            >
+              <Trash2 size={14} />
+              {confirmClearAll ? tr(lang, 'favorites.confirmClearAll', { count: favorites.length }) : tr(lang, 'favorites.clearAll')}
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {favorites.map((f) => (
+              <FavoriteRow
+                key={f.id} fav={f} zone={zones.find((z) => z.id === f.zone)} dark={dark} t={t} lang={lang}
+                onRemove={onRemove} onAddToInventory={onAddToInventory} onAddToShopping={onAddToShopping}
+              />
+            ))}
+          </div>
+        </>
       )}
       <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 14, lineHeight: 1.4 }}>
         {tr(lang, 'favorites.hint')}
