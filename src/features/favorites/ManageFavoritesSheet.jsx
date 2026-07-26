@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Trash2, ListPlus } from 'lucide-react';
+import { Trash2, ListPlus, PackagePlus, ShoppingCart } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { btnCircle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 
-function FavoriteRow({ fav, zone, dark, t, lang, onRemove }) {
+function FavoriteRow({ fav, zone, dark, t, lang, onRemove, onAddToInventory, onAddToShopping }) {
   const pal = zonePalette(zone ? zone.color : null, dark);
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: t.cardAlt, borderRadius: 12, padding: '10px 12px' }}>
@@ -22,6 +22,22 @@ function FavoriteRow({ fav, zone, dark, t, lang, onRemove }) {
       </div>
       <button
         type="button"
+        onClick={() => onAddToInventory(fav)}
+        style={btnCircle('transparent', t.success, 36)}
+        aria-label={tr(lang, 'favorites.addToInventoryAria', { name: fav.name })}
+      >
+        <PackagePlus size={16} />
+      </button>
+      <button
+        type="button"
+        onClick={() => onAddToShopping(fav)}
+        style={btnCircle('transparent', t.textMuted, 36)}
+        aria-label={tr(lang, 'favorites.addToShoppingAria', { name: fav.name })}
+      >
+        <ShoppingCart size={16} />
+      </button>
+      <button
+        type="button"
         onClick={() => onRemove(fav.id)}
         style={btnCircle('transparent', t.danger, 36)}
         aria-label={tr(lang, 'favorites.removeAria', { name: fav.name })}
@@ -36,7 +52,7 @@ function FavoriteRow({ fav, zone, dark, t, lang, onRemove }) {
 // entstehen nur über den Stern im Detail-Sheet oder gesammelt über den
 // "Bestand übernehmen"-Button hier, kein eigenes Anlegen-Formular.
 export function ManageFavoritesSheet({
-  open, onClose, t, dark, lang = 'de', favorites, zones, onRemove,
+  open, onClose, t, dark, lang = 'de', favorites, zones, onRemove, onAddToInventory, onAddToShopping,
   hasInventoryItems = false, onAddAllFromInventory,
 }) {
   const [confirmAddAll, setConfirmAddAll] = useState(false);
@@ -90,7 +106,10 @@ export function ManageFavoritesSheet({
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
           {favorites.map((f) => (
-            <FavoriteRow key={f.id} fav={f} zone={zones.find((z) => z.id === f.zone)} dark={dark} t={t} lang={lang} onRemove={onRemove} />
+            <FavoriteRow
+              key={f.id} fav={f} zone={zones.find((z) => z.id === f.zone)} dark={dark} t={t} lang={lang}
+              onRemove={onRemove} onAddToInventory={onAddToInventory} onAddToShopping={onAddToShopping}
+            />
           ))}
         </div>
       )}

@@ -881,6 +881,7 @@ export default function App() {
       <ManageFavoritesSheet
         open={showFavorites} onClose={() => setShowFavorites(false)} t={t} dark={dark} lang={lang}
         favorites={favorites} zones={zones} onRemove={removeFavorite}
+        onAddToInventory={addFavoriteToInventory} onAddToShopping={addFavoriteToShopping}
         hasInventoryItems={items.length > 0} onAddAllFromInventory={addAllInventoryToFavorites}
       />
 
