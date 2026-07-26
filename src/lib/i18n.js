@@ -185,6 +185,7 @@ const DE = {
   },
   warn: {
     title: 'MHD-Warnungen', subtitle: 'Schwellwerte, Farben, Erinnerungen',
+    showBanner: 'Ablauf-Banner anzeigen', showBannerHint: 'Hinweis-Leiste über der Bestandsliste, wenn Artikel heute/morgen ablaufen oder überfällig sind.',
     stage1: 'Stufe 1', stage1Hint: 'Artikel werden {{n}} {{unit}} vor Ablauf markiert.',
     stage2: 'Stufe 2 (kritisch)', stage2Hint: 'Ab {{n}} {{unit}} vor Ablauf, dringlicher als Stufe 1.',
     expired: 'Abgelaufen', expiredHint: 'Farbe für bereits abgelaufene Artikel.',
@@ -462,6 +463,7 @@ const EN = {
   },
   warn: {
     title: 'Best-before warnings', subtitle: 'Thresholds, colors, reminders',
+    showBanner: 'Show expiry banner', showBannerHint: 'Notice bar above the inventory list when items expire today/tomorrow or are overdue.',
     stage1: 'Stage 1', stage1Hint: 'Items are flagged {{n}} {{unit}} before expiry.',
     stage2: 'Stage 2 (critical)', stage2Hint: 'From {{n}} {{unit}} before expiry, more urgent than stage 1.',
     expired: 'Expired', expiredHint: 'Color for already expired items.',

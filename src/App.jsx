@@ -716,7 +716,9 @@ export default function App() {
         <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={(id) => { setActiveZone(id); setExpiringView(false); }} t={t} dark={dark} />
       </div>
 
-      <ExpiringBanner expiring={expiringSoon} t={t} lang={lang} onOpen={() => { setExpiringView(true); setSearch(''); }} />
+      {warn.showExpiringBanner !== false && (
+        <ExpiringBanner expiring={expiringSoon} t={t} lang={lang} onOpen={() => { setExpiringView(true); setSearch(''); }} />
+      )}
 
       {expiringView ? (
         <div style={{ maxWidth: 480, margin: '14px auto 0', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -32,6 +32,13 @@ export function WarnSheet({ open, onClose, t, lang = 'de', warn, onUpdateWarn, o
   return (
     <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'warn.title')} subtitle={tr(lang, 'warn.subtitle')}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <SettingRow
+          t={t}
+          label={tr(lang, 'warn.showBanner')}
+          sub={tr(lang, 'warn.showBannerHint')}
+          control={<Toggle t={t} on={warn.showExpiringBanner !== false} onChange={(on) => onUpdateWarn({ showExpiringBanner: on })} />}
+        />
+
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'warn.stage1')}</div>
           <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10 }}>
