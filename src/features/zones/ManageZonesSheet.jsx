@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, Snowflake } from 'lucide-react';
+import { Plus, Trash2, Snowflake, ChevronUp, ChevronDown } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { ColorSwatches } from '../../components/ColorSwatches.jsx';
@@ -29,7 +29,7 @@ function CooledToggle({ on, onChange, t, lang }) {
 }
 
 // Lagerorte verwalten: umbenennen, Emoji/Farbe ändern, hinzufügen, entfernen.
-export function ManageZonesSheet({ open, onClose, t, dark, lang = 'de', zones, countFor, onAdd, onUpdate, onRemove, customColors, onAddCustomColor, onRemoveCustomColor }) {
+export function ManageZonesSheet({ open, onClose, t, dark, lang = 'de', zones, countFor, onAdd, onUpdate, onRemove, onMove, customColors, onAddCustomColor, onRemoveCustomColor }) {
   const inputStyle = makeInputStyle(t);
   const [draft, setDraft] = useState({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], cooled: false });
   const [showAdd, setShowAdd] = useState(false);
@@ -45,12 +45,40 @@ export function ManageZonesSheet({ open, onClose, t, dark, lang = 'de', zones, c
   return (
     <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'zones.title')} subtitle={tr(lang, 'zones.subtitle')}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-        {zones.map((z) => {
+        {zones.map((z, idx) => {
           const pal = zonePalette(z.color, dark);
           const count = countFor(z.id);
           return (
             <div key={z.id} style={{ background: t.cardAlt, borderRadius: 14, padding: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => onMove(z.id, 'up')}
+                    disabled={idx === 0}
+                    style={{
+                      width: 24, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: 'none', borderRadius: 6, background: 'transparent', cursor: idx === 0 ? 'default' : 'pointer',
+                      color: idx === 0 ? t.border : t.textMuted,
+                    }}
+                    aria-label={tr(lang, 'zones.moveUpAria', { label: z.label })}
+                  >
+                    <ChevronUp size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onMove(z.id, 'down')}
+                    disabled={idx === zones.length - 1}
+                    style={{
+                      width: 24, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: 'none', borderRadius: 6, background: 'transparent', cursor: idx === zones.length - 1 ? 'default' : 'pointer',
+                      color: idx === zones.length - 1 ? t.border : t.textMuted,
+                    }}
+                    aria-label={tr(lang, 'zones.moveDownAria', { label: z.label })}
+                  >
+                    <ChevronDown size={15} />
+                  </button>
+                </div>
                 <input
                   value={z.emoji}
                   onChange={(e) => onUpdate(z.id, { emoji: e.target.value.slice(0, 3) })}

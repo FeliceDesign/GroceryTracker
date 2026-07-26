@@ -33,5 +33,21 @@ export function useZones() {
     [setZones],
   );
 
-  return { zones, setZones, loaded, addZone, updateZone, removeZone };
+  // Reihenfolge ändern (Hoch/Runter in der Zonen-Verwaltung) - vertauscht mit
+  // dem Nachbarn, bestimmt auch die Reihenfolge der Zonen-Tabs.
+  const moveZone = useCallback(
+    (id, direction) => {
+      setZones((prev) => {
+        const idx = prev.findIndex((z) => z.id === id);
+        const swapWith = direction === 'up' ? idx - 1 : idx + 1;
+        if (idx < 0 || swapWith < 0 || swapWith >= prev.length) return prev;
+        const next = [...prev];
+        [next[idx], next[swapWith]] = [next[swapWith], next[idx]];
+        return next;
+      });
+    },
+    [setZones],
+  );
+
+  return { zones, setZones, loaded, addZone, updateZone, removeZone, moveZone };
 }

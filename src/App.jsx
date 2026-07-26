@@ -50,7 +50,7 @@ export default function App() {
   const { dark, override: themeOverride, setThemeOverride, themeLoaded } = useSystemTheme();
   const t = buildTheme(dark);
 
-  const { zones, loaded: zonesLoaded, addZone, updateZone, setZones } = useZones();
+  const { zones, loaded: zonesLoaded, addZone, updateZone, moveZone, setZones } = useZones();
   const { categories, loaded: catsLoaded, addCategory, removeCategory, setCategories } = useCategories();
   const { foods, setFoods, loaded: foodsLoaded, getFood, upsertFood, removeFood } = useFoods();
   const {
@@ -955,7 +955,7 @@ export default function App() {
       <ManageZonesSheet
         open={showZones} onClose={() => setShowZones(false)} t={t} dark={dark} lang={lang}
         zones={zones} countFor={countFor}
-        onAdd={addZone} onUpdate={updateZone} onRemove={removeZoneWithReassign}
+        onAdd={addZone} onUpdate={updateZone} onRemove={removeZoneWithReassign} onMove={moveZone}
         customColors={customZoneColors} onAddCustomColor={addCustomZoneColor} onRemoveCustomColor={removeCustomZoneColor}
       />
 

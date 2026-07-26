@@ -101,6 +101,7 @@ const DE = {
   zones: {
     title: 'Lagerorte', subtitle: 'Anpassen, hinzufügen oder entfernen', emojiAria: 'Emoji',
     nameAria: 'Name des Lagerorts', removeAria: '{{label}} entfernen',
+    moveUpAria: '{{label}} nach oben verschieben', moveDownAria: '{{label}} nach unten verschieben',
     itemsCount: '{{count}} Artikel', itemsCountMoveHint: '{{count}} Artikel · beim Entfernen wandern sie in den ersten Lagerort',
     confirmRemove: '„{{label}}" wirklich entfernen?', cancel: 'Abbrechen', remove: 'Entfernen',
     newZonePlaceholder: 'z.B. Keller', addZone: 'Neuer Lagerort', cooled: 'Gekühlt', notCooled: 'Nicht gekühlt',
@@ -380,6 +381,7 @@ const EN = {
   zones: {
     title: 'Locations', subtitle: 'Customize, add or remove', emojiAria: 'Emoji',
     nameAria: 'Location name', removeAria: 'Remove {{label}}',
+    moveUpAria: 'Move {{label}} up', moveDownAria: 'Move {{label}} down',
     itemsCount: '{{count}} items', itemsCountMoveHint: '{{count}} items · moved to the first location when removed',
     confirmRemove: 'Really remove "{{label}}"?', cancel: 'Cancel', remove: 'Remove',
     newZonePlaceholder: 'e.g. Cellar', addZone: 'New location', cooled: 'Cooled', notCooled: 'Not cooled',
