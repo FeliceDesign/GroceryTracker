@@ -250,6 +250,12 @@ export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items,
               sub={tr(lang, 'backup.exportMacrosHint', { count: stats.foods })}
               control={<Toggle t={t} on={exportMacros} onChange={setExportMacros} />}
             />
+            <SettingRow
+              t={t}
+              label={tr(lang, 'backup.includeShopping')}
+              sub={tr(lang, 'backup.includeShoppingHint', { count: shopping.length })}
+              control={<Toggle t={t} on={includeShopping} onChange={setIncludeShopping} />}
+            />
             <Row t={t} icon={<Download size={19} />} label={tr(lang, 'backup.exportBackup')} sub={tr(lang, 'backup.exportBackupHint', { count: stats.items, macros: exportMacros ? tr(lang, 'backup.withMacros') : tr(lang, 'backup.withoutMacros') })} onClick={doExport} />
             <Row t={t} icon={<Share2 size={19} />} label={tr(lang, 'backup.shareBackup')} sub={tr(lang, 'backup.shareBackupHint')} onClick={doShareExport} />
             <Row t={t} icon={<ClipboardCopy size={19} />} label={tr(lang, 'backup.copyToClipboard')} sub={tr(lang, 'backup.copyToClipboardHint')} onClick={doCopyExport} />
@@ -347,12 +353,6 @@ export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items,
               label={tr(lang, 'backup.showMacros')}
               sub={tr(lang, 'backup.showMacrosHint')}
               control={<Toggle t={t} on={showMacros} onChange={setShowMacros} />}
-            />
-            <SettingRow
-              t={t}
-              label={tr(lang, 'backup.includeShopping')}
-              sub={tr(lang, 'backup.includeShoppingHint', { count: shopping.length })}
-              control={<Toggle t={t} on={includeShopping} onChange={setIncludeShopping} />}
             />
           </div>
 
