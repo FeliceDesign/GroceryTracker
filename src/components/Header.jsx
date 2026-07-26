@@ -9,6 +9,7 @@ export function Header({
   showShoppingButton = true, showSettingsButton = true, showAddButton = false, showFavoritesButton = false,
   showSearchButton = false,
   emojiBothSides = false,
+  addExtraHandlers, addHoldProgress = 0,
 }) {
   const pal = zonePalette(zone.color, dark);
   const center = align === 'center';
@@ -89,7 +90,21 @@ export function Header({
                 </button>
               )}
               {showAddButton && (
-                <button onClick={onAdd} style={iconBtn} aria-label={tr(lang, 'app.addAria')}>
+                <button
+                  onClick={onAdd}
+                  {...(addExtraHandlers || {})}
+                  style={{ ...iconBtn, touchAction: 'none' }}
+                  aria-label={tr(lang, 'app.addAria')}
+                >
+                  {addHoldProgress > 0 && (
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        position: 'absolute', inset: 0, borderRadius: 12, pointerEvents: 'none',
+                        background: `conic-gradient(rgba(255,255,255,0.55) ${addHoldProgress * 360}deg, transparent 0deg)`,
+                      }}
+                    />
+                  )}
                   <Plus size={22} strokeWidth={2.4} />
                 </button>
               )}

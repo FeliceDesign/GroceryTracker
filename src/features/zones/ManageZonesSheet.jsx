@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, Snowflake, ChevronUp, ChevronDown, Star } from 'lucide-react';
+import { Plus, Trash2, Snowflake, ChevronUp, ChevronDown, Star, Eye } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { ColorSwatches } from '../../components/ColorSwatches.jsx';
@@ -29,7 +29,10 @@ function CooledToggle({ on, onChange, t, lang }) {
 }
 
 // Lagerorte verwalten: umbenennen, Emoji/Farbe ändern, hinzufügen, entfernen.
-export function ManageZonesSheet({ open, onClose, t, dark, lang = 'de', zones, countFor, onAdd, onUpdate, onRemove, onMove, customColors, onAddCustomColor, onRemoveCustomColor, defaultZoneId, onSetDefaultZoneId }) {
+export function ManageZonesSheet({
+  open, onClose, t, dark, lang = 'de', zones, countFor, onAdd, onUpdate, onRemove, onMove, customColors, onAddCustomColor, onRemoveCustomColor,
+  defaultZoneId, onSetDefaultZoneId, focusMode = false, onExitFocusMode,
+}) {
   const inputStyle = makeInputStyle(t);
   const [draft, setDraft] = useState({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], cooled: false });
   const [showAdd, setShowAdd] = useState(false);
@@ -216,6 +219,25 @@ export function ManageZonesSheet({ open, onClose, t, dark, lang = 'de', zones, c
         >
           <Plus size={18} /> {tr(lang, 'zones.addZone')}
         </button>
+      )}
+
+      {focusMode && (
+        <div style={{ marginTop: 12, background: t.cardAlt, borderRadius: 14, padding: 14 }}>
+          <div style={{ fontSize: 12, color: t.textFaint, lineHeight: 1.45, marginBottom: 10 }}>
+            {tr(lang, 'zones.focusModeHint')}
+          </div>
+          <button
+            type="button"
+            onClick={onExitFocusMode}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '12px', borderRadius: 12, border: 'none',
+              background: t.btnPrimary, color: t.btnPrimaryText, fontWeight: 700, fontSize: 14, cursor: 'pointer',
+            }}
+          >
+            <Eye size={17} /> {tr(lang, 'zones.showButtonsAgain')}
+          </button>
+        </div>
       )}
     </Modal>
   );

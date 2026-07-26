@@ -9,6 +9,7 @@ import { useZones } from './hooks/useZones.js';
 import { useCategories } from './hooks/useCategories.js';
 import { useFoods } from './hooks/useFoods.js';
 import { useFavorites } from './hooks/useFavorites.js';
+import { useLongPress } from './hooks/useLongPress.js';
 import { SEED } from './lib/defaults.js';
 import { emptyMacros, foodToMacros, macrosToFood, hasFoodData, defaultBasisForUnit } from './lib/macros.js';
 import { openedDaysFor, effectiveExpiry } from './lib/openedShelfLife.js';
@@ -72,6 +73,7 @@ export default function App() {
     autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
     favoritesCollapsed: false, zoneEmojiBothSides: false, favoritesPos: 'off', showFavoriteChips: true, searchPos: 'top',
     favoritesSortMode: 'manual', mainSortMode: 'category', compactList: false, defaultZoneId: null,
+    focusMode: false,
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -329,6 +331,11 @@ export default function App() {
     setScanMsg('');
     setShowAdd(true);
   };
+
+  // 5s langer Druck auf den Add-Button aktiviert den Fokus-Modus (alle
+  // Aktions-Buttons ausgeblendet); zurück geht's nur über die Lagerorte-
+  // Verwaltung (Klick auf den Zonennamen bleibt dabei immer erreichbar).
+  const addLongPress = useLongPress(() => setPrefs((p) => ({ ...p, focusMode: true })), { ms: 5000 });
 
   // Antippen öffnet die (schreibgeschützte) Detail-Ansicht.
   const openDetail = (item) => setDetailItem(item);
@@ -735,11 +742,12 @@ export default function App() {
           onFavorites={() => setShowFavorites(true)}
           onToggleSearch={toggleSearch} searchOpen={searchOpen}
           onZoneClick={() => setShowZones(true)}
-          showShoppingButton={(prefs.shoppingPos || 'top') === 'top'}
-          showSettingsButton={(prefs.settingsPos || 'top') !== 'bottom'}
-          showAddButton={(prefs.addPos || 'bottom') === 'top'}
-          showFavoritesButton={(prefs.favoritesPos || 'off') === 'top'}
-          showSearchButton={!expiringView && (prefs.searchPos || 'top') === 'top'}
+          showShoppingButton={!prefs.focusMode && (prefs.shoppingPos || 'top') === 'top'}
+          showSettingsButton={!prefs.focusMode && (prefs.settingsPos || 'top') !== 'bottom'}
+          showAddButton={!prefs.focusMode && (prefs.addPos || 'bottom') === 'top'}
+          showFavoritesButton={!prefs.focusMode && (prefs.favoritesPos || 'off') === 'top'}
+          showSearchButton={!prefs.focusMode && !expiringView && (prefs.searchPos || 'top') === 'top'}
+          addExtraHandlers={addLongPress.handlers} addHoldProgress={addLongPress.progress}
         />
         <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={(id) => { setActiveZone(id); setExpiringView(false); }} t={t} dark={dark} />
       </div>
@@ -838,19 +846,21 @@ export default function App() {
       <FloatingActions
         zone={zone} dark={dark} t={t}
         items={[
-          (prefs.addPos || 'bottom') === 'bottom' && {
+          !prefs.focusMode && (prefs.addPos || 'bottom') === 'bottom' && {
             key: 'add', size: 60, primary: true,
             onClick: openAdd,
             ariaLabel: tr(lang, 'app.addAria'),
             icon: <Plus size={28} strokeWidth={2.6} />,
+            extraHandlers: addLongPress.handlers,
+            holdProgress: addLongPress.progress,
           },
-          prefs.settingsPos === 'bottom' && {
+          !prefs.focusMode && prefs.settingsPos === 'bottom' && {
             key: 'settings', size: 48,
             onClick: () => setShowSettings(true),
             ariaLabel: tr(lang, 'app.settingsAria'),
             icon: <Settings size={19} strokeWidth={2.2} />,
           },
-          prefs.shoppingPos === 'bottom' && {
+          !prefs.focusMode && prefs.shoppingPos === 'bottom' && {
             key: 'shopping', size: 48,
             onClick: () => setShowShopping(true),
             ariaLabel: `${tr(lang, 'app.shoppingAria')}${shopping.length > 0 ? ` (${shopping.length})` : ''}`,
@@ -865,13 +875,13 @@ export default function App() {
               />
             ),
           },
-          prefs.favoritesPos === 'bottom' && {
+          !prefs.focusMode && prefs.favoritesPos === 'bottom' && {
             key: 'favorites', size: 48,
             onClick: () => setShowFavorites(true),
             ariaLabel: tr(lang, 'app.favoritesAria'),
             icon: <Star size={18} strokeWidth={2.2} />,
           },
-          !expiringView && prefs.searchPos === 'bottom' && {
+          !prefs.focusMode && !expiringView && prefs.searchPos === 'bottom' && {
             key: 'search', size: 48,
             onClick: toggleSearch,
             ariaLabel: searchOpen ? tr(lang, 'app.searchCloseAria') : tr(lang, 'app.searchAria'),
@@ -1005,6 +1015,8 @@ export default function App() {
         customColors={customZoneColors} onAddCustomColor={addCustomZoneColor} onRemoveCustomColor={removeCustomZoneColor}
         defaultZoneId={prefs.defaultZoneId}
         onSetDefaultZoneId={(id) => setPrefs((p) => ({ ...p, defaultZoneId: id }))}
+        focusMode={prefs.focusMode === true}
+        onExitFocusMode={() => setPrefs((p) => ({ ...p, focusMode: false }))}
       />
 
       <ManageCategoriesSheet

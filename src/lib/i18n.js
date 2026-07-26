@@ -109,6 +109,8 @@ const DE = {
     confirmRemove: '„{{label}}" wirklich entfernen?', cancel: 'Abbrechen', remove: 'Entfernen',
     newZonePlaceholder: 'z.B. Keller', addZone: 'Neuer Lagerort', cooled: 'Gekühlt', notCooled: 'Nicht gekühlt',
     setDefaultAria: '{{label}} als Standard-Zone beim App-Start festlegen', isDefault: 'Standard-Zone beim App-Start',
+    focusModeHint: 'Fokus-Modus ist aktiv (durch langes Drücken auf den Plus-Button ausgelöst) - alle Aktions-Buttons sind ausgeblendet.',
+    showButtonsAgain: 'Buttons wieder einblenden',
   },
   categories: {
     title: 'Kategorien', subtitle: 'Umbenennen, hinzufügen oder entfernen', nameAria: 'Kategorie {{name}}',
@@ -400,6 +402,8 @@ const EN = {
     confirmRemove: 'Really remove "{{label}}"?', cancel: 'Cancel', remove: 'Remove',
     newZonePlaceholder: 'e.g. Cellar', addZone: 'New location', cooled: 'Cooled', notCooled: 'Not cooled',
     setDefaultAria: 'Set {{label}} as default location on app start', isDefault: 'Default location on app start',
+    focusModeHint: 'Focus mode is active (triggered by a long press on the plus button) - all action buttons are hidden.',
+    showButtonsAgain: 'Show buttons again',
   },
   categories: {
     title: 'Categories', subtitle: 'Rename, add or remove', nameAria: 'Category {{name}}',
