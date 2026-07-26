@@ -55,18 +55,6 @@ export function LayoutSheet({
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>{tr(lang, 'layout.shopping')}</div>
-            <Segmented
-              t={t}
-              value={shoppingPos || 'top'}
-              onChange={onSetShoppingPos}
-              options={[
-                { value: 'top', label: tr(lang, 'layout.top') },
-                { value: 'bottom', label: tr(lang, 'layout.bottom') },
-              ]}
-            />
-          </div>
-          <div>
             <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>{tr(lang, 'layout.settings')}</div>
             <Segmented
               t={t}
@@ -96,6 +84,19 @@ export function LayoutSheet({
               t={t}
               value={favoritesPos || 'off'}
               onChange={onSetFavoritesPos}
+              options={[
+                { value: 'top', label: tr(lang, 'layout.top') },
+                { value: 'bottom', label: tr(lang, 'layout.bottom') },
+                { value: 'off', label: tr(lang, 'layout.off') },
+              ]}
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>{tr(lang, 'layout.shopping')}</div>
+            <Segmented
+              t={t}
+              value={shoppingPos || 'top'}
+              onChange={onSetShoppingPos}
               options={[
                 { value: 'top', label: tr(lang, 'layout.top') },
                 { value: 'bottom', label: tr(lang, 'layout.bottom') },
