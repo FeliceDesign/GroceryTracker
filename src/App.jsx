@@ -54,7 +54,7 @@ export default function App() {
   const { categories, loaded: catsLoaded, addCategory, removeCategory, setCategories } = useCategories();
   const { foods, setFoods, loaded: foodsLoaded, getFood, upsertFood, removeFood } = useFoods();
   const {
-    favorites, loaded: favoritesLoaded, isFavorite, addFavorite, updateFavorite, removeFavorite, removeFavoriteByName,
+    favorites, loaded: favoritesLoaded, isFavorite, addFavorite, updateFavorite, moveFavorite, removeFavorite, removeFavoriteByName,
     clearFavorites, restoreFavorites,
   } = useFavorites();
   const [items, setItems, itemsLoaded] = useStorage('gt-items-v1', SEED);
@@ -233,7 +233,7 @@ export default function App() {
   // den beim Markieren gespeicherten Lagerort, mit der am Favoriten
   // hinterlegten Standard-Menge (Default 1).
   const addFavoriteToInventory = (fav) => {
-    const favQty = fav.qty || 1;
+    const favQty = fav.qty ?? 1;
     setItems((prev) => {
       const idx = prev.findIndex((i) => i.zone === fav.zone && i.unit === fav.unit && i.name.toLowerCase() === fav.name.toLowerCase());
       if (idx >= 0) {
@@ -253,7 +253,7 @@ export default function App() {
     setShopping((prev) => {
       if (prev.some((s) => s.zone === fav.zone && s.name.toLowerCase() === fav.name.toLowerCase())) return prev;
       return [...prev, {
-        id: newId('sl'), name: fav.name, zone: fav.zone, category: fav.category, qty: fav.qty || 1, unit: fav.unit, mhd: null,
+        id: newId('sl'), name: fav.name, zone: fav.zone, category: fav.category, qty: fav.qty ?? 1, unit: fav.unit, mhd: null,
         manual: true, addedAt: Date.now(),
       }];
     });
@@ -604,6 +604,34 @@ export default function App() {
   };
 
   // -- Ableitungen ------------------------------------------------------------
+
+  // Favoriten-Sortierung: "manuell" liefert die gespeicherte (per Hoch/
+  // Runter änderbare) Reihenfolge unverändert, die anderen Modi berechnen
+  // eine abgeleitete Anzeige-Reihenfolge, ohne die gespeicherte Reihenfolge
+  // zu verändern.
+  const sortedFavorites = useMemo(() => {
+    const mode = (prefs && prefs.favoritesSortMode) || 'manual';
+    if (mode === 'manual' || !favorites) return favorites;
+    if (mode === 'alpha') {
+      return [...favorites].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+    }
+    if (mode === 'zone' && zones) {
+      const zoneOrder = new Map(zones.map((z, i) => [z.id, i]));
+      return [...favorites].sort((a, b) => {
+        const za = zoneOrder.has(a.zone) ? zoneOrder.get(a.zone) : zones.length;
+        const zb = zoneOrder.has(b.zone) ? zoneOrder.get(b.zone) : zones.length;
+        return za !== zb ? za - zb : a.name.localeCompare(b.name, 'de');
+      });
+    }
+    if (mode === 'category') {
+      return [...favorites].sort((a, b) => {
+        const ca = (a.category || '').localeCompare(b.category || '', 'de');
+        return ca !== 0 ? ca : a.name.localeCompare(b.name, 'de');
+      });
+    }
+    return favorites;
+  }, [favorites, zones, prefs]);
+
   const grouped = useMemo(() => {
     if (!items) return [];
     const inZone = items.filter((i) => i.zone === activeZone);
@@ -855,7 +883,7 @@ export default function App() {
         shopping={shopping} shoppingInput={shoppingInput} setShoppingInput={setShoppingInput}
         onAddManual={addManualShopping} onCheck={checkAndRestore} onRemove={removeFromShopping}
         onClearAll={clearShopping} justChecked={justChecked} showCount={prefs.shoppingCount}
-        favorites={favorites} onTapFavorite={addFavoriteToShopping} showFavoriteChips={prefs.showFavoriteChips !== false}
+        favorites={sortedFavorites} onTapFavorite={addFavoriteToShopping} showFavoriteChips={prefs.showFavoriteChips !== false}
         favoritesCollapsed={prefs.favoritesCollapsed} onToggleFavoritesCollapsed={toggleFavoritesCollapsed}
       />
 
@@ -937,11 +965,13 @@ export default function App() {
 
       <ManageFavoritesSheet
         open={showFavorites} onClose={() => setShowFavorites(false)} t={t} dark={dark} lang={lang}
-        favorites={favorites} zones={zones} onRemove={removeFavorite} onUpdate={updateFavorite}
+        favorites={sortedFavorites} zones={zones} onRemove={removeFavorite} onUpdate={updateFavorite} onMove={moveFavorite}
         onAddToInventory={addFavoriteToInventory} onAddToShopping={addFavoriteToShopping}
         hasInventoryItems={items.length > 0} onAddAllFromInventory={addAllInventoryToFavorites}
         onClearAll={clearAllFavorites}
         onEditFood={(name) => { setShowFavorites(false); setEditFoodName(name); setShowFoods(true); }}
+        sortMode={prefs.favoritesSortMode || 'manual'}
+        onSetSortMode={(v) => setPrefs((p) => ({ ...p, favoritesSortMode: v }))}
       />
 
       <ManageFoodsSheet

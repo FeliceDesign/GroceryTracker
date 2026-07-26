@@ -32,6 +32,22 @@ export function useFavorites() {
     [setFavorites],
   );
 
+  // Manuelle Reihenfolge ändern (Hoch/Runter im Verwaltungs-Sheet, nur im
+  // Sortiermodus "Manuell" sichtbar) - vertauscht mit dem Nachbarn.
+  const moveFavorite = useCallback(
+    (id, direction) => {
+      setFavorites((prev) => {
+        const idx = prev.findIndex((f) => f.id === id);
+        const swapWith = direction === 'up' ? idx - 1 : idx + 1;
+        if (idx < 0 || swapWith < 0 || swapWith >= prev.length) return prev;
+        const next = [...prev];
+        [next[idx], next[swapWith]] = [next[swapWith], next[idx]];
+        return next;
+      });
+    },
+    [setFavorites],
+  );
+
   const removeFavorite = useCallback(
     (id) => setFavorites((prev) => prev.filter((f) => f.id !== id)),
     [setFavorites],
@@ -47,5 +63,8 @@ export function useFavorites() {
   // Für Undo nach "Alle löschen" - stellt den übergebenen Stand wieder her.
   const restoreFavorites = useCallback((list) => setFavorites(list), [setFavorites]);
 
-  return { favorites, loaded, isFavorite, addFavorite, updateFavorite, removeFavorite, removeFavoriteByName, clearFavorites, restoreFavorites };
+  return {
+    favorites, loaded, isFavorite, addFavorite, updateFavorite, moveFavorite,
+    removeFavorite, removeFavoriteByName, clearFavorites, restoreFavorites,
+  };
 }

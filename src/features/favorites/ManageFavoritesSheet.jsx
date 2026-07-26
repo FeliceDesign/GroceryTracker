@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Trash2, ListPlus, PackagePlus, ShoppingCart, Check, Pencil, Minus, Plus } from 'lucide-react';
+import { Trash2, ListPlus, PackagePlus, ShoppingCart, Check, Pencil, Minus, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
+import { Segmented } from '../../components/Segmented.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { btnCircle, pillStyle, makeInputStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 
 const UNITS = ['stk', 'g', 'ml'];
 
-function FavoriteRow({ fav, zone, dark, t, lang, onRemove, onUpdate, onAddToInventory, onAddToShopping, onEditFood }) {
+function FavoriteRow({
+  fav, zone, dark, t, lang, onRemove, onUpdate, onAddToInventory, onAddToShopping, onEditFood,
+  showMove = false, canMoveUp = false, canMoveDown = false, onMove,
+}) {
   const pal = zonePalette(zone ? zone.color : null, dark);
   // Kurzes Häkchen-Feedback nach dem Antippen, analog zum Kopieren-Feedback
   // in der Stammdaten-Verwaltung.
@@ -20,12 +24,52 @@ function FavoriteRow({ fav, zone, dark, t, lang, onRemove, onUpdate, onAddToInve
   }, [feedback]);
 
   const unit = fav.unit || 'stk';
-  const qty = fav.qty || 1;
+  // Nullish statt truthy-Fallback - 0 ist beim Tippen ein gültiger
+  // Zwischenzustand und darf nicht auf 1 zurückspringen.
+  const qty = fav.qty ?? 1;
   const inputStyle = makeInputStyle(t);
+
+  // Eigener Text-Puffer fürs Mengenfeld (g/ml): zeigt exakt, was getippt
+  // wird (auch "0" oder leer), statt bei jedem Tastendruck vom
+  // kontrollierten qty-Wert überschrieben zu werden - sonst hängt sich neu
+  // Getipptes hinter eine führende "0". Wird nur beim Einheitenwechsel
+  // (neuer Startwert) neu synchronisiert.
+  const [qtyText, setQtyText] = useState(String(qty));
+  useEffect(() => { setQtyText(String(qty)); }, [unit]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div style={{ background: t.cardAlt, borderRadius: 12, padding: '10px 12px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {showMove && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => onMove(fav.id, 'up')}
+              disabled={!canMoveUp}
+              style={{
+                width: 24, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: 'none', borderRadius: 6, background: 'transparent', cursor: canMoveUp ? 'pointer' : 'default',
+                color: canMoveUp ? t.textMuted : t.border,
+              }}
+              aria-label={tr(lang, 'favorites.moveUpAria', { name: fav.name })}
+            >
+              <ChevronUp size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onMove(fav.id, 'down')}
+              disabled={!canMoveDown}
+              style={{
+                width: 24, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: 'none', borderRadius: 6, background: 'transparent', cursor: canMoveDown ? 'pointer' : 'default',
+                color: canMoveDown ? t.textMuted : t.border,
+              }}
+              aria-label={tr(lang, 'favorites.moveDownAria', { name: fav.name })}
+            >
+              <ChevronDown size={15} />
+            </button>
+          </div>
+        )}
         <button
           type="button"
           onClick={() => onEditFood(fav.name)}
@@ -33,12 +77,14 @@ function FavoriteRow({ fav, zone, dark, t, lang, onRemove, onUpdate, onAddToInve
           aria-label={tr(lang, 'favorites.editFoodAria', { name: fav.name })}
         >
           <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere' }}>{fav.name}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
-            {zone && (
+          {zone && (
+            <div style={{ marginTop: 3 }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: pal.accent, background: pal.accentBg, borderRadius: 999, padding: '2px 8px' }}>
                 {zone.emoji} {zone.label}
               </span>
-            )}
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11.5, color: t.textFaint }}>{fav.category}</span>
             <span style={{ fontSize: 11.5, color: t.textFaint }}>· {unit === 'stk' ? `${qty}x` : `${qty} ${unit}`}</span>
           </div>
@@ -107,8 +153,13 @@ function FavoriteRow({ fav, zone, dark, t, lang, onRemove, onUpdate, onAddToInve
                 <input
                   type="number"
                   inputMode="numeric"
-                  value={qty}
-                  onChange={(e) => onUpdate(fav.id, { qty: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                  value={qtyText}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setQtyText(raw);
+                    const parsed = parseInt(raw, 10);
+                    onUpdate(fav.id, { qty: Number.isNaN(parsed) ? 0 : Math.max(0, parsed) });
+                  }}
                   style={{ ...inputStyle, marginTop: 0, padding: '8px 10px' }}
                 />
                 <span style={{ fontSize: 13.5, fontWeight: 700, color: t.textMuted }}>{unit}</span>
@@ -125,8 +176,9 @@ function FavoriteRow({ fav, zone, dark, t, lang, onRemove, onUpdate, onAddToInve
 // entstehen nur über den Stern im Detail-Sheet oder gesammelt über den
 // "Bestand übernehmen"-Button hier, kein eigenes Anlegen-Formular.
 export function ManageFavoritesSheet({
-  open, onClose, t, dark, lang = 'de', favorites, zones, onRemove, onUpdate, onAddToInventory, onAddToShopping,
+  open, onClose, t, dark, lang = 'de', favorites, zones, onRemove, onUpdate, onMove, onAddToInventory, onAddToShopping,
   hasInventoryItems = false, onAddAllFromInventory, onClearAll, onEditFood,
+  sortMode = 'manual', onSetSortMode,
 }) {
   const [confirmAddAll, setConfirmAddAll] = useState(false);
   const [addAllMsg, setAddAllMsg] = useState('');
@@ -185,6 +237,24 @@ export function ManageFavoritesSheet({
         </div>
       ) : (
         <>
+          {favorites.length > 1 && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: t.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
+                {tr(lang, 'favorites.sortLabel')}
+              </div>
+              <Segmented
+                t={t}
+                value={sortMode}
+                onChange={onSetSortMode}
+                options={[
+                  { value: 'manual', label: tr(lang, 'favorites.sortManual') },
+                  { value: 'alpha', label: tr(lang, 'favorites.sortAlpha') },
+                  { value: 'zone', label: tr(lang, 'favorites.sortZone') },
+                  { value: 'category', label: tr(lang, 'favorites.sortCategory') },
+                ]}
+              />
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
             <button
               type="button"
@@ -200,11 +270,12 @@ export function ManageFavoritesSheet({
             </button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {favorites.map((f) => (
+            {favorites.map((f, idx) => (
               <FavoriteRow
                 key={f.id} fav={f} zone={zones.find((z) => z.id === f.zone)} dark={dark} t={t} lang={lang}
                 onRemove={onRemove} onUpdate={onUpdate} onAddToInventory={onAddToInventory} onAddToShopping={onAddToShopping}
                 onEditFood={onEditFood}
+                showMove={sortMode === 'manual'} canMoveUp={idx > 0} canMoveDown={idx < favorites.length - 1} onMove={onMove}
               />
             ))}
           </div>
