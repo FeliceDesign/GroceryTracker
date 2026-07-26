@@ -26,7 +26,7 @@ const DE = {
     emptyList: '— leer —',
     soonSection: 'Bald ablaufend ({{count}})',
     laterSection: 'Weitere Artikel nach MHD ({{count}})',
-    hitsSection: '{{count}} Treffer',
+    hitsSection: '{{count}} Treffer', allSection: '{{count}} Artikel',
     addAria: 'Neuen Artikel hinzufügen', settingsAria: 'Einstellungen öffnen',
     shoppingAria: 'Einkaufsliste öffnen', favoritesAria: 'Favoriten öffnen',
     searchAria: 'Suche öffnen', searchCloseAria: 'Suche schließen',
@@ -110,6 +110,7 @@ const DE = {
     title: 'Kategorien', subtitle: 'Umbenennen, hinzufügen oder entfernen', nameAria: 'Kategorie {{name}}',
     removeAria: '{{name}} entfernen', itemsCount: '{{count}} Art.', newPlaceholder: 'Neue Kategorie…',
     addAria: 'Kategorie hinzufügen', hint: 'Beim Umbenennen wandern alle Artikel mit. Beim Entfernen rutschen sie nach „Sonstiges".',
+    moveUpAria: '{{name}} nach oben verschieben', moveDownAria: '{{name}} nach unten verschieben',
   },
   foods: {
     title: 'Stammdaten / Makros', subtitle: '{{count}} Lebensmittel', searchPlaceholder: 'Lebensmittel suchen…',
@@ -174,6 +175,8 @@ const DE = {
   },
   behavior: {
     title: 'Verhalten', subtitle: 'Einkaufsliste, Mengen, Formate',
+    mainSort: 'Sortierung der Hauptliste', mainSortHint: 'Wie Artikel im Bestand angezeigt werden.',
+    sortCategory: 'Kategorie', sortName: 'Name', sortMhd: 'MHD',
     shoppingCount: 'Markierung am Einkaufs-Symbol', shoppingCountHint: 'Wie offene Artikel am Einkaufslisten-Button angezeigt werden.',
     badgeCount: 'Zahl', badgeDot: 'Punkt', badgeOff: 'Aus',
     autoShopping: 'Entfernte Artikel auf Einkaufsliste', autoShoppingHint: 'Wenn ein Artikel entfernt wird, automatisch auf die Einkaufsliste setzen.',
@@ -306,7 +309,7 @@ const EN = {
     emptyList: '— empty —',
     soonSection: 'Expiring soon ({{count}})',
     laterSection: 'More items by best-before date ({{count}})',
-    hitsSection: '{{count}} results',
+    hitsSection: '{{count}} results', allSection: '{{count}} items',
     addAria: 'Add new item', settingsAria: 'Open settings',
     shoppingAria: 'Open shopping list', favoritesAria: 'Open favorites',
     searchAria: 'Open search', searchCloseAria: 'Close search',
@@ -390,6 +393,7 @@ const EN = {
     title: 'Categories', subtitle: 'Rename, add or remove', nameAria: 'Category {{name}}',
     removeAria: 'Remove {{name}}', itemsCount: '{{count}} items', newPlaceholder: 'New category…',
     addAria: 'Add category', hint: 'Renaming moves all items along. Removing moves them to "Other".',
+    moveUpAria: 'Move {{name}} up', moveDownAria: 'Move {{name}} down',
   },
   foods: {
     title: 'Nutrition database', subtitle: '{{count}} foods', searchPlaceholder: 'Search foods…',
@@ -454,6 +458,8 @@ const EN = {
   },
   behavior: {
     title: 'Behavior', subtitle: 'Shopping list, quantities, formats',
+    mainSort: 'Main list sorting', mainSortHint: 'How items are shown in the inventory.',
+    sortCategory: 'Category', sortName: 'Name', sortMhd: 'Best-before',
     shoppingCount: 'Marker on shopping icon', shoppingCountHint: 'How open items are shown on the shopping list button.',
     badgeCount: 'Number', badgeDot: 'Dot', badgeOff: 'Off',
     autoShopping: 'Removed items to shopping list', autoShoppingHint: 'Automatically add an item to the shopping list when it’s removed.',

@@ -51,7 +51,7 @@ export default function App() {
   const t = buildTheme(dark);
 
   const { zones, loaded: zonesLoaded, addZone, updateZone, moveZone, setZones } = useZones();
-  const { categories, loaded: catsLoaded, addCategory, removeCategory, setCategories } = useCategories();
+  const { categories, loaded: catsLoaded, addCategory, removeCategory, moveCategory, setCategories } = useCategories();
   const { foods, setFoods, loaded: foodsLoaded, getFood, upsertFood, removeFood } = useFoods();
   const {
     favorites, loaded: favoritesLoaded, isFavorite, addFavorite, updateFavorite, moveFavorite, removeFavorite, removeFavoriteByName,
@@ -71,7 +71,7 @@ export default function App() {
     shoppingPos: 'top', settingsPos: 'top', addPos: 'bottom',
     autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
     favoritesCollapsed: false, zoneEmojiBothSides: false, favoritesPos: 'off', showFavoriteChips: true, searchPos: 'top',
-    favoritesSortMode: 'manual',
+    favoritesSortMode: 'manual', mainSortMode: 'category',
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -632,6 +632,9 @@ export default function App() {
     return favorites;
   }, [favorites, zones, prefs]);
 
+  // Hauptlisten-Sortierung: "Kategorie" gruppiert nach der manuellen
+  // Kategorien-Reihenfolge (Settings -> Kategorien verwalten), "Name"/"MHD"
+  // zeigen stattdessen eine flache Liste ohne Gruppierung.
   const grouped = useMemo(() => {
     if (!items) return [];
     const inZone = items.filter((i) => i.zone === activeZone);
@@ -639,10 +642,29 @@ export default function App() {
     inZone.forEach((i) => {
       (byCat[i.category] = byCat[i.category] || []).push(i);
     });
-    return Object.entries(byCat)
-      .sort(([a], [b]) => a.localeCompare(b, 'de'))
-      .map(([cat, list]) => [cat, list.sort((a, b) => a.name.localeCompare(b.name, 'de'))]);
-  }, [items, activeZone]);
+    const known = (categories || []).filter((c) => byCat[c]);
+    const unknown = Object.keys(byCat).filter((c) => !known.includes(c)).sort((a, b) => a.localeCompare(b, 'de'));
+    return [...known, ...unknown].map((cat) => [cat, byCat[cat].sort((a, b) => a.name.localeCompare(b.name, 'de'))]);
+  }, [items, activeZone, categories]);
+
+  const flatSorted = useMemo(() => {
+    if (!items) return [];
+    const inZone = items.filter((i) => i.zone === activeZone);
+    if ((prefs && prefs.mainSortMode) === 'mhd') {
+      return inZone
+        .map((i) => {
+          const eff = effectiveExpiry(i, openedDaysFor(i.name, getFood(i.name)));
+          return { ...i, days: eff.date ? daysUntil(eff.date) : null };
+        })
+        .sort((a, b) => {
+          if (a.days === null && b.days === null) return a.name.localeCompare(b.name, 'de');
+          if (a.days === null) return 1;
+          if (b.days === null) return -1;
+          return a.days - b.days || a.name.localeCompare(b.name, 'de');
+        });
+    }
+    return [...inZone].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  }, [items, activeZone, prefs, getFood]);
 
   const searchResults = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -776,20 +798,34 @@ export default function App() {
               ))}
             </Section>
           )
-        ) : grouped.length === 0 ? (
+        ) : (prefs.mainSortMode || 'category') === 'category' ? (
+          grouped.length === 0 ? (
+            <Empty t={t} label={tr(lang, 'app.emptyList')} />
+          ) : (
+            grouped.map(([cat, list]) => (
+              <Section key={cat} t={t} title={cat}>
+                {list.map((item, idx) => (
+                  <ItemRow
+                    key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
+                    justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                    isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false}
+                  />
+                ))}
+              </Section>
+            ))
+          )
+        ) : flatSorted.length === 0 ? (
           <Empty t={t} label={tr(lang, 'app.emptyList')} />
         ) : (
-          grouped.map(([cat, list]) => (
-            <Section key={cat} t={t} title={cat}>
-              {list.map((item, idx) => (
-                <ItemRow
-                  key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
-                  justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                  isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false}
-                />
-              ))}
-            </Section>
-          ))
+          <Section t={t} title={tr(lang, 'app.allSection', { count: flatSorted.length })}>
+            {flatSorted.map((item, idx) => (
+              <ItemRow
+                key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
+                justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                isLast={idx === flatSorted.length - 1} showWarnDot={prefs.showWarnDot !== false}
+              />
+            ))}
+          </Section>
         )}
       </div>
 
@@ -928,6 +964,8 @@ export default function App() {
 
       <BehaviorSheet
         open={showBehavior} onClose={() => setShowBehavior(false)} t={t} lang={lang}
+        mainSortMode={prefs.mainSortMode || 'category'}
+        onSetMainSortMode={(v) => setPrefs((p) => ({ ...p, mainSortMode: v }))}
         shoppingBadgeMode={prefs.shoppingBadgeMode || 'count'}
         onSetShoppingBadgeMode={(v) => setPrefs((p) => ({ ...p, shoppingBadgeMode: v }))}
         autoShoppingOnRemove={prefs.autoShoppingOnRemove !== false}
@@ -962,7 +1000,7 @@ export default function App() {
       <ManageCategoriesSheet
         open={showCategories} onClose={() => setShowCategories(false)} t={t} lang={lang}
         categories={categories} countFor={countForCategory}
-        onAdd={addCategory} onRename={renameCategory} onRemove={removeCategoryWithReassign}
+        onAdd={addCategory} onRename={renameCategory} onRemove={removeCategoryWithReassign} onMove={moveCategory}
       />
 
       <ManageFavoritesSheet

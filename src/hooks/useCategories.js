@@ -33,5 +33,22 @@ export function useCategories() {
     [setCategories],
   );
 
-  return { categories, setCategories, loaded, addCategory, removeCategory };
+  // Reihenfolge ändern (Hoch/Runter in der Kategorien-Verwaltung) -
+  // vertauscht mit dem Nachbarn, bestimmt die Gruppen-Reihenfolge in der
+  // Hauptliste (Sortiermodus "Kategorie").
+  const moveCategory = useCallback(
+    (name, direction) => {
+      setCategories((prev) => {
+        const idx = prev.indexOf(name);
+        const swapWith = direction === 'up' ? idx - 1 : idx + 1;
+        if (idx < 0 || swapWith < 0 || swapWith >= prev.length) return prev;
+        const next = [...prev];
+        [next[idx], next[swapWith]] = [next[swapWith], next[idx]];
+        return next;
+      });
+    },
+    [setCategories],
+  );
+
+  return { categories, setCategories, loaded, addCategory, removeCategory, moveCategory };
 }

@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 
 // Eine Kategorie-Zeile: lokaler Entwurf, gespeichert bei Fokus-Verlust/Enter.
-function CategoryRow({ name, count, locked, t, lang, onRename, onRemove }) {
+function CategoryRow({ name, count, locked, t, lang, onRename, onRemove, onMove, canMoveUp, canMoveDown }) {
   const [draft, setDraft] = useState(name);
   const inputStyle = makeInputStyle(t);
   const save = () => {
@@ -16,6 +16,34 @@ function CategoryRow({ name, count, locked, t, lang, onRename, onRemove }) {
   };
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: t.cardAlt, borderRadius: 12, padding: '8px 10px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
+        <button
+          type="button"
+          onClick={() => onMove(name, 'up')}
+          disabled={!canMoveUp}
+          style={{
+            width: 24, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: 'none', borderRadius: 6, background: 'transparent', cursor: canMoveUp ? 'pointer' : 'default',
+            color: canMoveUp ? t.textMuted : t.border,
+          }}
+          aria-label={tr(lang, 'categories.moveUpAria', { name })}
+        >
+          <ChevronUp size={15} />
+        </button>
+        <button
+          type="button"
+          onClick={() => onMove(name, 'down')}
+          disabled={!canMoveDown}
+          style={{
+            width: 24, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: 'none', borderRadius: 6, background: 'transparent', cursor: canMoveDown ? 'pointer' : 'default',
+            color: canMoveDown ? t.textMuted : t.border,
+          }}
+          aria-label={tr(lang, 'categories.moveDownAria', { name })}
+        >
+          <ChevronDown size={15} />
+        </button>
+      </div>
       <ClearableInput
         t={t}
         lang={lang}
@@ -46,7 +74,7 @@ function CategoryRow({ name, count, locked, t, lang, onRename, onRemove }) {
 
 // Lebensmittel-Kategorien verwalten: umbenennen, hinzufügen, entfernen.
 // „Sonstiges" ist der Auffang-Eintrag und bleibt fest bestehen.
-export function ManageCategoriesSheet({ open, onClose, t, lang = 'de', categories, countFor, onAdd, onRename, onRemove }) {
+export function ManageCategoriesSheet({ open, onClose, t, lang = 'de', categories, countFor, onAdd, onRename, onRemove, onMove }) {
   const inputStyle = makeInputStyle(t);
   const [draft, setDraft] = useState('');
 
@@ -59,7 +87,7 @@ export function ManageCategoriesSheet({ open, onClose, t, lang = 'de', categorie
   return (
     <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'categories.title')} subtitle={tr(lang, 'categories.subtitle')}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-        {categories.map((c) => (
+        {categories.map((c, idx) => (
           <CategoryRow
             key={c}
             name={c}
@@ -69,6 +97,9 @@ export function ManageCategoriesSheet({ open, onClose, t, lang = 'de', categorie
             lang={lang}
             onRename={onRename}
             onRemove={onRemove}
+            onMove={onMove}
+            canMoveUp={idx > 0}
+            canMoveDown={idx < categories.length - 1}
           />
         ))}
       </div>
