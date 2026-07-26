@@ -11,7 +11,7 @@ import { tr } from '../../lib/i18n.js';
 export function LayoutSheet({
   open, onClose, t, lang = 'de', headerAlign, onSetHeaderAlign, appTitle, onSetAppTitle,
   shoppingPos, onSetShoppingPos, settingsPos, onSetSettingsPos, addPos, onSetAddPos,
-  favoritesPos, onSetFavoritesPos,
+  favoritesPos, onSetFavoritesPos, searchPos, onSetSearchPos,
   zoneEmojiBothSides, onToggleZoneEmojiBothSides,
 }) {
   const inputStyle = makeInputStyle(t);
@@ -97,6 +97,19 @@ export function LayoutSheet({
               t={t}
               value={shoppingPos || 'top'}
               onChange={onSetShoppingPos}
+              options={[
+                { value: 'top', label: tr(lang, 'layout.top') },
+                { value: 'bottom', label: tr(lang, 'layout.bottom') },
+                { value: 'off', label: tr(lang, 'layout.off') },
+              ]}
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>{tr(lang, 'layout.searchButton')}</div>
+            <Segmented
+              t={t}
+              value={searchPos || 'top'}
+              onChange={onSetSearchPos}
               options={[
                 { value: 'top', label: tr(lang, 'layout.top') },
                 { value: 'bottom', label: tr(lang, 'layout.bottom') },

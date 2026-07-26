@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Package, ShoppingCart, Settings, Plus, Star, X } from 'lucide-react';
+import { Package, ShoppingCart, Settings, Plus, Star, Search, X } from 'lucide-react';
 
 import { useSystemTheme, buildTheme } from './lib/theme.js';
 import { zonePalette, ZONE_COLOR_CHOICES, MHD_COLOR_CHOICES } from './lib/colors.js';
@@ -70,7 +70,8 @@ export default function App() {
     headerAlign: 'left', appTitle: '', showWarnDot: true,
     shoppingPos: 'top', settingsPos: 'top', addPos: 'bottom',
     autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
-    favoritesCollapsed: false, zoneEmojiBothSides: false, favoritesPos: 'off', showFavoriteChips: true,
+    favoritesCollapsed: false, zoneEmojiBothSides: false, favoritesPos: 'off', showFavoriteChips: true, searchPos: 'top',
+    favoritesSortMode: 'manual',
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -682,7 +683,7 @@ export default function App() {
           showSettingsButton={(prefs.settingsPos || 'top') !== 'bottom'}
           showAddButton={(prefs.addPos || 'bottom') === 'top'}
           showFavoritesButton={(prefs.favoritesPos || 'off') === 'top'}
-          showSearchButton={!expiringView}
+          showSearchButton={!expiringView && (prefs.searchPos || 'top') === 'top'}
         />
         <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={(id) => { setActiveZone(id); setExpiringView(false); }} t={t} dark={dark} />
       </div>
@@ -798,6 +799,12 @@ export default function App() {
             ariaLabel: tr(lang, 'app.favoritesAria'),
             icon: <Star size={18} strokeWidth={2.2} />,
           },
+          !expiringView && prefs.searchPos === 'bottom' && {
+            key: 'search', size: 48,
+            onClick: toggleSearch,
+            ariaLabel: searchOpen ? tr(lang, 'app.searchCloseAria') : tr(lang, 'app.searchAria'),
+            icon: searchOpen ? <X size={19} strokeWidth={2.2} /> : <Search size={18} strokeWidth={2.2} />,
+          },
         ].filter((x) => x)}
       />
 
@@ -883,6 +890,8 @@ export default function App() {
         onSetAddPos={(v) => setPrefs((p) => ({ ...p, addPos: v }))}
         favoritesPos={prefs.favoritesPos || 'off'}
         onSetFavoritesPos={(v) => setPrefs((p) => ({ ...p, favoritesPos: v }))}
+        searchPos={prefs.searchPos || 'top'}
+        onSetSearchPos={(v) => setPrefs((p) => ({ ...p, searchPos: v }))}
         zoneEmojiBothSides={prefs.zoneEmojiBothSides === true}
         onToggleZoneEmojiBothSides={(on) => setPrefs((p) => ({ ...p, zoneEmojiBothSides: on }))}
       />
