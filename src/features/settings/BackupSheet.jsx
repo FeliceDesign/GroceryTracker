@@ -56,6 +56,28 @@ function buildInventoryText(items, zones, selectedIds, lang, opts = {}) {
   return blocks.join('\n\n\n');
 }
 
+// Flache, nach Kategorie sortierte Tabelle der Einkaufsliste (keine
+// Zonen-Gruppierung, da Einträge oft keiner Zone zugeordnet sind).
+function buildShoppingText(shopping, lang) {
+  if (!shopping || shopping.length === 0) return '';
+  const cols = [
+    { label: tr(lang, 'backup.category'), get: (i) => i.category || 'Sonstiges' },
+    { label: tr(lang, 'backup.articleCol'), get: (i) => i.name },
+    { label: tr(lang, 'backup.qtyCol'), get: (i) => (i.unit === 'stk' ? `${i.qty}x` : `${i.qty}${i.unit}`) },
+  ];
+  const sorted = shopping
+    .slice()
+    .sort((a, b) => (a.category || '').localeCompare(b.category || '', 'de') || a.name.localeCompare(b.name, 'de'));
+  const widths = cols.map((c) => Math.max(c.label.length, ...sorted.map((i) => c.get(i).length)));
+  const padRow = (vals) => vals.map((v, idx) => (idx === cols.length - 1 ? v : v.padEnd(widths[idx]))).join(' | ');
+  const lines = [
+    padRow(cols.map((c) => c.label)),
+    widths.map((w) => '-'.repeat(w)).join('-|-'),
+    ...sorted.map((i) => padRow(cols.map((c) => c.get(i)))),
+  ];
+  return `${tr(lang, 'backup.shoppingHeader')}\n\n${lines.join('\n')}`;
+}
+
 const TABS = (lang) => [
   { id: 'backup', label: tr(lang, 'backup.tabBackup') },
   { id: 'list', label: tr(lang, 'backup.tabList') },
@@ -64,7 +86,7 @@ const TABS = (lang) => [
 // Konsolidierte Backup-/Export-Ansicht: JSON-Backup (Sichern/Teilen/
 // Zwischenablage/Import) auf einem Tab, dazu eine separate, zonen-
 // filterbare Bestandsliste als reine Lesetabelle auf einem zweiten Tab.
-export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items, stats, buildBackup, restoreBackup, previewBackup, getFood, dateFormat = 'dmy' }) {
+export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items, shopping = [], stats, buildBackup, restoreBackup, previewBackup, getFood, dateFormat = 'dmy' }) {
   const [tab, setTab] = useState('backup');
   const [importing, setImporting] = useState(false);
   const [importText, setImportText] = useState('');
@@ -74,6 +96,7 @@ export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items,
   const [selectedZoneIds, setSelectedZoneIds] = useState(() => zones.map((z) => z.id));
   const [showMhd, setShowMhd] = useState(false);
   const [showMacros, setShowMacros] = useState(false);
+  const [includeShopping, setIncludeShopping] = useState(false);
   const fileRef = useRef(null);
   const inputStyle = makeInputStyle(t);
   const tabs = TABS(lang);
@@ -187,10 +210,13 @@ export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items,
     }
   };
 
-  const inventoryText = useMemo(
-    () => buildInventoryText(items, zones, selectedZoneIds, lang, { showMhd, showMacros, getFood, dateFormat }),
-    [items, zones, selectedZoneIds, lang, showMhd, showMacros, getFood, dateFormat],
-  );
+  const inventoryText = useMemo(() => {
+    const inv = buildInventoryText(items, zones, selectedZoneIds, lang, { showMhd, showMacros, getFood, dateFormat });
+    if (!includeShopping) return inv;
+    const sl = buildShoppingText(shopping, lang);
+    if (!sl) return inv;
+    return inv ? `${inv}\n\n\n${sl}` : sl;
+  }, [items, zones, selectedZoneIds, lang, showMhd, showMacros, getFood, dateFormat, includeShopping, shopping]);
 
   const toggleZone = (id) => {
     setSelectedZoneIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -321,6 +347,12 @@ export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items,
               label={tr(lang, 'backup.showMacros')}
               sub={tr(lang, 'backup.showMacrosHint')}
               control={<Toggle t={t} on={showMacros} onChange={setShowMacros} />}
+            />
+            <SettingRow
+              t={t}
+              label={tr(lang, 'backup.includeShopping')}
+              sub={tr(lang, 'backup.includeShoppingHint', { count: shopping.length })}
+              control={<Toggle t={t} on={includeShopping} onChange={setIncludeShopping} />}
             />
           </div>
 
