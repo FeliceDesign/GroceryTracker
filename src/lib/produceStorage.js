@@ -14,7 +14,11 @@
 // Jeder Eintrag ist recherchiert (u.a. USDA/Extension-Quellen, Michigan
 // State University Extension, UC Davis Postharvest Center) – keine
 // erfundenen Angaben. Phase 1: 10 sehr gängige, gut abgesicherte Sorten.
-// Phase 2: 13 weitere Sorten.
+// Phase 2: 13 weitere Sorten. Phase 3: 10 weitere Sorten (u.a. Kräuter).
+//
+// `category`: 'obst'|'gemuese'|'kraeuter' – fürs Filtern in der UI, hat
+// keinen Einfluss auf die Lager-Logik (die richtet sich nur nach `storage`/
+// `ethylene*`).
 //
 // `label`/`reason`/`packaging` sind Deutsch, `label_en`/`reason_en`/
 // `packaging_en` die Übersetzungen fürs englische UI (siehe lib/i18n.js).
@@ -27,6 +31,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['apfel', 'äpfel', 'aepfel'],
     label: 'Apfel', label_en: 'Apple',
+    category: 'obst',
     storage: 'fridge',
     ethyleneProduces: 'high',
     ethyleneSensitive: 'low',
@@ -38,6 +43,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['banane', 'bananen'],
     label: 'Banane', label_en: 'Banana',
+    category: 'obst',
     storage: 'room',
     ethyleneProduces: 'high',
     ethyleneSensitive: 'medium',
@@ -49,6 +55,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['tomate', 'tomaten'],
     label: 'Tomate', label_en: 'Tomato',
+    category: 'gemuese',
     storage: 'room',
     ethyleneProduces: 'high',
     ethyleneSensitive: 'low',
@@ -60,6 +67,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['kartoffel', 'kartoffeln'],
     label: 'Kartoffel', label_en: 'Potato',
+    category: 'gemuese',
     storage: 'room',
     ethyleneProduces: 'low',
     ethyleneSensitive: 'medium',
@@ -71,6 +79,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['zwiebel', 'zwiebeln'],
     label: 'Zwiebel', label_en: 'Onion',
+    category: 'gemuese',
     storage: 'room',
     ethyleneProduces: 'medium',
     ethyleneSensitive: 'medium',
@@ -82,6 +91,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['karotte', 'karotten', 'möhre', 'moehre', 'möhren', 'moehren'],
     label: 'Karotte', label_en: 'Carrot',
+    category: 'gemuese',
     storage: 'fridge',
     ethyleneProduces: 'none',
     ethyleneSensitive: 'high',
@@ -93,6 +103,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['kopfsalat', 'eisbergsalat', 'salatkopf', 'salat'],
     label: 'Salat', label_en: 'Lettuce',
+    category: 'gemuese',
     storage: 'fridge',
     ethyleneProduces: 'none',
     ethyleneSensitive: 'high',
@@ -104,6 +115,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['gurke', 'gurken', 'salatgurke'],
     label: 'Gurke', label_en: 'Cucumber',
+    category: 'gemuese',
     storage: 'fridge',
     ethyleneProduces: 'low',
     ethyleneSensitive: 'high',
@@ -115,6 +127,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['zitrone', 'zitronen'],
     label: 'Zitrone', label_en: 'Lemon',
+    category: 'obst',
     storage: 'both',
     ethyleneProduces: 'low',
     ethyleneSensitive: 'low',
@@ -126,6 +139,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['avocado', 'avocados'],
     label: 'Avocado', label_en: 'Avocado',
+    category: 'obst',
     storage: 'both',
     ethyleneProduces: 'high',
     ethyleneSensitive: 'high',
@@ -137,6 +151,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['paprika'],
     label: 'Paprika', label_en: 'Bell pepper',
+    category: 'gemuese',
     storage: 'fridge',
     ethyleneProduces: 'low',
     ethyleneSensitive: 'low',
@@ -148,6 +163,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['knoblauch'],
     label: 'Knoblauch', label_en: 'Garlic',
+    category: 'gemuese',
     storage: 'room',
     ethyleneProduces: 'none',
     ethyleneSensitive: 'low',
@@ -159,6 +175,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['champignon', 'champignons', 'pilze', 'pilz'],
     label: 'Champignons', label_en: 'Mushrooms',
+    category: 'gemuese',
     storage: 'fridge',
     ethyleneProduces: 'low',
     ethyleneSensitive: 'low',
@@ -170,6 +187,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['spinat'],
     label: 'Spinat', label_en: 'Spinach',
+    category: 'gemuese',
     storage: 'fridge',
     ethyleneProduces: 'none',
     ethyleneSensitive: 'high',
@@ -181,6 +199,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['zucchini'],
     label: 'Zucchini', label_en: 'Zucchini',
+    category: 'gemuese',
     storage: 'fridge',
     ethyleneProduces: 'low',
     ethyleneSensitive: 'medium',
@@ -192,6 +211,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['aubergine', 'auberginen'],
     label: 'Aubergine', label_en: 'Eggplant',
+    category: 'gemuese',
     storage: 'both',
     ethyleneProduces: 'low',
     ethyleneSensitive: 'medium',
@@ -203,6 +223,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['orange', 'orangen'],
     label: 'Orange', label_en: 'Orange',
+    category: 'obst',
     storage: 'both',
     ethyleneProduces: 'low',
     ethyleneSensitive: 'low',
@@ -214,6 +235,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['weintraube', 'weintrauben', 'traube', 'trauben'],
     label: 'Weintrauben', label_en: 'Grapes',
+    category: 'obst',
     storage: 'fridge',
     ethyleneProduces: 'low',
     ethyleneSensitive: 'medium',
@@ -225,6 +247,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['birne', 'birnen'],
     label: 'Birne', label_en: 'Pear',
+    category: 'obst',
     storage: 'both',
     ethyleneProduces: 'high',
     ethyleneSensitive: 'medium',
@@ -236,6 +259,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['erdbeere', 'erdbeeren'],
     label: 'Erdbeeren', label_en: 'Strawberries',
+    category: 'obst',
     storage: 'fridge',
     ethyleneProduces: 'low',
     ethyleneSensitive: 'high',
@@ -247,6 +271,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['sellerie', 'staudensellerie'],
     label: 'Sellerie', label_en: 'Celery',
+    category: 'gemuese',
     storage: 'fridge',
     ethyleneProduces: 'low',
     ethyleneSensitive: 'medium',
@@ -258,6 +283,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['lauch', 'porree'],
     label: 'Lauch', label_en: 'Leek',
+    category: 'gemuese',
     storage: 'fridge',
     ethyleneProduces: 'low',
     ethyleneSensitive: 'medium',
@@ -269,6 +295,7 @@ export const PRODUCE_RULES = [
   {
     keys: ['rote bete', 'rote beete', 'rohe bete', 'bete'],
     label: 'Rote Bete', label_en: 'Beetroot',
+    category: 'gemuese',
     storage: 'fridge',
     ethyleneProduces: 'none',
     ethyleneSensitive: 'low',
@@ -276,6 +303,126 @@ export const PRODUCE_RULES = [
     packaging_en: 'Remove the greens (they draw out moisture otherwise), store unwashed in a perforated bag in the crisper drawer.',
     reason: 'Ohne Grün hält sich Rote Bete im Kühlschrank 2-3 Wochen; das Blattgrün entzieht der Knolle sonst Feuchtigkeit. Vor der Lagerung nicht waschen, nur Erde abbürsten.',
     reason_en: 'Without the greens, beetroot keeps 2-3 weeks in the fridge; the leaves otherwise draw moisture out of the root. Don’t wash before storing, just brush off the soil.',
+  },
+  {
+    keys: ['brokkoli', 'broccoli'],
+    label: 'Brokkoli', label_en: 'Broccoli',
+    category: 'gemuese',
+    storage: 'fridge',
+    ethyleneProduces: 'low',
+    ethyleneSensitive: 'high',
+    packaging: 'Unverpackt oder in perforierter Tüte im Gemüsefach lagern, nicht luftdicht.',
+    packaging_en: 'Store unwrapped or in a perforated bag in the crisper drawer, not airtight.',
+    reason: 'Sehr ethylenempfindlich und stark atmungsaktiv – bei Raumtemperatur wird er binnen Stunden gelb und welk. Im Kühlschrank hält er sich 3-5 Tage, getrennt von Äpfeln, Bananen & Co.',
+    reason_en: 'Very ethylene-sensitive and has a high respiration rate – turns yellow and limp within hours at room temperature. Keeps 3-5 days in the fridge, away from apples, bananas & co.',
+  },
+  {
+    keys: ['blumenkohl'],
+    label: 'Blumenkohl', label_en: 'Cauliflower',
+    category: 'gemuese',
+    storage: 'fridge',
+    ethyleneProduces: 'low',
+    ethyleneSensitive: 'medium',
+    packaging: 'Kopf nach unten oder locker in perforierter Tüte im Gemüsefach lagern.',
+    packaging_en: 'Store head-down or loosely in a perforated bag in the crisper drawer.',
+    reason: 'Hält sich im Kühlschrank etwa eine Woche; Röschen verfärben sich bei Ethylen-Kontakt bräunlich. Kopf-nach-unten-Lagerung verhindert, dass sich Feuchtigkeit in den Röschen sammelt und sie schneller verderben lässt.',
+    reason_en: 'Keeps about a week in the fridge; florets brown when exposed to ethylene. Storing head-down keeps moisture from pooling in the florets, which would otherwise speed up spoilage.',
+  },
+  {
+    keys: ['limette', 'limetten'],
+    label: 'Limette', label_en: 'Lime',
+    category: 'obst',
+    storage: 'both',
+    ethyleneProduces: 'low',
+    ethyleneSensitive: 'low',
+    packaging: 'Unverpackt lagerbar. Im Kühlschrank (Gemüsefach) am längsten haltbar, bei Raumtemperatur nur für den kurzfristigen Verbrauch.',
+    packaging_en: 'Can be stored unwrapped. Keeps longest in the fridge (crisper drawer); at room temperature only for short-term use.',
+    reason: 'Bei Raumtemperatur nur etwa eine Woche haltbar (und verliert an Saftigkeit), im Kühlschrank mehrere Wochen. Wie bei anderen Zitrusfrüchten spielt Ethylen nur eine geringe Rolle.',
+    reason_en: 'Keeps only about a week at room temperature (and loses juiciness), several weeks in the fridge. As with other citrus fruit, ethylene plays only a minor role.',
+  },
+  {
+    keys: ['kiwi', 'kiwis'],
+    label: 'Kiwi', label_en: 'Kiwi',
+    category: 'obst',
+    storage: 'both',
+    ethyleneProduces: 'medium',
+    ethyleneSensitive: 'high',
+    packaging: 'Unreif bei Raumtemperatur (ggf. in Papiertüte mit Apfel/Banane schneller reifen lassen). Reif: im Kühlschrank, das bremst die weitere Reifung.',
+    packaging_en: 'Unripe: at room temperature (optionally in a paper bag with an apple/banana to ripen faster). Ripe: in the fridge, which slows further ripening.',
+    reason: 'Reift wie eine Birne nach der Ernte nach und reagiert dabei sehr empfindlich auf Ethylen. Reif (leichter Druck spürbar) im Kühlschrank mehrere Wochen haltbar, getrennt von Äpfeln, Bananen & Co. gelagert.',
+    reason_en: 'Continues ripening after harvest like a pear and is very ethylene-sensitive while doing so. Once ripe (slight give when pressed), keeps several weeks in the fridge, stored away from apples, bananas & co.',
+  },
+  {
+    keys: ['pfirsich', 'pfirsiche', 'nektarine', 'nektarinen'],
+    label: 'Pfirsich', label_en: 'Peach',
+    category: 'obst',
+    storage: 'both',
+    ethyleneProduces: 'high',
+    ethyleneSensitive: 'medium',
+    packaging: 'Unreif bei Raumtemperatur nachreifen lassen (Stielansatz nach unten), reif dann im Kühlschrank weiterlagern.',
+    packaging_en: 'Ripen unripe fruit at room temperature (stem side down); once ripe, keep in the fridge.',
+    reason: 'Vor der vollen Reife im Kühlschrank gelagert werden Pfirsiche mehlig und geschmacklos (Kälteschaden) – deshalb erst bei Raumtemperatur nachreifen lassen. Setzen dabei selbst viel Ethylen frei, danach im Kühlschrank 3-5 Tage haltbar.',
+    reason_en: 'Refrigerated before fully ripe, peaches turn mealy and bland (chill damage) – so ripen at room temperature first. They release a lot of ethylene themselves while doing so; once ripe, they keep 3-5 days in the fridge.',
+  },
+  {
+    keys: ['kürbis', 'kuerbis', 'kürbisse', 'kuerbisse', 'hokkaido', 'butternut'],
+    label: 'Kürbis', label_en: 'Squash/pumpkin',
+    category: 'gemuese',
+    storage: 'room',
+    ethyleneProduces: 'low',
+    ethyleneSensitive: 'low',
+    packaging: 'Ganz: kühl, dunkel, trocken und luftig lagern (kein Kühlschrank nötig). Angeschnitten: mit Frischhaltefolie abgedeckt im Kühlschrank, zügig verbrauchen.',
+    packaging_en: 'Whole: store cool, dark, dry and airy (no fridge needed). Cut: cover with film and refrigerate, use promptly.',
+    reason: 'Ganze Winterkürbisse (z.B. Hokkaido, Butternut) halten sich dank fester Schale wochen- bis monatelang bei Raumtemperatur. Angeschnitten verderben sie im Kühlschrank dagegen innerhalb weniger Tage.',
+    reason_en: 'Whole winter squash (e.g. Hokkaido, butternut) keeps for weeks to months at room temperature thanks to its firm skin. Once cut, however, it spoils within a few days even in the fridge.',
+  },
+  {
+    keys: ['radieschen'],
+    label: 'Radieschen', label_en: 'Radish',
+    category: 'gemuese',
+    storage: 'fridge',
+    ethyleneProduces: 'none',
+    ethyleneSensitive: 'medium',
+    packaging: 'Grün entfernen (entzieht sonst Feuchtigkeit), in perforierter Tüte oder feuchtem Tuch im Gemüsefach lagern.',
+    packaging_en: 'Remove the greens (they draw out moisture otherwise), store in a perforated bag or damp cloth in the crisper drawer.',
+    reason: 'Ohne Grün hält sich Radieschen im Kühlschrank 1-2 Wochen; das Blattgrün lässt die Knolle sonst schneller welk und schwammig werden.',
+    reason_en: 'Without the greens, radishes keep 1-2 weeks in the fridge; the leaves otherwise make the root turn limp and spongy faster.',
+  },
+  {
+    keys: ['basilikum'],
+    label: 'Basilikum', label_en: 'Basil',
+    category: 'kraeuter',
+    storage: 'room',
+    ethyleneProduces: 'low',
+    ethyleneSensitive: 'medium',
+    packaging: 'Wie Schnittblumen mit den Stielen in einem Glas Wasser bei Raumtemperatur (nicht direkt in der Sonne), Blätter nicht mit Wasser bedecken.',
+    packaging_en: 'Like cut flowers, stems in a glass of water at room temperature (not in direct sun), keep the leaves dry.',
+    reason: 'Sehr kälteempfindlich – im Kühlschrank werden die Blätter binnen Stunden bis Tagen schwarz und schleimig (Kälteschaden unterhalb von ca. 10 °C). Bei Raumtemperatur im Wasserglas hält es sich dagegen etwa eine Woche.',
+    reason_en: 'Very cold-sensitive – in the fridge the leaves turn black and slimy within hours to days (chill damage below about 10 °C/50 °F). In a glass of water at room temperature, however, it keeps for about a week.',
+  },
+  {
+    keys: ['petersilie'],
+    label: 'Petersilie', label_en: 'Parsley',
+    category: 'kraeuter',
+    storage: 'fridge',
+    ethyleneProduces: 'none',
+    ethyleneSensitive: 'medium',
+    packaging: 'Wie Schnittblumen mit den Stielen in einem Glas Wasser im Kühlschrank, oder in feuchtes Küchenpapier gewickelt in einer Tüte.',
+    packaging_en: 'Like cut flowers, stems in a glass of water in the fridge, or wrapped in damp kitchen paper in a bag.',
+    reason: 'Anders als Basilikum verträgt Petersilie Kälte gut – im Wasserglas oder feuchten Tuch im Kühlschrank hält sie sich 1-2 Wochen, statt nach wenigen Tagen im offenen Beutel zu welken.',
+    reason_en: 'Unlike basil, parsley tolerates cold well – in a glass of water or a damp cloth in the fridge it keeps 1-2 weeks, instead of wilting within a few days in an open bag.',
+  },
+  {
+    keys: ['ingwer'],
+    label: 'Ingwer', label_en: 'Ginger',
+    category: 'gemuese',
+    storage: 'both',
+    ethyleneProduces: 'none',
+    ethyleneSensitive: 'low',
+    packaging: 'Unangeschnitten: trocken und luftig bei Raumtemperatur, für längere Haltbarkeit in Küchenpapier gewickelt im Kühlschrank. Angeschnitten: im Kühlschrank oder eingefroren.',
+    packaging_en: 'Uncut: dry and airy at room temperature; for longer storage, wrap in kitchen paper and refrigerate. Cut: keep in the fridge or freeze.',
+    reason: 'Unangeschnitten bei Raumtemperatur etwa 1-2 Wochen haltbar, im Kühlschrank (in Papier gewickelt) mehrere Wochen. Für sehr lange Haltbarkeit lässt sich Ingwer auch unangeschnitten einfrieren und bei Bedarf gerieben werden.',
+    reason_en: 'Uncut, it keeps about 1-2 weeks at room temperature, several weeks in the fridge (wrapped in paper). For very long storage, ginger can also be frozen whole and grated straight from frozen when needed.',
   },
 ];
 
