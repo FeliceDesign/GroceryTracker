@@ -28,7 +28,7 @@ const DE = {
     laterSection: 'Weitere Artikel nach MHD ({{count}})',
     hitsSection: '{{count}} Treffer',
     addAria: 'Neuen Artikel hinzufügen', settingsAria: 'Einstellungen öffnen',
-    shoppingAria: 'Einkaufsliste öffnen',
+    shoppingAria: 'Einkaufsliste öffnen', favoritesAria: 'Favoriten öffnen',
     toastRemoved: '„{{name}}" entfernt · auf Einkaufsliste',
     toastZoneRemoved: 'Lagerort „{{name}}" entfernt', undo: 'Rückgängig',
   },
@@ -162,7 +162,8 @@ const DE = {
     header: 'Kopfzeile', headerHint: 'Eigener Titel und Ausrichtung von Titel, Zone und Artikelzahl.',
     titlePlaceholder: 'Stock-Tracker', left: 'Links', center: 'Mittig',
     buttons: 'Buttons platzieren', buttonsHint: 'Jeder Button einzeln oben (Kopfzeile) oder unten (schwebend, stapeln sich in fester Reihenfolge).',
-    shopping: 'Einkaufsliste', settings: 'Einstellungen', addButton: 'Hinzufügen (+)', top: 'Oben', bottom: 'Unten',
+    shopping: 'Einkaufsliste', settings: 'Einstellungen', addButton: 'Hinzufügen (+)', favoritesButton: 'Favoriten',
+    top: 'Oben', bottom: 'Unten', off: 'Aus',
     zoneEmojiBothSides: 'Zonen-Emoji auf beiden Seiten', zoneEmojiBothSidesSub: 'Zeigt das Lagerort-Emoji in der Kopfzeile zusätzlich rechts vom Namen.',
   },
   behavior: {
@@ -175,6 +176,7 @@ const DE = {
     dateFormat: 'Datumsformat', dateFormatHint: 'Gilt für Datums-Anzeigen in der App (z.B. MHD-Badge). Das Kalender-Auswahlfeld selbst richtet sich immer nach der Spracheinstellung des Geräts.',
     fmtDmy: 'TT.MM.JJJJ', fmtDmyShort: 'TT.MM.JJ', fmtIso: 'JJJJ-MM-TT',
     stripBrandNames: 'Markennamen beim Scannen entfernen', stripBrandNamesHint: 'Entfernt bekannte Marken (z.B. „Alpro") vom Anfang/Ende des per Barcode gefundenen Produktnamens.',
+    showFavoriteChips: 'Favoriten-Schnellzugriff anzeigen', showFavoriteChipsHint: 'Blendet die Favoriten-Chip-Leiste in Hauptliste und Einkaufsliste komplett aus.',
   },
   warn: {
     title: 'MHD-Warnungen', subtitle: 'Schwellwerte, Farben, Erinnerungen',
@@ -298,7 +300,7 @@ const EN = {
     laterSection: 'More items by best-before date ({{count}})',
     hitsSection: '{{count}} results',
     addAria: 'Add new item', settingsAria: 'Open settings',
-    shoppingAria: 'Open shopping list',
+    shoppingAria: 'Open shopping list', favoritesAria: 'Open favorites',
     toastRemoved: '"{{name}}" removed · added to shopping list',
     toastZoneRemoved: 'Location "{{name}}" removed', undo: 'Undo',
   },
@@ -432,7 +434,8 @@ const EN = {
     header: 'Header', headerHint: 'Custom title and alignment of title, location and item count.',
     titlePlaceholder: 'Stock-Tracker', left: 'Left', center: 'Center',
     buttons: 'Button placement', buttonsHint: 'Each button individually at the top (header) or bottom (floating, stacked in a fixed order).',
-    shopping: 'Shopping list', settings: 'Settings', addButton: 'Add (+)', top: 'Top', bottom: 'Bottom',
+    shopping: 'Shopping list', settings: 'Settings', addButton: 'Add (+)', favoritesButton: 'Favorites',
+    top: 'Top', bottom: 'Bottom', off: 'Off',
     zoneEmojiBothSides: 'Zone emoji on both sides', zoneEmojiBothSidesSub: 'Also shows the location emoji to the right of the name in the header.',
   },
   behavior: {
@@ -445,6 +448,7 @@ const EN = {
     dateFormat: 'Date format', dateFormatHint: 'Applies to date displays in the app (e.g. best-before badge). The calendar picker itself always follows the device’s language setting.',
     fmtDmy: 'DD.MM.YYYY', fmtDmyShort: 'DD.MM.YY', fmtIso: 'YYYY-MM-DD',
     stripBrandNames: 'Remove brand names when scanning', stripBrandNamesHint: 'Removes known brands (e.g. "Alpro") from the start/end of product names found via barcode.',
+    showFavoriteChips: 'Show favorites quick-access', showFavoriteChipsHint: 'Hides the favorites chip row in the main list and shopping list entirely.',
   },
   warn: {
     title: 'Best-before warnings', subtitle: 'Thresholds, colors, reminders',

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Package, ShoppingCart, Settings, Plus, X } from 'lucide-react';
+import { Package, ShoppingCart, Settings, Plus, Star, X } from 'lucide-react';
 
 import { useSystemTheme, buildTheme } from './lib/theme.js';
 import { zonePalette, ZONE_COLOR_CHOICES, MHD_COLOR_CHOICES } from './lib/colors.js';
@@ -71,7 +71,7 @@ export default function App() {
     headerAlign: 'left', appTitle: '', showWarnDot: true,
     shoppingPos: 'top', settingsPos: 'top', addPos: 'bottom',
     autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
-    favoritesCollapsed: false, zoneEmojiBothSides: false,
+    favoritesCollapsed: false, zoneEmojiBothSides: false, favoritesPos: 'off', showFavoriteChips: true,
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -662,10 +662,12 @@ export default function App() {
           onShopping={() => setShowShopping(true)}
           onSettings={() => setShowSettings(true)}
           onAdd={openAdd}
+          onFavorites={() => setShowFavorites(true)}
           onZoneClick={() => setShowZones(true)}
           showShoppingButton={(prefs.shoppingPos || 'top') !== 'bottom'}
           showSettingsButton={(prefs.settingsPos || 'top') !== 'bottom'}
           showAddButton={(prefs.addPos || 'bottom') === 'top'}
+          showFavoritesButton={(prefs.favoritesPos || 'off') === 'top'}
         />
         <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={(id) => { setActiveZone(id); setExpiringView(false); }} t={t} dark={dark} />
       </div>
@@ -683,7 +685,7 @@ export default function App() {
         <SearchBar value={search} onChange={setSearch} t={t} lang={lang} />
       )}
 
-      {!expiringView && !search.trim() && favorites.length > 0 && (
+      {!expiringView && !search.trim() && prefs.showFavoriteChips !== false && favorites.length > 0 && (
         <div style={{ maxWidth: 480, margin: '0 auto', padding: '0 14px 10px' }}>
           <FavoriteChips
             favorites={favorites} zones={zones} dark={dark} t={t} lang={lang} onTap={addFavoriteToInventory}
@@ -784,6 +786,12 @@ export default function App() {
               />
             ),
           },
+          prefs.favoritesPos === 'bottom' && {
+            key: 'favorites', size: 48,
+            onClick: () => setShowFavorites(true),
+            ariaLabel: tr(lang, 'app.favoritesAria'),
+            icon: <Star size={18} strokeWidth={2.2} />,
+          },
         ].filter((x) => x)}
       />
 
@@ -834,7 +842,7 @@ export default function App() {
         shopping={shopping} shoppingInput={shoppingInput} setShoppingInput={setShoppingInput}
         onAddManual={addManualShopping} onCheck={checkAndRestore} onRemove={removeFromShopping}
         onClearAll={clearShopping} justChecked={justChecked} showCount={prefs.shoppingCount}
-        favorites={favorites} onTapFavorite={addFavoriteToShopping}
+        favorites={favorites} onTapFavorite={addFavoriteToShopping} showFavoriteChips={prefs.showFavoriteChips !== false}
         favoritesCollapsed={prefs.favoritesCollapsed} onToggleFavoritesCollapsed={toggleFavoritesCollapsed}
       />
 
@@ -867,6 +875,8 @@ export default function App() {
         onSetSettingsPos={(v) => setPrefs((p) => ({ ...p, settingsPos: v }))}
         addPos={prefs.addPos || 'bottom'}
         onSetAddPos={(v) => setPrefs((p) => ({ ...p, addPos: v }))}
+        favoritesPos={prefs.favoritesPos || 'off'}
+        onSetFavoritesPos={(v) => setPrefs((p) => ({ ...p, favoritesPos: v }))}
         zoneEmojiBothSides={prefs.zoneEmojiBothSides === true}
         onToggleZoneEmojiBothSides={(on) => setPrefs((p) => ({ ...p, zoneEmojiBothSides: on }))}
       />
@@ -887,6 +897,8 @@ export default function App() {
         onSetDateFormat={(v) => setPrefs((p) => ({ ...p, dateFormat: v }))}
         stripBrandNames={prefs.stripBrandNames !== false}
         onToggleStripBrandNames={(on) => setPrefs((p) => ({ ...p, stripBrandNames: on }))}
+        showFavoriteChips={prefs.showFavoriteChips !== false}
+        onToggleShowFavoriteChips={(on) => setPrefs((p) => ({ ...p, showFavoriteChips: on }))}
       />
 
       <WarnSheet

@@ -11,6 +11,7 @@ import { tr } from '../../lib/i18n.js';
 export function LayoutSheet({
   open, onClose, t, lang = 'de', headerAlign, onSetHeaderAlign, appTitle, onSetAppTitle,
   shoppingPos, onSetShoppingPos, settingsPos, onSetSettingsPos, addPos, onSetAddPos,
+  favoritesPos, onSetFavoritesPos,
   zoneEmojiBothSides, onToggleZoneEmojiBothSides,
 }) {
   const inputStyle = makeInputStyle(t);
@@ -86,6 +87,19 @@ export function LayoutSheet({
               options={[
                 { value: 'top', label: tr(lang, 'layout.top') },
                 { value: 'bottom', label: tr(lang, 'layout.bottom') },
+              ]}
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>{tr(lang, 'layout.favoritesButton')}</div>
+            <Segmented
+              t={t}
+              value={favoritesPos || 'off'}
+              onChange={onSetFavoritesPos}
+              options={[
+                { value: 'top', label: tr(lang, 'layout.top') },
+                { value: 'bottom', label: tr(lang, 'layout.bottom') },
+                { value: 'off', label: tr(lang, 'layout.off') },
               ]}
             />
           </div>
