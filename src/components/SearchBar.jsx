@@ -2,7 +2,7 @@ import { Search, X } from 'lucide-react';
 import { makeInputStyle, btnCircle } from '../lib/styles.js';
 import { tr } from '../lib/i18n.js';
 
-export function SearchBar({ value, onChange, t, lang = 'de' }) {
+export function SearchBar({ value, onChange, t, lang = 'de', autoFocus = false }) {
   const inputStyle = makeInputStyle(t);
   return (
     <div style={{ maxWidth: 480, margin: '14px auto 0', padding: '0 20px', position: 'relative' }}>
@@ -14,6 +14,7 @@ export function SearchBar({ value, onChange, t, lang = 'de' }) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={tr(lang, 'search.placeholder')}
+        autoFocus={autoFocus}
         style={{ ...inputStyle, marginTop: 0, paddingLeft: 40, paddingRight: 40 }}
       />
       {value && (

@@ -29,6 +29,7 @@ const DE = {
     hitsSection: '{{count}} Treffer',
     addAria: 'Neuen Artikel hinzufügen', settingsAria: 'Einstellungen öffnen',
     shoppingAria: 'Einkaufsliste öffnen', favoritesAria: 'Favoriten öffnen',
+    searchAria: 'Suche öffnen', searchCloseAria: 'Suche schließen',
     toastRemoved: '„{{name}}" entfernt · auf Einkaufsliste',
     toastZoneRemoved: 'Lagerort „{{name}}" entfernt', undo: 'Rückgängig',
   },
@@ -176,7 +177,7 @@ const DE = {
     dateFormat: 'Datumsformat', dateFormatHint: 'Gilt für Datums-Anzeigen in der App (z.B. MHD-Badge). Das Kalender-Auswahlfeld selbst richtet sich immer nach der Spracheinstellung des Geräts.',
     fmtDmy: 'TT.MM.JJJJ', fmtDmyShort: 'TT.MM.JJ', fmtIso: 'JJJJ-MM-TT',
     stripBrandNames: 'Markennamen beim Scannen entfernen', stripBrandNamesHint: 'Entfernt bekannte Marken (z.B. „Alpro") vom Anfang/Ende des per Barcode gefundenen Produktnamens.',
-    showFavoriteChips: 'Favoriten-Schnellzugriff anzeigen', showFavoriteChipsHint: 'Blendet die Favoriten-Chip-Leiste in Hauptliste und Einkaufsliste komplett aus.',
+    showFavoriteChips: 'Favoriten-Schnellzugriff in Einkaufsliste', showFavoriteChipsHint: 'Chip-Leiste mit deinen Favoriten zum schnellen Hinzufügen in der Einkaufsliste.',
   },
   warn: {
     title: 'MHD-Warnungen', subtitle: 'Schwellwerte, Farben, Erinnerungen',
@@ -301,6 +302,7 @@ const EN = {
     hitsSection: '{{count}} results',
     addAria: 'Add new item', settingsAria: 'Open settings',
     shoppingAria: 'Open shopping list', favoritesAria: 'Open favorites',
+    searchAria: 'Open search', searchCloseAria: 'Close search',
     toastRemoved: '"{{name}}" removed · added to shopping list',
     toastZoneRemoved: 'Location "{{name}}" removed', undo: 'Undo',
   },
@@ -448,7 +450,7 @@ const EN = {
     dateFormat: 'Date format', dateFormatHint: 'Applies to date displays in the app (e.g. best-before badge). The calendar picker itself always follows the device’s language setting.',
     fmtDmy: 'DD.MM.YYYY', fmtDmyShort: 'DD.MM.YY', fmtIso: 'YYYY-MM-DD',
     stripBrandNames: 'Remove brand names when scanning', stripBrandNamesHint: 'Removes known brands (e.g. "Alpro") from the start/end of product names found via barcode.',
-    showFavoriteChips: 'Show favorites quick-access', showFavoriteChipsHint: 'Hides the favorites chip row in the main list and shopping list entirely.',
+    showFavoriteChips: 'Favorites quick-access in shopping list', showFavoriteChipsHint: 'Chip row with your favorites for quickly adding items in the shopping list.',
   },
   warn: {
     title: 'Best-before warnings', subtitle: 'Thresholds, colors, reminders',

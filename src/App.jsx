@@ -22,7 +22,6 @@ import { Header } from './components/Header.jsx';
 import { ZoneTabs } from './components/ZoneTabs.jsx';
 import { ExpiringBanner } from './components/ExpiringBanner.jsx';
 import { SearchBar } from './components/SearchBar.jsx';
-import { FavoriteChips } from './components/FavoriteChips.jsx';
 import { ItemRow } from './components/ItemRow.jsx';
 import { FloatingActions } from './components/FloatingActions.jsx';
 import { CountBadge } from './components/CountBadge.jsx';
@@ -95,6 +94,7 @@ export default function App() {
 
   const [activeZone, setActiveZone] = useState(null);
   const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   // Zonenübergreifende, nach Dringlichkeit sortierte Ansicht – geöffnet über
   // die Ablauf-Warnung statt eines normalen Zonenwechsels.
   const [expiringView, setExpiringView] = useState(false);
@@ -218,29 +218,40 @@ export default function App() {
   // Einkaufsliste gemeinsam, persistiert in den Prefs).
   const toggleFavoritesCollapsed = () => setPrefs((p) => ({ ...p, favoritesCollapsed: !p.favoritesCollapsed }));
 
-  // Favorit direkt in den Bestand übernehmen (Schnellzugriff-Chip): immer in
-  // den beim Markieren gespeicherten Lagerort, Menge fest auf 1.
+  // Suchfeld über den Kopfzeilen-Button auf-/zuklappen - beim Zuklappen wird
+  // der Suchtext mitgelöscht, damit die Liste nicht gefiltert hängen bleibt.
+  const toggleSearch = () => {
+    setSearchOpen((open) => {
+      if (open) setSearch('');
+      return !open;
+    });
+  };
+
+  // Favorit direkt in den Bestand übernehmen (Favoriten-Verwaltung): immer in
+  // den beim Markieren gespeicherten Lagerort, mit der am Favoriten
+  // hinterlegten Standard-Menge (Default 1).
   const addFavoriteToInventory = (fav) => {
+    const favQty = fav.qty || 1;
     setItems((prev) => {
       const idx = prev.findIndex((i) => i.zone === fav.zone && i.unit === fav.unit && i.name.toLowerCase() === fav.name.toLowerCase());
       if (idx >= 0) {
         const next = [...prev];
-        next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
+        next[idx] = { ...next[idx], qty: next[idx].qty + favQty };
         return next;
       }
-      return [...prev, { id: newId(), name: fav.name, zone: fav.zone, category: fav.category, qty: 1, unit: fav.unit, mhd: null }];
+      return [...prev, { id: newId(), name: fav.name, zone: fav.zone, category: fav.category, qty: favQty, unit: fav.unit, mhd: null }];
     });
     setActiveZone(fav.zone);
   };
 
-  // Favorit auf die Einkaufsliste setzen (Schnellzugriff-Chip in der
-  // Einkaufsliste) - trägt Lagerort/Kategorie/Einheit mit, damit er beim
-  // Abhaken direkt in den Bestand wandert statt übers Formular zu gehen.
+  // Favorit auf die Einkaufsliste setzen - trägt Lagerort/Kategorie/Einheit/
+  // Menge mit, damit er beim Abhaken direkt in den Bestand wandert statt
+  // übers Formular zu gehen.
   const addFavoriteToShopping = (fav) => {
     setShopping((prev) => {
       if (prev.some((s) => s.zone === fav.zone && s.name.toLowerCase() === fav.name.toLowerCase())) return prev;
       return [...prev, {
-        id: newId('sl'), name: fav.name, zone: fav.zone, category: fav.category, qty: 1, unit: fav.unit, mhd: null,
+        id: newId('sl'), name: fav.name, zone: fav.zone, category: fav.category, qty: fav.qty || 1, unit: fav.unit, mhd: null,
         manual: true, addedAt: Date.now(),
       }];
     });
@@ -663,11 +674,13 @@ export default function App() {
           onSettings={() => setShowSettings(true)}
           onAdd={openAdd}
           onFavorites={() => setShowFavorites(true)}
+          onToggleSearch={toggleSearch} searchOpen={searchOpen}
           onZoneClick={() => setShowZones(true)}
-          showShoppingButton={(prefs.shoppingPos || 'top') !== 'bottom'}
+          showShoppingButton={(prefs.shoppingPos || 'top') === 'top'}
           showSettingsButton={(prefs.settingsPos || 'top') !== 'bottom'}
           showAddButton={(prefs.addPos || 'bottom') === 'top'}
           showFavoritesButton={(prefs.favoritesPos || 'off') === 'top'}
+          showSearchButton={!expiringView}
         />
         <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={(id) => { setActiveZone(id); setExpiringView(false); }} t={t} dark={dark} />
       </div>
@@ -681,17 +694,8 @@ export default function App() {
             <X size={14} />
           </button>
         </div>
-      ) : (
-        <SearchBar value={search} onChange={setSearch} t={t} lang={lang} />
-      )}
-
-      {!expiringView && !search.trim() && prefs.showFavoriteChips !== false && favorites.length > 0 && (
-        <div style={{ maxWidth: 480, margin: '0 auto', padding: '0 14px 10px' }}>
-          <FavoriteChips
-            favorites={favorites} zones={zones} dark={dark} t={t} lang={lang} onTap={addFavoriteToInventory}
-            label={tr(lang, 'favorites.chipsLabel')} collapsed={prefs.favoritesCollapsed} onToggleCollapse={toggleFavoritesCollapsed}
-          />
-        </div>
+      ) : searchOpen && (
+        <SearchBar value={search} onChange={setSearch} t={t} lang={lang} autoFocus />
       )}
 
       {/* Liste */}

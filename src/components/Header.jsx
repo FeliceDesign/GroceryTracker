@@ -1,12 +1,13 @@
-import { ShoppingCart, Settings, Plus, Star } from 'lucide-react';
+import { ShoppingCart, Settings, Plus, Star, Search, X } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
 import { tr } from '../lib/i18n.js';
 import { CountBadge } from './CountBadge.jsx';
 
 export function Header({
   zone, dark, t, lang = 'de', totalInZone, shoppingCount, showShoppingCount = true, align = 'left', title,
-  onShopping, onSettings, onAdd, onFavorites, onZoneClick,
+  onShopping, onSettings, onAdd, onFavorites, onToggleSearch, searchOpen = false, onZoneClick,
   showShoppingButton = true, showSettingsButton = true, showAddButton = false, showFavoritesButton = false,
+  showSearchButton = false,
   emojiBothSides = false,
 }) {
   const pal = zonePalette(zone.color, dark);
@@ -16,7 +17,7 @@ export function Header({
     width: 44, height: 44, color: t.headerText, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
   };
-  const buttonCount = (showShoppingButton ? 1 : 0) + (showSettingsButton ? 1 : 0) + (showAddButton ? 1 : 0) + (showFavoritesButton ? 1 : 0);
+  const buttonCount = (showSearchButton ? 1 : 0) + (showShoppingButton ? 1 : 0) + (showSettingsButton ? 1 : 0) + (showAddButton ? 1 : 0) + (showFavoritesButton ? 1 : 0);
   // Breite der Buttons-Gruppe – im „zentriert"-Modus als Gegengewicht links,
   // damit der Zonenname wirklich mittig sitzt statt vom Buttons-Platz nach
   // links verschoben zu wirken. Passt sich an, wenn Buttons nach unten
@@ -54,17 +55,28 @@ export function Header({
                 Emoji-Gewicht nach rechts verschoben. Mit beidseitigem Emoji
                 zählt das linke Emoji stattdessen mit, da beide Seiten dann
                 symmetrisch sind und das Gesamtpaket zentriert werden soll. */}
-            <span style={center && !emojiBothSides ? { position: 'absolute', right: '100%', marginRight: 9, flexShrink: 0 } : { marginRight: 9, flexShrink: 0 }}>
-              {zone.emoji}
-            </span>
+            {zone.emoji && (
+              <span style={center && !emojiBothSides ? { position: 'absolute', right: '100%', marginRight: 9, flexShrink: 0 } : { marginRight: 9, flexShrink: 0 }}>
+                {zone.emoji}
+              </span>
+            )}
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{zone.label}</span>
-            {emojiBothSides && (
+            {emojiBothSides && zone.emoji && (
               <span style={{ marginLeft: 9, flexShrink: 0 }}>{zone.emoji}</span>
             )}
           </h1>
 
           {buttonCount > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8, flexShrink: 0 }}>
+              {showSearchButton && (
+                <button
+                  onClick={onToggleSearch}
+                  style={iconBtn}
+                  aria-label={searchOpen ? tr(lang, 'app.searchCloseAria') : tr(lang, 'app.searchAria')}
+                >
+                  {searchOpen ? <X size={20} strokeWidth={2.2} /> : <Search size={19} strokeWidth={2.2} />}
+                </button>
+              )}
               {showShoppingButton && (
                 <button onClick={onShopping} style={iconBtn} aria-label={`${tr(lang, 'app.shoppingAria')}${shoppingCount > 0 ? ` (${shoppingCount})` : ''}`}>
                   <ShoppingCart size={20} strokeWidth={2.2} />
