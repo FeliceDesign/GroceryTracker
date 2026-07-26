@@ -68,6 +68,7 @@ export default function App() {
     headerAlign: 'left', appTitle: '', showWarnDot: true,
     shoppingPos: 'top', settingsPos: 'top', addPos: 'bottom',
     autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
+    favoritesCollapsed: false,
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -206,6 +207,10 @@ export default function App() {
     if (isFavorite(item.name)) removeFavoriteByName(item.name);
     else addFavorite({ name: item.name, zone: item.zone, category: item.category, unit: item.unit });
   };
+
+  // Ein-/Ausklappen der Favoriten-Chip-Leiste (gilt für Hauptliste und
+  // Einkaufsliste gemeinsam, persistiert in den Prefs).
+  const toggleFavoritesCollapsed = () => setPrefs((p) => ({ ...p, favoritesCollapsed: !p.favoritesCollapsed }));
 
   // Favorit direkt in den Bestand übernehmen (Schnellzugriff-Chip): immer in
   // den beim Markieren gespeicherten Lagerort, Menge fest auf 1.
@@ -641,7 +646,10 @@ export default function App() {
 
       {!expiringView && !search.trim() && favorites.length > 0 && (
         <div style={{ maxWidth: 480, margin: '0 auto', padding: '0 14px 10px' }}>
-          <FavoriteChips favorites={favorites} zones={zones} dark={dark} t={t} onTap={addFavoriteToInventory} />
+          <FavoriteChips
+            favorites={favorites} zones={zones} dark={dark} t={t} lang={lang} onTap={addFavoriteToInventory}
+            label={tr(lang, 'favorites.chipsLabel')} collapsed={prefs.favoritesCollapsed} onToggleCollapse={toggleFavoritesCollapsed}
+          />
         </div>
       )}
 
@@ -779,6 +787,7 @@ export default function App() {
         onAddManual={addManualShopping} onCheck={checkAndRestore} onRemove={removeFromShopping}
         onClearAll={clearShopping} justChecked={justChecked} showCount={prefs.shoppingCount}
         favorites={favorites} onTapFavorite={addFavoriteToShopping}
+        favoritesCollapsed={prefs.favoritesCollapsed} onToggleFavoritesCollapsed={toggleFavoritesCollapsed}
       />
 
       <SettingsSheet

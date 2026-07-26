@@ -12,7 +12,7 @@ import { tr } from '../../lib/i18n.js';
 export function ShoppingSheet({
   open, onClose, t, dark, lang = 'de', zones,
   shopping, shoppingInput, setShoppingInput, onAddManual, onCheck, onRemove, onClearAll, justChecked,
-  showCount = true, favorites, onTapFavorite,
+  showCount = true, favorites, onTapFavorite, favoritesCollapsed, onToggleFavoritesCollapsed,
 }) {
   const inputStyle = makeInputStyle(t);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -50,7 +50,10 @@ export function ShoppingSheet({
 
       {favorites && favorites.length > 0 && (
         <div style={{ marginTop: 12 }}>
-          <FavoriteChips favorites={favorites} zones={zones} dark={dark} t={t} onTap={onTapFavorite} label={tr(lang, 'shopping.favoritesLabel')} />
+          <FavoriteChips
+            favorites={favorites} zones={zones} dark={dark} t={t} lang={lang} onTap={onTapFavorite}
+            label={tr(lang, 'shopping.favoritesLabel')} collapsed={favoritesCollapsed} onToggleCollapse={onToggleFavoritesCollapsed}
+          />
         </div>
       )}
 
