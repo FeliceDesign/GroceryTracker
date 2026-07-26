@@ -4,7 +4,7 @@ import { tr } from '../lib/i18n.js';
 import { CountBadge } from './CountBadge.jsx';
 
 export function Header({
-  zone, dark, t, lang = 'de', totalInZone, shoppingCount, showShoppingCount = true, align = 'left', title,
+  zone, dark, t, lang = 'de', totalInZone, shoppingCount, shoppingBadgeMode = 'count', align = 'left', title,
   onShopping, onSettings, onAdd, onFavorites, onToggleSearch, searchOpen = false, onZoneClick,
   showShoppingButton = true, showSettingsButton = true, showAddButton = false, showFavoritesButton = false,
   showSearchButton = false,
@@ -80,7 +80,7 @@ export function Header({
               {showShoppingButton && (
                 <button onClick={onShopping} style={iconBtn} aria-label={`${tr(lang, 'app.shoppingAria')}${shoppingCount > 0 ? ` (${shoppingCount})` : ''}`}>
                   <ShoppingCart size={20} strokeWidth={2.2} />
-                  <CountBadge count={shoppingCount} show={showShoppingCount} badgeBg={t.headerText} badgeFg={pal.headerBg} holeBorder={pal.headerBg} />
+                  <CountBadge count={shoppingCount} mode={shoppingBadgeMode} badgeBg={t.headerText} badgeFg={pal.headerBg} holeBorder={pal.headerBg} />
                 </button>
               )}
               {showSettingsButton && (

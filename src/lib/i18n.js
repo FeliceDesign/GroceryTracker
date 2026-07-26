@@ -173,7 +173,8 @@ const DE = {
   },
   behavior: {
     title: 'Verhalten', subtitle: 'Einkaufsliste, Mengen, Formate',
-    shoppingCount: 'Artikelzahl auf Einkaufsliste', shoppingCountHint: 'Zahl-Badge am Einkaufs-Symbol. Aus: nur ein Punkt bei offenen Artikeln.',
+    shoppingCount: 'Markierung am Einkaufs-Symbol', shoppingCountHint: 'Wie offene Artikel am Einkaufslisten-Button angezeigt werden.',
+    badgeCount: 'Zahl', badgeDot: 'Punkt', badgeOff: 'Aus',
     autoShopping: 'Entfernte Artikel auf Einkaufsliste', autoShoppingHint: 'Wenn ein Artikel entfernt wird, automatisch auf die Einkaufsliste setzen.',
     step: 'Schrittweite (g/ml)', stepHint: 'Wie viel die +/−-Knöpfe bei Gramm/Milliliter ändern. „Auto" = 10 bis 100, danach 50.', stepAuto: 'Auto',
     slider: 'Schieberegler für Menge', sliderHint: 'Im Bearbeiten-Dialog bei g/ml zusätzlich zum Zahlenfeld.',
@@ -451,7 +452,8 @@ const EN = {
   },
   behavior: {
     title: 'Behavior', subtitle: 'Shopping list, quantities, formats',
-    shoppingCount: 'Item count on shopping list', shoppingCountHint: 'Number badge on the shopping icon. Off: just a dot for open items.',
+    shoppingCount: 'Marker on shopping icon', shoppingCountHint: 'How open items are shown on the shopping list button.',
+    badgeCount: 'Number', badgeDot: 'Dot', badgeOff: 'Off',
     autoShopping: 'Removed items to shopping list', autoShoppingHint: 'Automatically add an item to the shopping list when it’s removed.',
     step: 'Step size (g/ml)', stepHint: 'How much the +/− buttons change for grams/milliliters. "Auto" = 10 up to 100, then 50.', stepAuto: 'Auto',
     slider: 'Quantity slider', sliderHint: 'In addition to the number field, in the edit dialog for g/ml.',

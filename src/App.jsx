@@ -66,7 +66,7 @@ export default function App() {
   // Allgemeine UI-Einstellungen (z.B. Anzeige-Optionen).
   // stepGml: Schrittweite der +/−-Knöpfe für g/ml ('auto' = adaptiv).
   const [prefs, setPrefs, prefsLoaded] = useStorage('gt-prefs-v1', {
-    shoppingCount: true, stepGml: 'auto', showSlider: true,
+    shoppingCount: true, shoppingBadgeMode: 'count', stepGml: 'auto', showSlider: true,
     headerAlign: 'left', appTitle: '', showWarnDot: true,
     shoppingPos: 'top', settingsPos: 'top', addPos: 'bottom',
     autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
@@ -699,7 +699,7 @@ export default function App() {
           zone={zone} dark={dark} t={t} lang={lang}
           totalInZone={totalInZone}
           shoppingCount={shopping.length}
-          showShoppingCount={prefs.shoppingCount}
+          shoppingBadgeMode={prefs.shoppingBadgeMode || 'count'}
           align={prefs.headerAlign} title={prefs.appTitle} emojiBothSides={prefs.zoneEmojiBothSides}
           onShopping={() => setShowShopping(true)}
           onSettings={() => setShowSettings(true)}
@@ -816,7 +816,7 @@ export default function App() {
             badge: (
               <CountBadge
                 count={shopping.length}
-                show={prefs.shoppingCount}
+                mode={prefs.shoppingBadgeMode || 'count'}
                 badgeBg={t.headerText}
                 badgeFg={zonePalette(zone.color, dark).headerBg}
                 holeBorder={zonePalette(zone.color, dark).headerBg}
@@ -884,7 +884,7 @@ export default function App() {
         open={showShopping} onClose={() => setShowShopping(false)} t={t} dark={dark} lang={lang} zones={zones}
         shopping={shopping} shoppingInput={shoppingInput} setShoppingInput={setShoppingInput}
         onAddManual={addManualShopping} onCheck={checkAndRestore} onRemove={removeFromShopping}
-        onClearAll={clearShopping} justChecked={justChecked} showCount={prefs.shoppingCount}
+        onClearAll={clearShopping} justChecked={justChecked} showCount={(prefs.shoppingBadgeMode || 'count') !== 'off'}
         favorites={sortedFavorites} onTapFavorite={addFavoriteToShopping} showFavoriteChips={prefs.showFavoriteChips !== false}
         favoritesCollapsed={prefs.favoritesCollapsed} onToggleFavoritesCollapsed={toggleFavoritesCollapsed}
       />
@@ -928,8 +928,8 @@ export default function App() {
 
       <BehaviorSheet
         open={showBehavior} onClose={() => setShowBehavior(false)} t={t} lang={lang}
-        showShoppingCount={prefs.shoppingCount}
-        onToggleShoppingCount={(on) => setPrefs((p) => ({ ...p, shoppingCount: on }))}
+        shoppingBadgeMode={prefs.shoppingBadgeMode || 'count'}
+        onSetShoppingBadgeMode={(v) => setPrefs((p) => ({ ...p, shoppingBadgeMode: v }))}
         autoShoppingOnRemove={prefs.autoShoppingOnRemove !== false}
         onToggleAutoShoppingOnRemove={(on) => setPrefs((p) => ({ ...p, autoShoppingOnRemove: on }))}
         stepGml={prefs.stepGml}

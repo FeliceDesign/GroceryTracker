@@ -8,19 +8,29 @@ import { tr } from '../../lib/i18n.js';
 // ("Darstellung"), jetzt eigenes Untermenü (Settings-Declutter).
 export function BehaviorSheet({
   open, onClose, t, lang = 'de',
-  showShoppingCount, onToggleShoppingCount, autoShoppingOnRemove, onToggleAutoShoppingOnRemove, stepGml, onSetStepGml,
+  shoppingBadgeMode, onSetShoppingBadgeMode, autoShoppingOnRemove, onToggleAutoShoppingOnRemove, stepGml, onSetStepGml,
   showSlider, onToggleShowSlider, showWarnDot, onToggleShowWarnDot, dateFormat, onSetDateFormat,
   stripBrandNames, onToggleStripBrandNames, showFavoriteChips, onToggleShowFavoriteChips,
 }) {
   return (
     <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'behavior.title')} subtitle={tr(lang, 'behavior.subtitle')}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <SettingRow
-          t={t}
-          label={tr(lang, 'behavior.shoppingCount')}
-          sub={tr(lang, 'behavior.shoppingCountHint')}
-          control={<Toggle t={t} on={showShoppingCount !== false} onChange={onToggleShoppingCount} />}
-        />
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.shoppingCount')}</div>
+          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
+            {tr(lang, 'behavior.shoppingCountHint')}
+          </div>
+          <Segmented
+            t={t}
+            value={shoppingBadgeMode || 'count'}
+            onChange={onSetShoppingBadgeMode}
+            options={[
+              { value: 'count', label: tr(lang, 'behavior.badgeCount') },
+              { value: 'dot', label: tr(lang, 'behavior.badgeDot') },
+              { value: 'off', label: tr(lang, 'behavior.badgeOff') },
+            ]}
+          />
+        </div>
         <SettingRow
           t={t}
           label={tr(lang, 'behavior.autoShopping')}

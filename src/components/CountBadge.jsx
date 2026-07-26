@@ -1,9 +1,10 @@
-// Kleines Zahl-Badge (oder Punkt, falls `show` aus) oben rechts an einem
-// runden/eckigen Icon-Button. Wird sowohl im Header als auch bei nach unten
-// verschobenen Floating-Buttons verwendet – daher als eigene Komponente.
-export function CountBadge({ count, show, badgeBg, badgeFg, holeBorder }) {
-  if (!(count > 0)) return null;
-  return show ? (
+// Kleines Zahl-Badge (oder Punkt, oder ganz aus - je nach `mode`) oben
+// rechts an einem runden/eckigen Icon-Button. Wird sowohl im Header als auch
+// bei nach unten verschobenen Floating-Buttons verwendet – daher als eigene
+// Komponente.
+export function CountBadge({ count, mode = 'count', badgeBg, badgeFg, holeBorder }) {
+  if (!(count > 0) || mode === 'off') return null;
+  return mode === 'count' ? (
     <span style={{
       position: 'absolute', top: -4, right: -4, minWidth: 19, height: 19,
       borderRadius: 10, background: badgeBg, color: badgeFg,
