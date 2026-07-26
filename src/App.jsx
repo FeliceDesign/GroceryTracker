@@ -71,7 +71,7 @@ export default function App() {
     shoppingPos: 'top', settingsPos: 'top', addPos: 'bottom',
     autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
     favoritesCollapsed: false, zoneEmojiBothSides: false, favoritesPos: 'off', showFavoriteChips: true, searchPos: 'top',
-    favoritesSortMode: 'manual', mainSortMode: 'category',
+    favoritesSortMode: 'manual', mainSortMode: 'category', compactList: false, defaultZoneId: null,
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -144,13 +144,17 @@ export default function App() {
   const ready = themeLoaded && zonesLoaded && catsLoaded && foodsLoaded && favoritesLoaded && itemsLoaded && shoppingLoaded && warnLoaded && prefsLoaded
     && zones !== null && categories !== null && foods !== null && items !== null && shopping !== null && warn !== null && prefs !== null;
 
-  // activeZone gültig halten (z.B. nachdem ein Lagerort entfernt wurde)
+  // activeZone gültig halten (z.B. nachdem ein Lagerort entfernt wurde) –
+  // greift auch beim App-Start (activeZone noch null): dann zählt die in den
+  // Einstellungen festgelegte Standard-Zone, falls sie noch existiert.
   useEffect(() => {
     if (!zones || zones.length === 0) return;
     if (!activeZone || !zones.some((z) => z.id === activeZone)) {
-      setActiveZone(zones[0].id);
+      const defaultZoneId = prefs && prefs.defaultZoneId;
+      const fallback = defaultZoneId && zones.some((z) => z.id === defaultZoneId) ? defaultZoneId : zones[0].id;
+      setActiveZone(fallback);
     }
-  }, [zones, activeZone]);
+  }, [zones, activeZone, prefs]);
 
   useEffect(() => () => {
     clearTimeout(undoTimerRef.current);
@@ -766,7 +770,7 @@ export default function App() {
                     <ItemRow
                       key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                       justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                      showZoneBadge isLast={idx === expiringSoon.length - 1} showWarnDot={prefs.showWarnDot !== false}
+                      showZoneBadge isLast={idx === expiringSoon.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true}
                     />
                   ))}
                 </Section>
@@ -777,7 +781,7 @@ export default function App() {
                     <ItemRow
                       key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                       justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                      showZoneBadge isLast={idx === expiringLater.length - 1} showWarnDot={prefs.showWarnDot !== false}
+                      showZoneBadge isLast={idx === expiringLater.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true}
                     />
                   ))}
                 </Section>
@@ -793,7 +797,7 @@ export default function App() {
                 <ItemRow
                   key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                   justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                  showZoneBadge isLast={idx === searchResults.length - 1} showWarnDot={prefs.showWarnDot !== false}
+                  showZoneBadge isLast={idx === searchResults.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true}
                 />
               ))}
             </Section>
@@ -808,7 +812,7 @@ export default function App() {
                   <ItemRow
                     key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                     justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                    isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false}
+                    isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true}
                   />
                 ))}
               </Section>
@@ -822,7 +826,7 @@ export default function App() {
               <ItemRow
                 key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                 justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                isLast={idx === flatSorted.length - 1} showWarnDot={prefs.showWarnDot !== false}
+                isLast={idx === flatSorted.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true}
               />
             ))}
           </Section>
@@ -982,6 +986,8 @@ export default function App() {
         onToggleStripBrandNames={(on) => setPrefs((p) => ({ ...p, stripBrandNames: on }))}
         showFavoriteChips={prefs.showFavoriteChips !== false}
         onToggleShowFavoriteChips={(on) => setPrefs((p) => ({ ...p, showFavoriteChips: on }))}
+        compactList={prefs.compactList === true}
+        onToggleCompactList={(on) => setPrefs((p) => ({ ...p, compactList: on }))}
       />
 
       <WarnSheet
@@ -995,6 +1001,8 @@ export default function App() {
         zones={zones} countFor={countFor}
         onAdd={addZone} onUpdate={updateZone} onRemove={removeZoneWithReassign} onMove={moveZone}
         customColors={customZoneColors} onAddCustomColor={addCustomZoneColor} onRemoveCustomColor={removeCustomZoneColor}
+        defaultZoneId={prefs.defaultZoneId}
+        onSetDefaultZoneId={(id) => setPrefs((p) => ({ ...p, defaultZoneId: id }))}
       />
 
       <ManageCategoriesSheet

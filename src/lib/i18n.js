@@ -105,6 +105,7 @@ const DE = {
     itemsCount: '{{count}} Artikel', itemsCountMoveHint: '{{count}} Artikel · beim Entfernen wandern sie in den ersten Lagerort',
     confirmRemove: '„{{label}}" wirklich entfernen?', cancel: 'Abbrechen', remove: 'Entfernen',
     newZonePlaceholder: 'z.B. Keller', addZone: 'Neuer Lagerort', cooled: 'Gekühlt', notCooled: 'Nicht gekühlt',
+    setDefaultAria: '{{label}} als Standard-Zone beim App-Start festlegen', isDefault: 'Standard-Zone beim App-Start',
   },
   categories: {
     title: 'Kategorien', subtitle: 'Umbenennen, hinzufügen oder entfernen', nameAria: 'Kategorie {{name}}',
@@ -187,6 +188,7 @@ const DE = {
     fmtDmy: 'TT.MM.JJJJ', fmtDmyShort: 'TT.MM.JJ', fmtIso: 'JJJJ-MM-TT',
     stripBrandNames: 'Markennamen beim Scannen entfernen', stripBrandNamesHint: 'Entfernt bekannte Marken (z.B. „Alpro") vom Anfang/Ende des per Barcode gefundenen Produktnamens.',
     showFavoriteChips: 'Favoriten-Schnellzugriff in Einkaufsliste', showFavoriteChipsHint: 'Chip-Leiste mit deinen Favoriten zum schnellen Hinzufügen in der Einkaufsliste.',
+    compactList: 'Kompakte Listenansicht', compactListHint: 'Engere Zeilen und kleinere Schrift in der Bestandsliste – mehr Artikel auf einen Blick.',
   },
   warn: {
     title: 'MHD-Warnungen', subtitle: 'Schwellwerte, Farben, Erinnerungen',
@@ -388,6 +390,7 @@ const EN = {
     itemsCount: '{{count}} items', itemsCountMoveHint: '{{count}} items · moved to the first location when removed',
     confirmRemove: 'Really remove "{{label}}"?', cancel: 'Cancel', remove: 'Remove',
     newZonePlaceholder: 'e.g. Cellar', addZone: 'New location', cooled: 'Cooled', notCooled: 'Not cooled',
+    setDefaultAria: 'Set {{label}} as default location on app start', isDefault: 'Default location on app start',
   },
   categories: {
     title: 'Categories', subtitle: 'Rename, add or remove', nameAria: 'Category {{name}}',
@@ -470,6 +473,7 @@ const EN = {
     fmtDmy: 'DD.MM.YYYY', fmtDmyShort: 'DD.MM.YY', fmtIso: 'YYYY-MM-DD',
     stripBrandNames: 'Remove brand names when scanning', stripBrandNamesHint: 'Removes known brands (e.g. "Alpro") from the start/end of product names found via barcode.',
     showFavoriteChips: 'Favorites quick-access in shopping list', showFavoriteChipsHint: 'Chip row with your favorites for quickly adding items in the shopping list.',
+    compactList: 'Compact list view', compactListHint: 'Tighter rows and smaller text in the inventory list – fit more items on screen.',
   },
   warn: {
     title: 'Best-before warnings', subtitle: 'Thresholds, colors, reminders',

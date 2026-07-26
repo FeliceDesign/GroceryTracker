@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, Snowflake, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Snowflake, ChevronUp, ChevronDown, Star } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { ColorSwatches } from '../../components/ColorSwatches.jsx';
@@ -29,7 +29,7 @@ function CooledToggle({ on, onChange, t, lang }) {
 }
 
 // Lagerorte verwalten: umbenennen, Emoji/Farbe ändern, hinzufügen, entfernen.
-export function ManageZonesSheet({ open, onClose, t, dark, lang = 'de', zones, countFor, onAdd, onUpdate, onRemove, onMove, customColors, onAddCustomColor, onRemoveCustomColor }) {
+export function ManageZonesSheet({ open, onClose, t, dark, lang = 'de', zones, countFor, onAdd, onUpdate, onRemove, onMove, customColors, onAddCustomColor, onRemoveCustomColor, defaultZoneId, onSetDefaultZoneId }) {
   const inputStyle = makeInputStyle(t);
   const [draft, setDraft] = useState({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], cooled: false });
   const [showAdd, setShowAdd] = useState(false);
@@ -96,6 +96,15 @@ export function ManageZonesSheet({ open, onClose, t, dark, lang = 'de', zones, c
                 />
                 <button
                   type="button"
+                  onClick={() => onSetDefaultZoneId(z.id === defaultZoneId ? null : z.id)}
+                  aria-pressed={z.id === defaultZoneId}
+                  aria-label={tr(lang, 'zones.setDefaultAria', { label: z.label })}
+                  style={{ ...btnCircle('transparent', z.id === defaultZoneId ? pal.accent : t.textFaint, 40) }}
+                >
+                  <Star size={16} fill={z.id === defaultZoneId ? pal.accent : 'none'} />
+                </button>
+                <button
+                  type="button"
                   onClick={() => setConfirmRemoveId(z.id)}
                   disabled={zones.length <= 1}
                   aria-label={tr(lang, 'zones.removeAria', { label: z.label })}
@@ -104,6 +113,11 @@ export function ManageZonesSheet({ open, onClose, t, dark, lang = 'de', zones, c
                   <Trash2 size={16} />
                 </button>
               </div>
+              {z.id === defaultZoneId && (
+                <div style={{ fontSize: 11, fontWeight: 700, color: pal.accent, marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Star size={11} fill={pal.accent} /> {tr(lang, 'zones.isDefault')}
+                </div>
+              )}
               <ColorSwatches
                 t={t} lang={lang} choices={ZONE_COLOR_CHOICES} value={z.color} onChange={(c) => onUpdate(z.id, { color: c })}
                 customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); onUpdate(z.id, { color: c }); }} onRemoveCustom={onRemoveCustomColor}

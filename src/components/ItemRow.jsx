@@ -11,7 +11,7 @@ import { tr } from '../lib/i18n.js';
 // `warnColors` optional: { soon, critical, expired } – eigene Farben aus den Einstellungen.
 export function ItemRow({
   item, zone, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = {}, openedShelfDays = null,
-  justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast, showWarnDot = true,
+  justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast, showWarnDot = true, compact = false,
 }) {
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
   const days = daysUntil(item.mhd); // gedrucktes MHD
@@ -51,7 +51,7 @@ export function ItemRow({
     <div
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '13px 14px',
+        padding: compact ? '6px 14px' : '13px 14px',
         borderBottom: !isLast ? `1px solid ${t.border}` : 'none',
         background: justChanged === item.id ? pal.accentBg : 'transparent',
         transition: 'background 0.3s ease',
@@ -60,19 +60,19 @@ export function ItemRow({
       <div onClick={() => onEdit(item)} style={{ cursor: 'pointer', minWidth: 0, flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
           {warn && showWarnDot && (
-            <span style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', background: wColor, marginTop: 6 }} aria-hidden="true" />
+            <span style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', background: wColor, marginTop: compact ? 5 : 6 }} aria-hidden="true" />
           )}
-          <span style={{ fontSize: 15, color: t.text, fontWeight: 500, overflowWrap: 'anywhere', lineHeight: 1.3 }}>{item.name}</span>
+          <span style={{ fontSize: compact ? 13.5 : 15, color: t.text, fontWeight: 500, overflowWrap: 'anywhere', lineHeight: 1.3 }}>{item.name}</span>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 3, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: compact ? 1 : 3, flexWrap: 'wrap' }}>
           {showZoneBadge && zone && (
-            <span style={{ fontSize: 10.5, fontWeight: 700, color: pal.accent }}>
+            <span style={{ fontSize: compact ? 9.5 : 10.5, fontWeight: 700, color: pal.accent }}>
               {zone.emoji} {zone.label}
             </span>
           )}
           {showMhdBadge && (
             <span style={{
-              fontSize: 11, fontWeight: 700, color: mhdColor,
+              fontSize: compact ? 10 : 11, fontWeight: 700, color: mhdColor,
               background: mhdWarn ? mhdBg : 'transparent',
               padding: '1px 7px', borderRadius: 6,
             }}>
@@ -83,7 +83,7 @@ export function ItemRow({
               zeigt die Rest-Haltbarkeit nach dem Öffnen, wenn bekannt. */}
           {showOpenedBadge && (
             <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700,
+              display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: compact ? 9.5 : 10.5, fontWeight: 700,
               color: openColor,
               background: openBg,
               padding: '1px 7px', borderRadius: 6,
@@ -95,25 +95,25 @@ export function ItemRow({
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-        <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText, 36)} aria-label={tr(lang, 'itemRow.decreaseAria', { name: item.name })}>
-          <Minus size={14} strokeWidth={2.5} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 10, flexShrink: 0 }}>
+        <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText, compact ? 28 : 36)} aria-label={tr(lang, 'itemRow.decreaseAria', { name: item.name })}>
+          <Minus size={compact ? 12 : 14} strokeWidth={2.5} />
         </button>
         <span
           onClick={() => (item.unit !== 'stk' ? onEdit(item) : null)}
           style={{
             minWidth: item.unit === 'stk' ? 20 : 46, textAlign: 'center',
-            fontSize: 14, fontWeight: 700, color: pal.accent,
+            fontSize: compact ? 12.5 : 14, fontWeight: 700, color: pal.accent,
             cursor: item.unit !== 'stk' ? 'pointer' : 'default',
           }}
         >
           {item.unit === 'stk' ? `${item.qty}x` : `${item.qty}${item.unit}`}
         </span>
-        <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent, 36)} aria-label={tr(lang, 'itemRow.increaseAria', { name: item.name })}>
-          <Plus size={14} strokeWidth={2.5} />
+        <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent, compact ? 28 : 36)} aria-label={tr(lang, 'itemRow.increaseAria', { name: item.name })}>
+          <Plus size={compact ? 12 : 14} strokeWidth={2.5} />
         </button>
-        <button onClick={() => onRemove(item.id)} style={{ ...btnCircle('transparent', t.danger), marginLeft: 2 }} aria-label={tr(lang, 'itemRow.removeAria', { name: item.name })}>
-          <Trash2 size={14} strokeWidth={2} />
+        <button onClick={() => onRemove(item.id)} style={{ ...btnCircle('transparent', t.danger, compact ? 28 : 32), marginLeft: 2 }} aria-label={tr(lang, 'itemRow.removeAria', { name: item.name })}>
+          <Trash2 size={compact ? 12 : 14} strokeWidth={2} />
         </button>
       </div>
     </div>
