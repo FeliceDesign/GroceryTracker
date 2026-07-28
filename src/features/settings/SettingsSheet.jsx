@@ -79,17 +79,21 @@ export function SettingsSheet({
         />
         <Row
           t={t}
-          icon={<Clock size={19} />}
-          label={tr(lang, 'settings.shelfLifeTitle')}
-          sub={tr(lang, 'settings.shelfLifeSub')}
-          onClick={onOpenShelfLife}
-        />
-        <Row
-          t={t}
           icon={<ListOrdered size={19} />}
           label={tr(lang, 'settings.expiringTitle')}
           sub={tr(lang, 'settings.expiringSub')}
           onClick={onOpenExpiringView}
+        />
+      </div>
+
+      <div style={sectionLabel(t)}>{tr(lang, 'settings.guides')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <Row
+          t={t}
+          icon={<Clock size={19} />}
+          label={tr(lang, 'settings.shelfLifeTitle')}
+          sub={tr(lang, 'settings.shelfLifeSub')}
+          onClick={onOpenShelfLife}
         />
         <Row
           t={t}
