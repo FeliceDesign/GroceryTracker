@@ -8,7 +8,7 @@ import { FrozenShelfLifeDetails } from '../macros/FrozenShelfLifeDetails.jsx';
 import { ProduceStorageDetails } from '../macros/ProduceStorageDetails.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel, formatDateDisplay } from '../../lib/date.js';
-import { MACRO_FIELDS, fmtNum, unsaturatedFat, hasMacros, basisLabel, copyMacros } from '../../lib/macros.js';
+import { MACRO_FIELDS, fmtNum, unsaturatedFat, hasMacros, basisLabel, copyMacros, copyToClipboard } from '../../lib/macros.js';
 import { openedDaysFor, openedUntil } from '../../lib/openedShelfLife.js';
 import { btnCircle, primaryButtonStyle, makeInputStyle, pillStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
@@ -28,6 +28,7 @@ export function DetailItemSheet({
   onClose, onEdit, onChangeQty, onRemove, onToggleOpened, onChangeMhd,
 }) {
   const [copied, setCopied] = useState(false);
+  const [copiedIng, setCopiedIng] = useState(false);
   const [shelfTab, setShelfTab] = useState('opened');
   if (!open || !item) return null;
   const inputStyle = makeInputStyle(t);
@@ -52,6 +53,11 @@ export function DetailItemSheet({
   const doCopy = async () => {
     const ok = await copyMacros({ ...food, name: item.name }, lang);
     if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); }
+  };
+
+  const doCopyIngredients = async () => {
+    const ok = await copyToClipboard(String(food?.ingredients || '').trim());
+    if (ok) { setCopiedIng(true); setTimeout(() => setCopiedIng(false), 1600); }
   };
 
   const section = { marginTop: 18 };
@@ -204,8 +210,24 @@ export function DetailItemSheet({
       {food && food.ingredients && String(food.ingredients).trim() && (
         <div style={section}>
           <div style={{ ...secLabel, display: 'inline-flex', alignItems: 'center', gap: 6 }}><List size={13} /> {tr(lang, 'detail.ingredients')}</div>
-          <div style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.5, background: t.cardAlt, borderRadius: 12, padding: '10px 14px' }}>
-            {food.ingredients}
+          <div style={{ position: 'relative' }}>
+            <div style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.5, background: t.cardAlt, borderRadius: 12, padding: '10px 42px 10px 14px' }}>
+              {food.ingredients}
+            </div>
+            <button
+              type="button"
+              onClick={doCopyIngredients}
+              aria-label={tr(lang, 'macroEditor.copyIngredients')}
+              title={tr(lang, 'macroEditor.copyIngredients')}
+              style={{
+                position: 'absolute', right: 8, top: 8,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 30, height: 30, borderRadius: 8, border: `1.5px solid ${t.border}`,
+                background: t.card, color: copiedIng ? t.success : t.textMuted, cursor: 'pointer',
+              }}
+            >
+              {copiedIng ? <Check size={14} /> : <Copy size={13} />}
+            </button>
           </div>
         </div>
       )}
