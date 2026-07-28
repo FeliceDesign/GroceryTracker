@@ -383,6 +383,29 @@ export function MacroEditor({
               </button>
             );
           })}
+          {(() => {
+            const stepPresets = [null, 'auto', 5, 10, 25, 50, 100];
+            const isCustom = !stepPresets.includes(macros.stepGml ?? null);
+            return (
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={isCustom ? macros.stepGml : ''}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === '') return;
+                  onChange({ stepGml: Math.max(1, parseInt(v, 10) || 1) });
+                }}
+                placeholder={tr(lang, 'behavior.stepCustom')}
+                style={{
+                  padding: '8px 10px', borderRadius: 999, border: 'none', cursor: 'text', fontSize: 13, fontWeight: 700,
+                  background: isCustom ? t.pillActive : t.card, color: isCustom ? t.pillActiveText : t.textMuted,
+                  width: 92, textAlign: 'center',
+                }}
+              />
+            );
+          })()}
         </div>
       </div>
 

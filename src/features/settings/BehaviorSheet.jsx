@@ -78,6 +78,29 @@ export function BehaviorSheet({
                 </button>
               );
             })}
+            {(() => {
+              const stepPresets = ['auto', '5', '10', '25', '50', '100'];
+              const isCustom = !stepPresets.includes(String(stepGml ?? 'auto'));
+              return (
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  value={isCustom ? stepGml : ''}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === '') return;
+                    onSetStepGml(Math.max(1, parseInt(v, 10) || 1));
+                  }}
+                  placeholder={tr(lang, 'behavior.stepCustom')}
+                  style={{
+                    padding: '8px 10px', borderRadius: 999, border: 'none', cursor: 'text', fontSize: 13, fontWeight: 700,
+                    background: isCustom ? t.pillActive : t.card, color: isCustom ? t.pillActiveText : t.textMuted,
+                    width: 92, textAlign: 'center',
+                  }}
+                />
+              );
+            })()}
           </div>
         </div>
 
