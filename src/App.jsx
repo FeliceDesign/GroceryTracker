@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Package, ShoppingCart, Settings, Plus, Star, Search, X } from 'lucide-react';
+import { Package, ShoppingCart, Settings, Plus, Star, Search, X, EyeOff } from 'lucide-react';
 
 import { useSystemTheme, buildTheme } from './lib/theme.js';
 import { zonePalette, ZONE_COLOR_CHOICES, MHD_COLOR_CHOICES } from './lib/colors.js';
@@ -890,6 +890,12 @@ export default function App() {
             onClick: toggleSearch,
             ariaLabel: searchOpen ? tr(lang, 'app.searchCloseAria') : tr(lang, 'app.searchAria'),
             icon: searchOpen ? <X size={19} strokeWidth={2.2} /> : <Search size={18} strokeWidth={2.2} />,
+          },
+          !prefs.focusMode && {
+            key: 'focusMode', size: 48,
+            onClick: () => setPrefs((p) => ({ ...p, focusMode: true })),
+            ariaLabel: tr(lang, 'app.focusModeAria'),
+            icon: <EyeOff size={18} strokeWidth={2.2} />,
           },
         ].filter((x) => x)}
       />
