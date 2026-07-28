@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Camera, Copy, Check, ClipboardPaste, List, Clock, Eraser } from 'lucide-react';
+import { Camera, Copy, Check, ClipboardPaste, List, Clock, Eraser, Layers2 } from 'lucide-react';
 import {
   MACRO_FIELDS, basisOptions, hasMacros, mergeScanned, copyMacros, copyToClipboard, unsaturatedFat, fmtNum,
 } from '../../lib/macros.js';
@@ -9,25 +9,29 @@ import { parseNutritionFacts } from '../../scan/nutrition.js';
 import { makeInputStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 import { ShelfLifeDetails } from './ShelfLifeDetails.jsx';
+import { useAutoGrowTextarea } from '../../hooks/useAutoGrowTextarea.js';
 
 // Bearbeitungsformular für die Stammdaten eines Lebensmittels (Nährwerte +
 // Zutaten). `macros` ist der Entwurf (siehe lib/macros.js), `onChange(patch)`
 // mischt Änderungen ein. Scannen, Text-Einfügen und Kopieren sind hier
 // gekapselt, damit alle Einbindungen gleich funktionieren.
 export function MacroEditor({
-  name, macros, onChange, t, lang = 'de', scanSupported, accent,
+  name, macros, onChange, t, lang = 'de', scanSupported, accent, globalStepGml,
 }) {
   const [busy, setBusy] = useState(false);
   const [ingBusy, setIngBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [copied, setCopied] = useState(false);
   const [copiedIng, setCopiedIng] = useState(false);
-  const [showPaste, setShowPaste] = useState(false);
+  const [showPaste, setShowPaste] = useState(true);
   const [pasteText, setPasteText] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
   const inputStyle = makeInputStyle(t);
   const showCopy = hasMacros(macros) && (name || '').trim().length > 0;
   const ruleDays = shelfLifeAfterOpening(name);
+  const globalStepLabel = globalStepGml && globalStepGml !== 'auto' ? String(globalStepGml) : tr(lang, 'behavior.stepAuto');
+  const pasteRef = useAutoGrowTextarea(pasteText);
+  const ingredientsRef = useAutoGrowTextarea(macros.ingredients || '');
 
   const setField = (key, raw) => {
     const v = raw === '' ? null : parseFloat(String(raw).replace(',', '.'));
@@ -276,11 +280,12 @@ export function MacroEditor({
       {showPaste && (
         <div style={{ marginTop: 10 }}>
           <textarea
+            ref={pasteRef}
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
             placeholder={tr(lang, 'macroEditor.pastePlaceholder')}
             rows={5}
-            style={{ ...inputStyle, marginTop: 0, resize: 'vertical', fontSize: 13 }}
+            style={{ ...inputStyle, marginTop: 0, resize: 'none', overflow: 'hidden', fontSize: 13 }}
           />
           <button
             type="button"
@@ -304,11 +309,12 @@ export function MacroEditor({
         </span>
         <div style={{ position: 'relative', marginTop: 8 }}>
           <textarea
+            ref={ingredientsRef}
             value={macros.ingredients || ''}
             onChange={(e) => onChange({ ingredients: e.target.value })}
             placeholder={tr(lang, 'macroEditor.ingredientsPlaceholder')}
             rows={3}
-            style={{ ...inputStyle, marginTop: 0, resize: 'vertical', fontSize: 13, lineHeight: 1.45, paddingRight: 42 }}
+            style={{ ...inputStyle, marginTop: 0, resize: 'none', overflow: 'hidden', fontSize: 13, lineHeight: 1.45, paddingRight: 42 }}
           />
           {scanSupported && (
             <button
@@ -349,6 +355,34 @@ export function MacroEditor({
               </button>
             );
           })()}
+        </div>
+      </div>
+
+      {/* Schrittweite der +/−-Knöpfe (Override der globalen Einstellung) */}
+      <div style={{ marginTop: 18 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, color: t.text }}>
+          <Layers2 size={16} /> {tr(lang, 'macroEditor.stepGml')}
+        </span>
+        <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 2, marginBottom: 8, lineHeight: 1.35 }}>
+          {tr(lang, 'macroEditor.stepGmlHint', { value: globalStepLabel })}
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {[[null, tr(lang, 'macroEditor.stepDefault')], ['auto', tr(lang, 'behavior.stepAuto')], [5, '5'], [10, '10'], [25, '25'], [50, '50'], [100, '100']].map(([val, lbl]) => {
+            const active = (macros.stepGml ?? null) === val;
+            return (
+              <button
+                key={String(val)}
+                type="button"
+                onClick={() => onChange({ stepGml: val })}
+                style={{
+                  padding: '8px 14px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                  background: active ? t.pillActive : t.card, color: active ? t.pillActiveText : t.textMuted,
+                }}
+              >
+                {lbl}
+              </button>
+            );
+          })}
         </div>
       </div>
 

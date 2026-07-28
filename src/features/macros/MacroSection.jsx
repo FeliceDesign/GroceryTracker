@@ -7,15 +7,21 @@ import { tr } from '../../lib/i18n.js';
 // Aufklappbarer „Nährwerte, Zutaten und Haltbarkeit"-Abschnitt für das
 // Bearbeiten-/Anlegen-Sheet. Zeigt zugeklappt eine Kurz-Zusammenfassung,
 // aufgeklappt den Editor – sanft animiert und beim Öffnen ins Bild gescrollt.
-export function MacroSection({ name, macros, onChange, t, lang = 'de', scanSupported, accent }) {
+export function MacroSection({ name, macros, onChange, t, lang = 'de', scanSupported, accent, globalStepGml }) {
   const filled = hasFoodData(macros);
-  const [open, setOpen] = useState(filled);
+  const [open, setOpen] = useState(true);
   const ref = useRef(null);
+  // Erst nach dem ersten Render "scharf" – verhindert, dass die Sektion beim
+  // Öffnen von Anlegen/Bearbeiten (jetzt standardmäßig aufgeklappt) sofort
+  // ins Bild scrollt und dabei am Namensfeld vorbeispringt. Nur ein Klick
+  // auf den Umschalter selbst soll noch scrollen.
+  const mountedRef = useRef(false);
   const summary = hasMacros(macros)
     ? `${macroSummary({ ...macros }, lang)} · ${basisLabel(macros, lang)}`
     : (filled ? tr(lang, 'macroSection.ingredientsPresent') : tr(lang, 'macroSection.none'));
 
   useEffect(() => {
+    if (!mountedRef.current) { mountedRef.current = true; return undefined; }
     if (!open || !ref.current) return undefined;
     const id = setTimeout(() => {
       try { ref.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch { /* egal */ }
@@ -58,6 +64,7 @@ export function MacroSection({ name, macros, onChange, t, lang = 'de', scanSuppo
               lang={lang}
               scanSupported={scanSupported}
               accent={accent}
+              globalStepGml={globalStepGml}
             />
           </div>
         </div>

@@ -56,7 +56,7 @@ export function basisLabel(food, lang = 'de') {
 
 // Leerer Bearbeitungs-Entwurf.
 export function emptyMacros(basis = '100g') {
-  const m = { basis, portionSize: null, ingredients: '', openedDays: null };
+  const m = { basis, portionSize: null, ingredients: '', openedDays: null, stepGml: null };
   MACRO_FIELDS.forEach((f) => { m[f.key] = null; });
   return m;
 }
@@ -68,6 +68,7 @@ export function foodToMacros(food, fallbackBasis = '100g') {
   m.portionSize = food.portionSize ?? null;
   m.ingredients = food.ingredients || '';
   m.openedDays = food.openedDays ?? null;
+  m.stepGml = food.stepGml ?? null;
   MACRO_FIELDS.forEach((f) => { m[f.key] = food[f.key] ?? null; });
   return m;
 }
@@ -80,6 +81,7 @@ export function macrosToFood(m, name) {
     portionSize: (m && m.portionSize) ?? null,
     ingredients: (m && m.ingredients ? String(m.ingredients).trim() : ''),
     openedDays: (m && m.openedDays != null && m.openedDays !== '') ? Number(m.openedDays) : null,
+    stepGml: (m && m.stepGml != null && m.stepGml !== '') ? Number(m.stepGml) : null,
   };
   MACRO_FIELDS.forEach((f) => { food[f.key] = (m && m[f.key] != null) ? m[f.key] : null; });
   return food;

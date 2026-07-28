@@ -129,7 +129,9 @@ export function AddItemSheet({
         </div>
       ) : (
         (() => {
-          const step = stepGml && stepGml !== 'auto' ? Number(stepGml) : 10;
+          // Artikel-eigener Override (Stammdaten) geht vor der globalen Einstellung.
+          const effectiveStepGml = newItem.macros?.stepGml != null ? newItem.macros.stepGml : stepGml;
+          const step = effectiveStepGml && effectiveStepGml !== 'auto' ? Number(effectiveStepGml) : 10;
           // Feste Obergrenze, unabhängig von der aktuellen Menge – sonst
           // verschiebt sich die Skala bei jeder Änderung mit (gleiches Muster
           // wie im Bearbeiten-Dialog).
@@ -201,6 +203,7 @@ export function AddItemSheet({
         lang={lang}
         scanSupported={scanSupported}
         accent={pal.accent}
+        globalStepGml={stepGml}
       />
     </Modal>
   );

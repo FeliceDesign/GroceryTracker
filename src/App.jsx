@@ -177,9 +177,12 @@ export default function App() {
   const countFor = (id) => (items ? items.filter((i) => i.zone === id).length : 0);
 
   // -- Menge / Bearbeiten -----------------------------------------------------
-  const stepFor = (unit, qty) => {
+  // Schrittweite: Artikel-eigener Override (Stammdaten) geht vor der
+  // globalen Einstellung, "Auto" richtet sich nach der aktuellen Menge.
+  const stepFor = (unit, qty, name) => {
     if (unit !== 'g' && unit !== 'ml') return 1;
-    const s = prefs && prefs.stepGml;
+    const food = name ? getFood(name) : null;
+    const s = (food && food.stepGml != null) ? food.stepGml : (prefs && prefs.stepGml);
     if (s && s !== 'auto') return Number(s);
     return qty <= 100 ? 10 : 50;
   };
@@ -193,7 +196,7 @@ export default function App() {
   const changeQty = (id, direction) => {
     const item = items.find((i) => i.id === id);
     if (!item) return;
-    const next = Math.max(0, item.qty + direction * stepFor(item.unit, item.qty));
+    const next = Math.max(0, item.qty + direction * stepFor(item.unit, item.qty, item.name));
     if (next === 0) {
       removeItem(id);
       return;
@@ -1039,7 +1042,7 @@ export default function App() {
       <ManageFoodsSheet
         open={showFoods} onClose={() => { setShowFoods(false); setEditFoodName(null); }} t={t} lang={lang}
         foods={foods} onUpsert={upsertFood} onRemove={removeFood}
-        scanSupported={scanSupported} initialEditName={editFoodName}
+        scanSupported={scanSupported} initialEditName={editFoodName} stepGml={prefs.stepGml}
       />
 
       <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} lang={lang} />

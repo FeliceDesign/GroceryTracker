@@ -14,7 +14,7 @@ import {
 // bearbeiten, neu anlegen, kopieren und löschen. `initialEditName` springt
 // beim Öffnen direkt in den Editor für diesen Namen (z.B. von einem
 // Favoriten aus) - vorhandene Stammdaten werden geladen, sonst leer angelegt.
-export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpsert, onRemove, scanSupported, initialEditName }) {
+export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpsert, onRemove, scanSupported, initialEditName, stepGml }) {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null); // { name, macros } oder null
   const [copiedKey, setCopiedKey] = useState(null);
@@ -114,6 +114,7 @@ export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpser
           t={t}
           lang={lang}
           scanSupported={scanSupported}
+          globalStepGml={stepGml}
         />
       </Modal>
     );

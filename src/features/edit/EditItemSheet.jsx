@@ -156,7 +156,9 @@ export function EditItemSheet({
         </div>
       ) : (
         (() => {
-          const step = stepGml && stepGml !== 'auto' ? Number(stepGml) : 10;
+          // Artikel-eigener Override (Stammdaten) geht vor der globalen Einstellung.
+          const effectiveStepGml = editItem.macros?.stepGml != null ? editItem.macros.stepGml : stepGml;
+          const step = effectiveStepGml && effectiveStepGml !== 'auto' ? Number(effectiveStepGml) : 10;
           // Feste Obergrenze, unabhängig von der aktuellen Menge – sonst
           // verschiebt sich die Skala bei jeder Änderung mit.
           const sliderMax = 1000;
@@ -286,6 +288,7 @@ export function EditItemSheet({
         lang={lang}
         scanSupported={scanSupported}
         accent={pal.accent}
+        globalStepGml={stepGml}
       />
     </Modal>
   );
