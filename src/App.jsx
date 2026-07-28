@@ -112,6 +112,7 @@ export default function App() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showFoods, setShowFoods] = useState(false);
   const [editFoodName, setEditFoodName] = useState(null);
+  const [foodsFromFavorites, setFoodsFromFavorites] = useState(false);
   const [showShelfLife, setShowShelfLife] = useState(false);
   const [showProduceStorage, setShowProduceStorage] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
@@ -1034,13 +1035,19 @@ export default function App() {
         onAddToInventory={addFavoriteToInventory} onAddToShopping={addFavoriteToShopping}
         hasInventoryItems={items.length > 0} onAddAllFromInventory={addAllInventoryToFavorites}
         onClearAll={clearAllFavorites}
-        onEditFood={(name) => { setShowFavorites(false); setEditFoodName(name); setShowFoods(true); }}
+        onEditFood={(name) => { setShowFavorites(false); setEditFoodName(name); setFoodsFromFavorites(true); setShowFoods(true); }}
         sortMode={prefs.favoritesSortMode || 'manual'}
         onSetSortMode={(v) => setPrefs((p) => ({ ...p, favoritesSortMode: v }))}
       />
 
       <ManageFoodsSheet
-        open={showFoods} onClose={() => { setShowFoods(false); setEditFoodName(null); }} t={t} lang={lang}
+        open={showFoods}
+        onClose={() => {
+          setShowFoods(false);
+          setEditFoodName(null);
+          if (foodsFromFavorites) { setFoodsFromFavorites(false); setShowFavorites(true); }
+        }}
+        t={t} lang={lang}
         foods={foods} onUpsert={upsertFood} onRemove={removeFood}
         scanSupported={scanSupported} initialEditName={editFoodName} stepGml={prefs.stepGml}
       />

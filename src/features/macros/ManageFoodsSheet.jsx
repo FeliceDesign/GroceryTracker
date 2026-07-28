@@ -18,6 +18,10 @@ export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpser
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null); // { name, macros } oder null
   const [copiedKey, setCopiedKey] = useState(null);
+  // true, wenn der Editor über initialEditName direkt (z.B. von einem
+  // Favoriten aus) geöffnet wurde - dann soll Schließen/Speichern/Löschen
+  // das ganze Sheet verlassen statt auf die Stammdaten-Liste zurückzufallen.
+  const [directEntry, setDirectEntry] = useState(false);
   const inputStyle = makeInputStyle(t);
 
   // Beim Schließen den Editor-/Suchzustand zurücksetzen; beim Öffnen mit
@@ -25,6 +29,7 @@ export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpser
   useEffect(() => {
     if (!open) {
       setEditing(null);
+      setDirectEntry(false);
       setSearch('');
       setCopiedKey(null);
     } else if (initialEditName) {
@@ -32,10 +37,18 @@ export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpser
       setEditing(existing
         ? { key: existing.key, name: existing.name, macros: foodToMacros(existing) }
         : { name: initialEditName, macros: emptyMacros('100g') });
+      setDirectEntry(true);
     }
     // foods absichtlich ausgelassen - nur open/initialEditName sollen den Einstieg auslösen
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialEditName]);
+
+  // Editor verlassen: bei Direkteinstieg das ganze Sheet schließen (z.B.
+  // zurück zu Favoriten), sonst nur zur Stammdaten-Liste zurück.
+  const finishEditing = () => {
+    setEditing(null);
+    if (directEntry) onClose();
+  };
 
   const list = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -43,8 +56,8 @@ export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpser
     return arr.slice().sort((a, b) => a.name.localeCompare(b.name, 'de'));
   }, [foods, search]);
 
-  const startNew = () => setEditing({ name: search.trim(), macros: emptyMacros('100g') });
-  const startEdit = (food) => setEditing({ key: food.key, name: food.name, macros: foodToMacros(food) });
+  const startNew = () => { setDirectEntry(false); setEditing({ name: search.trim(), macros: emptyMacros('100g') }); };
+  const startEdit = (food) => { setDirectEntry(false); setEditing({ key: food.key, name: food.name, macros: foodToMacros(food) }); };
 
   const save = () => {
     const name = (editing.name || '').trim();
@@ -52,12 +65,12 @@ export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpser
     onUpsert(macrosToFood(editing.macros, name));
     // Falls umbenannt (anderer Schlüssel): alten Datensatz entfernen.
     if (editing.key && editing.key !== normalizeName(name)) onRemove(editing.key);
-    setEditing(null);
+    finishEditing();
   };
 
   const del = () => {
     if (editing.key) onRemove(editing.key);
-    setEditing(null);
+    finishEditing();
   };
 
   const copyRow = async (food) => {
@@ -94,7 +107,7 @@ export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpser
       </div>
     );
     return (
-      <Modal open={open} onClose={() => setEditing(null)} t={t} lang={lang} title={editing.key ? tr(lang, 'foods.editTitle') : tr(lang, 'foods.newTitle')} footer={footer}>
+      <Modal open={open} onClose={finishEditing} t={t} lang={lang} title={editing.key ? tr(lang, 'foods.editTitle') : tr(lang, 'foods.newTitle')} footer={footer}>
         <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 4 }}>
           {tr(lang, 'foods.name')}
         </label>
