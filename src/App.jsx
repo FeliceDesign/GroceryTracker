@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Package, ShoppingCart, Settings, Plus, Star, Search, X, EyeOff } from 'lucide-react';
+import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff } from 'lucide-react';
 
 import { useSystemTheme, buildTheme } from './lib/theme.js';
 import { zonePalette, ZONE_COLOR_CHOICES, MHD_COLOR_CHOICES } from './lib/colors.js';
@@ -73,7 +73,7 @@ export default function App() {
     autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
     favoritesCollapsed: false, zoneEmojiBothSides: false, favoritesPos: 'off', showFavoriteChips: true, searchPos: 'top',
     favoritesSortMode: 'manual', mainSortMode: 'category', compactList: false, defaultZoneId: null,
-    focusMode: false,
+    focusMode: false, buttonsHidden: false,
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -746,11 +746,11 @@ export default function App() {
           onFavorites={() => setShowFavorites(true)}
           onToggleSearch={toggleSearch} searchOpen={searchOpen}
           onZoneClick={() => setShowZones(true)}
-          showShoppingButton={!prefs.focusMode && (prefs.shoppingPos || 'top') === 'top'}
-          showSettingsButton={!prefs.focusMode && (prefs.settingsPos || 'top') !== 'bottom'}
+          showShoppingButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.shoppingPos || 'top') === 'top'}
+          showSettingsButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.settingsPos || 'top') !== 'bottom'}
           showAddButton={!prefs.focusMode && (prefs.addPos || 'bottom') === 'top'}
-          showFavoritesButton={!prefs.focusMode && (prefs.favoritesPos || 'off') === 'top'}
-          showSearchButton={!prefs.focusMode && !expiringView && (prefs.searchPos || 'top') === 'top'}
+          showFavoritesButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.favoritesPos || 'off') === 'top'}
+          showSearchButton={!prefs.focusMode && !prefs.buttonsHidden && !expiringView && (prefs.searchPos || 'top') === 'top'}
           addExtraHandlers={addLongPress.handlers} addHoldProgress={addLongPress.progress}
         />
         <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={(id) => { setActiveZone(id); setExpiringView(false); }} t={t} dark={dark} />
@@ -858,13 +858,13 @@ export default function App() {
             extraHandlers: addLongPress.handlers,
             holdProgress: addLongPress.progress,
           },
-          !prefs.focusMode && prefs.settingsPos === 'bottom' && {
+          !prefs.focusMode && !prefs.buttonsHidden && prefs.settingsPos === 'bottom' && {
             key: 'settings', size: 48,
             onClick: () => setShowSettings(true),
             ariaLabel: tr(lang, 'app.settingsAria'),
             icon: <Settings size={19} strokeWidth={2.2} />,
           },
-          !prefs.focusMode && prefs.shoppingPos === 'bottom' && {
+          !prefs.focusMode && !prefs.buttonsHidden && prefs.shoppingPos === 'bottom' && {
             key: 'shopping', size: 48,
             onClick: () => setShowShopping(true),
             ariaLabel: `${tr(lang, 'app.shoppingAria')}${shopping.length > 0 ? ` (${shopping.length})` : ''}`,
@@ -879,23 +879,23 @@ export default function App() {
               />
             ),
           },
-          !prefs.focusMode && prefs.favoritesPos === 'bottom' && {
+          !prefs.focusMode && !prefs.buttonsHidden && prefs.favoritesPos === 'bottom' && {
             key: 'favorites', size: 48,
             onClick: () => setShowFavorites(true),
             ariaLabel: tr(lang, 'app.favoritesAria'),
             icon: <Star size={18} strokeWidth={2.2} />,
           },
-          !prefs.focusMode && !expiringView && prefs.searchPos === 'bottom' && {
+          !prefs.focusMode && !prefs.buttonsHidden && !expiringView && prefs.searchPos === 'bottom' && {
             key: 'search', size: 48,
             onClick: toggleSearch,
             ariaLabel: searchOpen ? tr(lang, 'app.searchCloseAria') : tr(lang, 'app.searchAria'),
             icon: searchOpen ? <X size={19} strokeWidth={2.2} /> : <Search size={18} strokeWidth={2.2} />,
           },
           !prefs.focusMode && {
-            key: 'focusMode', size: 48,
-            onClick: () => setPrefs((p) => ({ ...p, focusMode: true })),
-            ariaLabel: tr(lang, 'app.focusModeAria'),
-            icon: <EyeOff size={18} strokeWidth={2.2} />,
+            key: 'hideButtons', size: 48,
+            onClick: () => setPrefs((p) => ({ ...p, buttonsHidden: !p.buttonsHidden })),
+            ariaLabel: prefs.buttonsHidden ? tr(lang, 'app.showButtonsAria') : tr(lang, 'app.hideButtonsAria'),
+            icon: prefs.buttonsHidden ? <Eye size={18} strokeWidth={2.2} /> : <EyeOff size={18} strokeWidth={2.2} />,
           },
         ].filter((x) => x)}
       />
