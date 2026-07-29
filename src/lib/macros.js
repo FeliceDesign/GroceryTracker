@@ -136,29 +136,27 @@ export function macroSummary(food, lang = 'de') {
   return parts.join(' · ');
 }
 
-// Mehrzeilige Nährwerttabelle zum Kopieren (an „:" ausgerichtet).
+// Mehrzeilige Nährwerttabelle zum Kopieren, z.B.:
+// "Brokkoli - pro 100g\nKalorien: 39kcal\nFett: 0,9g\n  davon gesättigte
+// Fettsäuren: 0,2g\n…". „Davon"-Zeilen mit zwei Leerzeichen eingerückt.
 export function formatMacroTable(food, lang = 'de') {
   const name = (food.name || '').trim();
   const rows = [];
   MACRO_FIELDS.forEach((f) => {
     if (food[f.key] != null && food[f.key] !== '') {
       const label = f.key === 'satFat' ? tr(lang, 'macros.satFatTable') : tr(lang, `macros.${f.key}`);
-      rows.push({
-        label: (f.indent ? ' – ' : '') + label + ':',
-        value: `${fmtNum(food[f.key])} ${f.unit}`,
-      });
+      rows.push(`${f.indent ? '  ' : ''}${label}: ${fmtNum(food[f.key])}${f.unit}`);
     }
     // Abgeleitete „davon ungesättigt"-Zeile direkt hinter „davon gesättigt".
     if (f.key === 'satFat') {
       const u = unsaturatedFat(food);
-      if (u != null) rows.push({ label: ` – ${tr(lang, 'macros.unsaturated')}:`, value: `${fmtNum(u)} g` });
+      if (u != null) rows.push(`  ${tr(lang, 'macros.unsaturated')}: ${fmtNum(u)}g`);
     }
   });
-  const header = `${name} — ${basisLabel(food, lang)}`;
+  const basis = basisLabel(food, lang).replace(/(\d)\s(g|ml)\b/, '$1$2');
+  const header = `${name} - ${basis}`;
   if (rows.length === 0) return header;
-  const width = Math.max(...rows.map((r) => r.label.length)) + 2;
-  const body = rows.map((r) => r.label.padEnd(width) + r.value).join('\n');
-  return `${header}\n${body}`;
+  return `${header}\n${rows.join('\n')}`;
 }
 
 // Text in die Zwischenablage. navigator.clipboard bevorzugt, sonst

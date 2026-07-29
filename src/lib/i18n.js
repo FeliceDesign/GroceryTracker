@@ -154,8 +154,8 @@ const DE = {
   macroSection: { title: 'Nährwerte, Zutaten und Haltbarkeit', none: 'noch keine – tippen zum Erfassen', ingredientsPresent: 'Zutaten hinterlegt' },
   macros: {
     kcal: 'Kalorien', protein: 'Protein', carbs: 'Kohlenhydrate', sugar: 'davon Zucker',
-    fiber: 'Ballaststoffe', fat: 'Fett', satFat: 'davon gesättigte', satFatTable: 'davon gesättigt',
-    salt: 'Salz', unsaturated: 'davon ungesättigt',
+    fiber: 'Ballaststoffe', fat: 'Fett', satFat: 'davon gesättigte', satFatTable: 'davon gesättigte Fettsäuren',
+    salt: 'Salz', unsaturated: 'davon ungesättigte Fettsäuren',
     per100g: 'pro 100 g', per100ml: 'pro 100 ml', perPortion: 'pro Portion', perPortionSize: 'pro Portion ({{size}} g)',
     basis100g: '100 g', basis100ml: '100 ml', basisPortion: 'Portion',
   },
@@ -454,8 +454,8 @@ const EN = {
   macroSection: { title: 'Nutrition, ingredients and shelf life', none: 'none yet – tap to add', ingredientsPresent: 'Ingredients on file' },
   macros: {
     kcal: 'Calories', protein: 'Protein', carbs: 'Carbs', sugar: 'of which sugar',
-    fiber: 'Fiber', fat: 'Fat', satFat: 'of which saturated', satFatTable: 'of which saturated',
-    salt: 'Salt', unsaturated: 'of which unsaturated',
+    fiber: 'Fiber', fat: 'Fat', satFat: 'of which saturated', satFatTable: 'of which saturated fat',
+    salt: 'Salt', unsaturated: 'of which unsaturated fat',
     per100g: 'per 100 g', per100ml: 'per 100 ml', perPortion: 'per portion', perPortionSize: 'per portion ({{size}} g)',
     basis100g: '100 g', basis100ml: '100 ml', basisPortion: 'Portion',
   },
