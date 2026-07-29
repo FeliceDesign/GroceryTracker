@@ -138,11 +138,31 @@ export function storageLabel(storage, lang = 'de') {
   return tr(lang, 'shelfLife.fridge');
 }
 
-// Ist ein Lagerort „kalt"? Nutzt das Flag `cooled`, sonst eine Namens-Heuristik.
+const FREEZER_NAME_RE = /gefrier|tiefkühl|tiefkuehl|tiefgefrier|freezer|frost/i;
+const COOLED_NAME_RE = /kühl|kuehl|kalt|fridge|chill/i;
+
+// Lager-Temperatur eines Lagerorts: 'cooled' | 'frozen' | 'room'. Nutzt das
+// Feld `storageType`, sonst (Altdaten) das frühere Bool-Flag `cooled` plus
+// Namens-Heuristik zur Unterscheidung Gekühlt/Tiefgefroren, sonst rein die
+// Namens-Heuristik.
+export function zoneStorageType(zone) {
+  if (!zone) return 'room';
+  if (zone.storageType === 'cooled' || zone.storageType === 'frozen' || zone.storageType === 'room') {
+    return zone.storageType;
+  }
+  if (zone.cooled != null) {
+    if (!zone.cooled) return 'room';
+    return FREEZER_NAME_RE.test(zone.label || '') ? 'frozen' : 'cooled';
+  }
+  if (FREEZER_NAME_RE.test(zone.label || '')) return 'frozen';
+  if (COOLED_NAME_RE.test(zone.label || '')) return 'cooled';
+  return 'room';
+}
+
+// Ist ein Lagerort „kalt" (gekühlt oder tiefgefroren)? Für die Lager-Hinweise
+// bei geöffneten Artikeln zählt Tiefgefroren mit als „nicht Raumtemperatur".
 export function zoneIsCooled(zone) {
-  if (!zone) return false;
-  if (zone.cooled != null) return !!zone.cooled;
-  return /kühl|kuehl|gefrier|kalt|fridge|freezer|frost/i.test(zone.label || '');
+  return zoneStorageType(zone) !== 'room';
 }
 
 // Passt der Lagerort zur Empfehlung? Gibt einen Hinweistext zurück oder null.

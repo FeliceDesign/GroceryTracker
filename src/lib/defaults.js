@@ -5,13 +5,13 @@
 // Ein Lagerort trägt eine einzige Basisfarbe; alle abgeleiteten Farbtöne
 // entstehen daraus (siehe lib/colors.js). So sind eigene Lagerorte den
 // Standard-Lagerorten optisch gleichgestellt.
-// `cooled` markiert gekühlte Lagerorte (für Lager-Hinweise bei geöffneten
-// Artikeln). Standard: Kühlschrank/Gefrierschrank = ja, Vorrat/Snacks = nein.
+// `storageType` markiert die Lager-Temperatur ('cooled' | 'frozen' | 'room'),
+// für Lager-Hinweise bei geöffneten Artikeln.
 export const DEFAULT_ZONES = [
-  { id: 'K', label: 'Kühlschrank', emoji: '🧊', color: '#4A8B6F', cooled: true },
-  { id: 'F', label: 'Gefrierschrank', emoji: '❄️', color: '#3B7A9E', cooled: true },
-  { id: 'V', label: 'Vorrat', emoji: '🥫', color: '#9C7A3C', cooled: false },
-  { id: 'S', label: 'Snacks', emoji: '🍫', color: '#7A6BA8', cooled: false },
+  { id: 'K', label: 'Kühlschrank', emoji: '🧊', color: '#4A8B6F', storageType: 'cooled' },
+  { id: 'F', label: 'Gefrierschrank', emoji: '❄️', color: '#3B7A9E', storageType: 'frozen' },
+  { id: 'V', label: 'Vorrat', emoji: '🥫', color: '#9C7A3C', storageType: 'room' },
+  { id: 'S', label: 'Snacks', emoji: '🍫', color: '#7A6BA8', storageType: 'room' },
 ];
 
 export const DEFAULT_CATEGORIES = [

@@ -8,9 +8,9 @@ export function useZones() {
   const [zones, setZones, loaded] = useStorage('gt-zones-v1', DEFAULT_ZONES);
 
   const addZone = useCallback(
-    ({ label, emoji, color, cooled = false }) => {
+    ({ label, emoji, color, storageType = 'room' }) => {
       const id = 'z' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-      const zone = { id, label: label.trim(), emoji: emoji || '📦', color, cooled: !!cooled };
+      const zone = { id, label: label.trim(), emoji: emoji || '📦', color, storageType };
       setZones((prev) => [...prev, zone]);
       return id;
     },

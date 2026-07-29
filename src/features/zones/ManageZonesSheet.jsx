@@ -1,30 +1,30 @@
 import { useState } from 'react';
-import { Plus, Trash2, Snowflake, ChevronUp, ChevronDown, Star, Eye } from 'lucide-react';
+import { Plus, Trash2, Refrigerator, Snowflake, Sun, ChevronUp, ChevronDown, Star, Eye } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { ColorSwatches } from '../../components/ColorSwatches.jsx';
+import { Segmented } from '../../components/Segmented.jsx';
 import { ZONE_COLOR_CHOICES, zonePalette } from '../../lib/colors.js';
-import { zoneIsCooled } from '../../lib/openedShelfLife.js';
+import { zoneStorageType } from '../../lib/openedShelfLife.js';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 
-// Kleiner „gekühlt"-Umschalter (für Lager-Hinweise bei geöffneten Artikeln).
-function CooledToggle({ on, onChange, t, lang }) {
+// Lager-Temperatur eines Lagerorts (für Lager-Hinweise bei geöffneten
+// Artikeln): Gekühlt / Tiefgefroren / Raumtemperatur.
+function StorageTypeSegmented({ value, onChange, t, lang }) {
   return (
-    <button
-      type="button"
-      onClick={() => onChange(!on)}
-      aria-pressed={on}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10,
-        padding: '7px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
-        border: `1.5px solid ${on ? t.info || '#3B7A9E' : t.border}`,
-        background: on ? (t.infoBg || 'rgba(59,122,158,0.14)') : 'transparent',
-        color: on ? (t.info || '#3B7A9E') : t.textMuted,
-      }}
-    >
-      <Snowflake size={14} /> {on ? tr(lang, 'zones.cooled') : tr(lang, 'zones.notCooled')}
-    </button>
+    <div style={{ marginTop: 10 }}>
+      <Segmented
+        t={t}
+        value={value}
+        onChange={onChange}
+        options={[
+          { value: 'cooled', label: tr(lang, 'zones.storageCooled'), icon: <Refrigerator size={14} /> },
+          { value: 'frozen', label: tr(lang, 'zones.storageFrozen'), icon: <Snowflake size={14} /> },
+          { value: 'room', label: tr(lang, 'zones.storageRoom'), icon: <Sun size={14} /> },
+        ]}
+      />
+    </div>
   );
 }
 
@@ -34,14 +34,14 @@ export function ManageZonesSheet({
   defaultZoneId, onSetDefaultZoneId, focusMode = false, onExitFocusMode,
 }) {
   const inputStyle = makeInputStyle(t);
-  const [draft, setDraft] = useState({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], cooled: false });
+  const [draft, setDraft] = useState({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], storageType: 'room' });
   const [showAdd, setShowAdd] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
 
   const submitAdd = () => {
     if (!draft.label.trim()) return;
-    onAdd({ label: draft.label, emoji: draft.emoji || '📦', color: draft.color, cooled: draft.cooled });
-    setDraft({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], cooled: false });
+    onAdd({ label: draft.label, emoji: draft.emoji || '📦', color: draft.color, storageType: draft.storageType });
+    setDraft({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], storageType: 'room' });
     setShowAdd(false);
   };
 
@@ -125,7 +125,7 @@ export function ManageZonesSheet({
                 t={t} lang={lang} choices={ZONE_COLOR_CHOICES} value={z.color} onChange={(c) => onUpdate(z.id, { color: c })}
                 customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); onUpdate(z.id, { color: c }); }} onRemoveCustom={onRemoveCustomColor}
               />
-              <CooledToggle t={t} lang={lang} on={zoneIsCooled(z)} onChange={(v) => onUpdate(z.id, { cooled: v })} />
+              <StorageTypeSegmented t={t} lang={lang} value={zoneStorageType(z)} onChange={(v) => onUpdate(z.id, { storageType: v })} />
               <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 8 }}>
                 {zones.length > 1 ? tr(lang, 'zones.itemsCountMoveHint', { count }) : tr(lang, 'zones.itemsCount', { count })}
               </div>
@@ -188,11 +188,11 @@ export function ManageZonesSheet({
             t={t} lang={lang} choices={ZONE_COLOR_CHOICES} value={draft.color} onChange={(c) => setDraft((s) => ({ ...s, color: c }))}
             customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); setDraft((s) => ({ ...s, color: c })); }} onRemoveCustom={onRemoveCustomColor}
           />
-          <CooledToggle t={t} lang={lang} on={draft.cooled} onChange={(v) => setDraft((s) => ({ ...s, cooled: v }))} />
+          <StorageTypeSegmented t={t} lang={lang} value={draft.storageType} onChange={(v) => setDraft((s) => ({ ...s, storageType: v }))} />
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <button
               type="button"
-              onClick={() => { setShowAdd(false); setDraft({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0] }); }}
+              onClick={() => { setShowAdd(false); setDraft({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], storageType: 'room' }); }}
               style={{ flex: 1, padding: '12px', borderRadius: 12, border: `1.5px solid ${t.border}`, background: 'transparent', color: t.textMuted, fontWeight: 700, cursor: 'pointer' }}
             >
               {tr(lang, 'zones.cancel')}
