@@ -13,6 +13,7 @@ export function LayoutSheet({
   shoppingPos, onSetShoppingPos, settingsPos, onSetSettingsPos, addPos, onSetAddPos,
   favoritesPos, onSetFavoritesPos, searchPos, onSetSearchPos,
   zoneEmojiBothSides, onToggleZoneEmojiBothSides,
+  bottomButtonsLayout, onSetBottomButtonsLayout,
 }) {
   const inputStyle = makeInputStyle(t);
 
@@ -52,6 +53,19 @@ export function LayoutSheet({
         <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'layout.buttons')}</div>
         <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
           {tr(lang, 'layout.buttonsHint')}
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>{tr(lang, 'layout.bottomArrangement')}</div>
+          <div style={{ fontSize: 11.5, color: t.textFaint, marginBottom: 6, lineHeight: 1.35 }}>{tr(lang, 'layout.bottomArrangementHint')}</div>
+          <Segmented
+            t={t}
+            value={bottomButtonsLayout || 'stack'}
+            onChange={onSetBottomButtonsLayout}
+            options={[
+              { value: 'stack', label: tr(lang, 'layout.arrangeStack') },
+              { value: 'row', label: tr(lang, 'layout.arrangeRow') },
+            ]}
+          />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div>

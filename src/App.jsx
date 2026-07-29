@@ -73,7 +73,7 @@ export default function App() {
     autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
     favoritesCollapsed: false, zoneEmojiBothSides: false, favoritesPos: 'off', showFavoriteChips: true, searchPos: 'top',
     favoritesSortMode: 'manual', mainSortMode: 'category', compactList: false, defaultZoneId: null,
-    focusMode: false, buttonsHidden: false,
+    focusMode: false, buttonsHidden: false, bottomButtonsLayout: 'stack',
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -848,7 +848,7 @@ export default function App() {
       </div>
 
       <FloatingActions
-        zone={zone} dark={dark} t={t}
+        zone={zone} dark={dark} t={t} layout={prefs.bottomButtonsLayout || 'stack'}
         items={[
           !prefs.focusMode && (prefs.addPos || 'bottom') === 'bottom' && {
             key: 'add', size: 60, primary: true,
@@ -986,6 +986,8 @@ export default function App() {
         onSetSearchPos={(v) => setPrefs((p) => ({ ...p, searchPos: v }))}
         zoneEmojiBothSides={prefs.zoneEmojiBothSides === true}
         onToggleZoneEmojiBothSides={(on) => setPrefs((p) => ({ ...p, zoneEmojiBothSides: on }))}
+        bottomButtonsLayout={prefs.bottomButtonsLayout || 'stack'}
+        onSetBottomButtonsLayout={(v) => setPrefs((p) => ({ ...p, bottomButtonsLayout: v }))}
       />
 
       <BehaviorSheet
