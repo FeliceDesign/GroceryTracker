@@ -135,6 +135,7 @@ export default function App() {
   const [deletedItem, setDeletedItem] = useState(null);
   const [deletedZone, setDeletedZone] = useState(null);
   const [deletedFavorites, setDeletedFavorites] = useState(null);
+  const [restoredShopping, setRestoredShopping] = useState(null);
   const [justChanged, setJustChanged] = useState(null);
   const [justChecked, setJustChecked] = useState(null);
   const [shoppingInput, setShoppingInput] = useState('');
@@ -144,6 +145,7 @@ export default function App() {
   const favoritesUndoTimerRef = useRef(null);
   const flashTimerRef = useRef(null);
   const checkedTimerRef = useRef(null);
+  const shoppingUndoTimerRef = useRef(null);
 
   const scanSupported = isScanSupported();
   const ready = themeLoaded && zonesLoaded && catsLoaded && foodsLoaded && favoritesLoaded && itemsLoaded && shoppingLoaded && warnLoaded && prefsLoaded
@@ -166,6 +168,7 @@ export default function App() {
     clearTimeout(favoritesUndoTimerRef.current);
     clearTimeout(flashTimerRef.current);
     clearTimeout(checkedTimerRef.current);
+    clearTimeout(shoppingUndoTimerRef.current);
   }, []);
 
   // MHD-Erinnerungen neu planen, sobald sich Bestand oder Einstellungen ändern.
@@ -493,17 +496,47 @@ export default function App() {
       return;
     }
     setShopping((prev) => prev.filter((s) => s.id !== entry.id));
-    setItems((prev) => {
-      const idx = prev.findIndex((i) => i.zone === entry.zone && i.name.toLowerCase() === entry.name.toLowerCase());
-      if (idx >= 0 && prev[idx].unit === entry.unit) {
-        const next = [...prev];
-        next[idx] = { ...next[idx], qty: next[idx].qty + (entry.qty > 0 ? entry.qty : 1) };
-        return next;
-      }
+
+    // Entscheidung (zusammenführen oder neu anlegen) anhand des aktuellen
+    // `items`-Standes VOR dem Update treffen - nicht innerhalb des
+    // setItems-Updaters, dessen Ausführung nicht synchron zur nächsten
+    // Zeile garantiert ist (sonst wären mergedItemId/createdItemId beim
+    // Setzen von restoredShopping noch null, Undo also wirkungslos).
+    const idx = items.findIndex((i) => i.zone === entry.zone && i.unit === entry.unit && i.name.toLowerCase() === entry.name.toLowerCase());
+    let mergedItemId = null;
+    let mergedPrevQty = null;
+    let createdItemId = null;
+    if (idx >= 0) {
+      mergedItemId = items[idx].id;
+      mergedPrevQty = items[idx].qty;
+      const addQty = entry.qty > 0 ? entry.qty : 1;
+      setItems((prev) => prev.map((i) => (i.id === mergedItemId ? { ...i, qty: i.qty + addQty } : i)));
+    } else {
       const { addedAt: _a, manual: _m, ...item } = entry;
-      return [...prev, { ...item, qty: entry.qty > 0 ? entry.qty : 1 }];
-    });
+      createdItemId = item.id;
+      setItems((prev) => [...prev, { ...item, qty: entry.qty > 0 ? entry.qty : 1 }]);
+    }
     setActiveZone(entry.zone);
+    setRestoredShopping({ entry, mergedItemId, mergedPrevQty, createdItemId });
+    clearTimeout(shoppingUndoTimerRef.current);
+    shoppingUndoTimerRef.current = setTimeout(() => setRestoredShopping(null), 5000);
+  };
+
+  // Rückgängig für "Aus Einkaufsliste in den Bestand übernommen": bei einem
+  // neu angelegten Artikel wird er wieder entfernt, bei einer Mengen-
+  // Zusammenführung die vorherige Menge wiederhergestellt - der
+  // Einkaufslisten-Eintrag kehrt in beiden Fällen zurück.
+  const undoRestoreFromShopping = () => {
+    if (!restoredShopping) return;
+    const { entry, mergedItemId, mergedPrevQty, createdItemId } = restoredShopping;
+    if (createdItemId) {
+      setItems((prev) => prev.filter((i) => i.id !== createdItemId));
+    } else if (mergedItemId) {
+      setItems((prev) => prev.map((i) => (i.id === mergedItemId ? { ...i, qty: mergedPrevQty } : i)));
+    }
+    setShopping((prev) => (prev.some((s) => s.id === entry.id) ? prev : [...prev, entry]));
+    setRestoredShopping(null);
+    clearTimeout(shoppingUndoTimerRef.current);
   };
 
   const checkAndRestore = (entry) => {
@@ -941,6 +974,15 @@ export default function App() {
           message={tr(lang, 'favorites.toastAllCleared', { count: deletedFavorites.length })}
           actionLabel={tr(lang, 'app.undo')}
           onAction={undoFavoritesDelete}
+        />
+      )}
+
+      {!deletedItem && !deletedZone && !deletedFavorites && restoredShopping && (
+        <Toast
+          t={t}
+          message={tr(lang, 'app.toastAddedFromShopping', { name: restoredShopping.entry.name })}
+          actionLabel={tr(lang, 'app.undo')}
+          onAction={undoRestoreFromShopping}
         />
       )}
 

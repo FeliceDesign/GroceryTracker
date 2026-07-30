@@ -33,6 +33,7 @@ const DE = {
     hideButtonsAria: 'Buttons ausblenden', showButtonsAria: 'Buttons einblenden',
     toastRemoved: '„{{name}}" entfernt · auf Einkaufsliste',
     toastZoneRemoved: 'Lagerort „{{name}}" entfernt', undo: 'Rückgängig',
+    toastAddedFromShopping: '„{{name}}" zum Bestand hinzugefügt',
   },
   search: { placeholder: 'Artikel suchen (alle Lagerorte)…', resetAria: 'Suche zurücksetzen' },
   expiringBanner: {
@@ -349,6 +350,7 @@ const EN = {
     hideButtonsAria: 'Hide buttons', showButtonsAria: 'Show buttons',
     toastRemoved: '"{{name}}" removed · added to shopping list',
     toastZoneRemoved: 'Location "{{name}}" removed', undo: 'Undo',
+    toastAddedFromShopping: '"{{name}}" added to inventory',
   },
   search: { placeholder: 'Search items (all locations)…', resetAria: 'Reset search' },
   expiringBanner: {
