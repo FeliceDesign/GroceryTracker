@@ -172,6 +172,7 @@ const DE = {
     guides: 'Ratgeber',
     shelfLifeTitle: 'Haltbarkeits-Ratgeber', shelfLifeSub: 'Geöffnet, ungeöffnet, tiefgefroren',
     produceTitle: 'Obst-&-Gemüse-Ratgeber', produceSub: 'Kühlen, Ethylen, Verpackung',
+    spiceTitle: 'Gewürz-Ratgeber', spiceSub: 'Passt zu, Haltbarkeit, Lagerung',
     data: 'Daten', backupTitle: 'Backup, Export & Import', backupSub: '{{count}} Artikel · Sichern, Teilen, Bestandsliste',
     language: 'Sprache', footer: 'Stock-Tracker · lokal gespeichert auf diesem Gerät',
   },
@@ -285,6 +286,13 @@ const DE = {
     packaging: 'Verpackung:', nothingFound: 'Nichts gefunden.', storage: 'Lagerung: {{value}}',
     ethyleneHigh: 'hoch', ethyleneMedium: 'mittel', ethyleneLow: 'gering', ethyleneNone: 'keins',
     categoryAll: 'Alle', categoryObst: 'Obst', categoryGemuese: 'Gemüse', categoryKraeuter: 'Kräuter',
+  },
+  spices: {
+    title: 'Gewürz-Ratgeber', subtitle: 'Passt zu, Haltbarkeit, Lagerung', searchPlaceholder: 'Gewürz oder Gericht suchen…',
+    hint: 'Die "Passt zu"-Vorschläge sind Erfahrungswissen aus der Küchenpraxis, keine feste Regel. Die Haltbarkeitsangaben sind recherchierte Richtwerte bei kühler, dunkler, luftdichter Lagerung.',
+    categoryAll: 'Alle', categoryWarm: 'Wärmend', categoryAsia: 'Asiatisch', categoryScharf: 'Scharf', categoryMediterran: 'Mediterran',
+    pairsWith: 'Passt zu', shelfLife: 'Haltbarkeit', whole: 'ganz', ground: 'gemahlen',
+    nothingFound: 'Nichts gefunden.',
   },
   scanCapture: {
     dateRecognized: '✓ Datum erkannt.',
@@ -480,6 +488,7 @@ const EN = {
     guides: 'Guides',
     shelfLifeTitle: 'Shelf life guide', shelfLifeSub: 'Opened, unopened, frozen',
     produceTitle: 'Fruit & veg storage guide', produceSub: 'Cooling, ethylene, packaging',
+    spiceTitle: 'Spice guide', spiceSub: 'Pairing, shelf life, storage',
     data: 'Data', backupTitle: 'Backup, export & import', backupSub: '{{count}} items · Save, share, inventory list',
     language: 'Language', footer: 'Stock-Tracker · stored locally on this device',
   },
@@ -593,6 +602,13 @@ const EN = {
     packaging: 'Packaging:', nothingFound: 'Nothing found.', storage: 'Storage: {{value}}',
     ethyleneHigh: 'high', ethyleneMedium: 'medium', ethyleneLow: 'low', ethyleneNone: 'none',
     categoryAll: 'All', categoryObst: 'Fruit', categoryGemuese: 'Vegetables', categoryKraeuter: 'Herbs',
+  },
+  spices: {
+    title: 'Spice guide', subtitle: 'Pairing, shelf life, storage', searchPlaceholder: 'Search spice or dish…',
+    hint: 'The "pairs with" suggestions are cooking experience, not a strict rule. The shelf-life figures are researched guidelines assuming cool, dark, airtight storage.',
+    categoryAll: 'All', categoryWarm: 'Warm', categoryAsia: 'Asian', categoryScharf: 'Spicy', categoryMediterran: 'Mediterranean',
+    pairsWith: 'Pairs with', shelfLife: 'Shelf life', whole: 'whole', ground: 'ground',
+    nothingFound: 'Nothing found.',
   },
   scanCapture: {
     dateRecognized: '✓ Date recognized.',

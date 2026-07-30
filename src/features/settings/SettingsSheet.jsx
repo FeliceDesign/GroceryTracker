@@ -1,4 +1,4 @@
-import { Boxes, Tags, Utensils, Clock, ListOrdered, Sprout, Download, Sun, Moon, SunMoon, LayoutGrid, SlidersHorizontal, AlertTriangle, Languages, Star } from 'lucide-react';
+import { Boxes, Tags, Utensils, Clock, ListOrdered, Sprout, ChefHat, Download, Sun, Moon, SunMoon, LayoutGrid, SlidersHorizontal, AlertTriangle, Languages, Star } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { Row } from '../../components/Row.jsx';
@@ -15,7 +15,7 @@ const sectionLabel = (t) => ({
 // Scroll-Bereich.
 export function SettingsSheet({
   open, onClose, t, lang = 'de', onSetLang, themeOverride, setThemeOverride,
-  onManageZones, onManageCategories, onManageFoods, onManageFavorites, onOpenShelfLife, onOpenExpiringView, onOpenProduceStorage,
+  onManageZones, onManageCategories, onManageFoods, onManageFavorites, onOpenShelfLife, onOpenExpiringView, onOpenProduceStorage, onOpenSpiceGuide,
   onOpenLayout, onOpenBehavior, onOpenWarnSettings, onOpenBackup,
   stats,
 }) {
@@ -101,6 +101,13 @@ export function SettingsSheet({
           label={tr(lang, 'settings.produceTitle')}
           sub={tr(lang, 'settings.produceSub')}
           onClick={onOpenProduceStorage}
+        />
+        <Row
+          t={t}
+          icon={<ChefHat size={19} />}
+          label={tr(lang, 'settings.spiceTitle')}
+          sub={tr(lang, 'settings.spiceSub')}
+          onClick={onOpenSpiceGuide}
         />
       </div>
 

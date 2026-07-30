@@ -43,6 +43,7 @@ import { WarnSheet } from './features/settings/WarnSheet.jsx';
 import { ManageFoodsSheet } from './features/macros/ManageFoodsSheet.jsx';
 import { ShelfLifeSheet } from './features/macros/ShelfLifeSheet.jsx';
 import { ProduceStorageSheet } from './features/macros/ProduceStorageSheet.jsx';
+import { SpiceGuideSheet } from './features/macros/SpiceGuideSheet.jsx';
 import { DetailItemSheet } from './features/detail/DetailItemSheet.jsx';
 
 const newId = (prefix = 'i') => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -115,6 +116,7 @@ export default function App() {
   const [foodsFromFavorites, setFoodsFromFavorites] = useState(false);
   const [showShelfLife, setShowShelfLife] = useState(false);
   const [showProduceStorage, setShowProduceStorage] = useState(false);
+  const [showSpiceGuide, setShowSpiceGuide] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
   const [showLayout, setShowLayout] = useState(false);
   const [showBehavior, setShowBehavior] = useState(false);
@@ -970,6 +972,7 @@ export default function App() {
         onOpenShelfLife={() => { setShowSettings(false); setShowShelfLife(true); }}
         onOpenExpiringView={() => { setShowSettings(false); setExpiringView(true); setSearch(''); }}
         onOpenProduceStorage={() => { setShowSettings(false); setShowProduceStorage(true); }}
+        onOpenSpiceGuide={() => { setShowSettings(false); setShowSpiceGuide(true); }}
         onOpenBackup={() => { setShowSettings(false); setShowBackup(true); }}
         onOpenLayout={() => { setShowSettings(false); setShowLayout(true); }}
         onOpenBehavior={() => { setShowSettings(false); setShowBehavior(true); }}
@@ -1072,6 +1075,7 @@ export default function App() {
 
       <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} lang={lang} />
       <ProduceStorageSheet open={showProduceStorage} onClose={() => setShowProduceStorage(false)} t={t} lang={lang} />
+      <SpiceGuideSheet open={showSpiceGuide} onClose={() => setShowSpiceGuide(false)} t={t} lang={lang} />
       <BackupSheet
         open={showBackup} onClose={() => setShowBackup(false)} t={t} dark={dark} lang={lang} zones={zones} items={items} shopping={shopping}
         stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
