@@ -253,17 +253,24 @@ export default function App() {
   // den beim Markieren gespeicherten Lagerort, mit der am Favoriten
   // hinterlegten Standard-Menge (Default 1).
   const addFavoriteToInventory = (fav) => {
+    // Favoriten ohne Lagerort (z.B. per Stern aus den Stammdaten angelegt,
+    // ohne Bezug zu einem physischen Artikel) fallen auf die aktive Zone
+    // zurück - ein Artikel ohne Lagerort/Kategorie würde sonst die Suche
+    // zum Absturz bringen (i.category.toLowerCase() auf undefined).
+    const favZone = fav.zone || activeZone;
+    const favCategory = fav.category || categories[0];
+    const favUnit = fav.unit || 'stk';
     const favQty = fav.qty ?? 1;
     setItems((prev) => {
-      const idx = prev.findIndex((i) => i.zone === fav.zone && i.unit === fav.unit && i.name.toLowerCase() === fav.name.toLowerCase());
+      const idx = prev.findIndex((i) => i.zone === favZone && i.unit === favUnit && i.name.toLowerCase() === fav.name.toLowerCase());
       if (idx >= 0) {
         const next = [...prev];
         next[idx] = { ...next[idx], qty: next[idx].qty + favQty };
         return next;
       }
-      return [...prev, { id: newId(), name: fav.name, zone: fav.zone, category: fav.category, qty: favQty, unit: fav.unit, mhd: null }];
+      return [...prev, { id: newId(), name: fav.name, zone: favZone, category: favCategory, qty: favQty, unit: favUnit, mhd: null }];
     });
-    setActiveZone(fav.zone);
+    setActiveZone(favZone);
   };
 
   // Favorit auf die Einkaufsliste setzen - trägt Lagerort/Kategorie/Einheit/
@@ -697,7 +704,7 @@ export default function App() {
     const q = search.trim().toLowerCase();
     if (!q || !items) return null;
     return items
-      .filter((i) => i.name.toLowerCase().includes(q) || i.category.toLowerCase().includes(q))
+      .filter((i) => i.name.toLowerCase().includes(q) || (i.category || '').toLowerCase().includes(q))
       .sort((a, b) => a.name.localeCompare(b.name, 'de'));
   }, [items, search]);
 
