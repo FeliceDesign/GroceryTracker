@@ -4,6 +4,7 @@ import { ColorSwatches } from '../../components/ColorSwatches.jsx';
 import { Toggle } from '../../components/Toggle.jsx';
 import { SettingRow } from '../../components/SettingRow.jsx';
 import { MHD_COLOR_CHOICES } from '../../lib/colors.js';
+import { levelColor } from '../../lib/date.js';
 import { btnCircle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 
@@ -53,7 +54,7 @@ export function WarnSheet({ open, onClose, t, lang = 'de', warn, onUpdateWarn, o
             suffix={dayWord(warn.yellowDays)}
             onChange={(v) => onUpdateWarn({ yellowDays: v })}
           />
-          <ColorSwatches t={t} lang={lang} allowAuto choices={MHD_COLOR_CHOICES} value={warn.colorSoon} onChange={(c) => onUpdateWarn({ colorSoon: c })}
+          <ColorSwatches t={t} lang={lang} allowAuto autoColor={levelColor('soon', t)} choices={MHD_COLOR_CHOICES} value={warn.colorSoon} onChange={(c) => onUpdateWarn({ colorSoon: c })}
             customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); onUpdateWarn({ colorSoon: c }); }} onRemoveCustom={onRemoveCustomColor}
           />
         </div>
@@ -73,7 +74,7 @@ export function WarnSheet({ open, onClose, t, lang = 'de', warn, onUpdateWarn, o
             onChange={(v) => onUpdateWarn({ orangeDays: v })}
           />
           <ColorSwatches
-            t={t} lang={lang} allowAuto choices={MHD_COLOR_CHOICES} value={warn.colorCritical} onChange={(c) => onUpdateWarn({ colorCritical: c })}
+            t={t} lang={lang} allowAuto autoColor={levelColor('critical', t)} choices={MHD_COLOR_CHOICES} value={warn.colorCritical} onChange={(c) => onUpdateWarn({ colorCritical: c })}
             customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); onUpdateWarn({ colorCritical: c }); }} onRemoveCustom={onRemoveCustomColor}
           />
         </div>
@@ -84,7 +85,7 @@ export function WarnSheet({ open, onClose, t, lang = 'de', warn, onUpdateWarn, o
             {tr(lang, 'warn.expiredHint')}
           </div>
           <ColorSwatches
-            t={t} lang={lang} allowAuto choices={MHD_COLOR_CHOICES} value={warn.colorExpired} onChange={(c) => onUpdateWarn({ colorExpired: c })}
+            t={t} lang={lang} allowAuto autoColor={levelColor('expired', t)} choices={MHD_COLOR_CHOICES} value={warn.colorExpired} onChange={(c) => onUpdateWarn({ colorExpired: c })}
             customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); onUpdateWarn({ colorExpired: c }); }} onRemoveCustom={onRemoveCustomColor}
           />
         </div>

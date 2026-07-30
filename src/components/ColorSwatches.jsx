@@ -6,11 +6,15 @@ import { tr } from '../lib/i18n.js';
 // (Lagerorte, MHD-Warnstufen, …). `choices` ist ein Array von Hex-Werten.
 // `allowAuto` (+ `t` fürs Theme) blendet vorne einen zusätzlichen Kreis ein,
 // der `value === null` repräsentiert ("keine eigene Farbe, Theme-Standard").
+// `autoColor` (optional): die tatsächlich wirksame Standardfarbe (z.B.
+// levelColor('soon', t) für die MHD-Warnstufen) - füllt den Auto-Kreis damit,
+// statt ihn neutral/grau darzustellen, damit sichtbar ist, welche Farbe bei
+// "Automatisch" wirklich verwendet wird.
 // `customChoices` (+ `onAddCustom`/`onRemoveCustom`) ergänzt die feste
 // Palette um vom Nutzer selbst hinzugefügte Farben: ein "+"-Kreis öffnet den
 // nativen Farbwähler (`input[type=color]`), eigene Farben tragen zusätzlich
 // ein kleines "x" zum Entfernen (die feste Palette bleibt unantastbar).
-export function ColorSwatches({ choices, customChoices = [], value, onChange, allowAuto, onAddCustom, onRemoveCustom, t, lang = 'de' }) {
+export function ColorSwatches({ choices, customChoices = [], value, onChange, allowAuto, autoColor, onAddCustom, onRemoveCustom, t, lang = 'de' }) {
   const colorInputRef = useRef(null);
 
   return (
@@ -23,13 +27,15 @@ export function ColorSwatches({ choices, customChoices = [], value, onChange, al
           aria-pressed={value == null}
           style={{
             width: 26, height: 26, borderRadius: '50%', cursor: 'pointer',
-            background: t ? t.cardAlt : '#e5e5e5',
-            border: value == null ? `3px solid ${t ? t.textMuted : '#888'}` : '3px solid transparent',
-            boxShadow: value == null ? `0 0 0 2px ${t ? t.textMuted : '#888'}` : 'none',
+            background: autoColor || (t ? t.cardAlt : '#e5e5e5'),
+            border: value == null ? '3px solid rgba(255,255,255,0.9)' : '3px solid transparent',
+            boxShadow: value == null ? `0 0 0 2px ${autoColor || (t ? t.textMuted : '#888')}` : 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          {value == null ? <Check size={13} color={t ? t.textMuted : '#888'} strokeWidth={3} /> : <SunMoon size={13} color={t ? t.textMuted : '#888'} />}
+          {value == null
+            ? <Check size={13} color={autoColor ? '#fff' : (t ? t.textMuted : '#888')} strokeWidth={3} />
+            : <SunMoon size={13} color={autoColor ? '#fff' : (t ? t.textMuted : '#888')} />}
         </button>
       )}
 
