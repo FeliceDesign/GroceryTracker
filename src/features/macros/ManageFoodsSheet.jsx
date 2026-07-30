@@ -214,6 +214,21 @@ export function ManageFoodsSheet({
                     : (hasFoodData(food) ? tr(lang, 'foods.ingredientsPresent') : tr(lang, 'foods.noValues'))}
                 </span>
               </button>
+              {onToggleFavorite && (
+                <button
+                  type="button"
+                  onClick={() => onToggleFavorite({ name: food.name })}
+                  aria-pressed={isFavorite?.(food.name)}
+                  aria-label={tr(lang, isFavorite?.(food.name) ? 'detail.unfavoriteAria' : 'detail.favoriteAria')}
+                  style={{
+                    flexShrink: 0, width: 36, height: 36, borderRadius: 10, border: 'none', cursor: 'pointer',
+                    background: 'transparent', color: isFavorite?.(food.name) ? t.warning : t.textFaint,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <Star size={16} fill={isFavorite?.(food.name) ? 'currentColor' : 'none'} />
+                </button>
+              )}
               {hasMacros(food) && (
                 <button
                   type="button"
