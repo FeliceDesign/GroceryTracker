@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Minus, Trash2, Pencil, Copy, Check, Utensils, List, PackageOpen, Star } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Plus, Minus, Trash2, Pencil, Copy, Check, Utensils, List, PackageOpen, Star, ChevronDown, ChevronRight } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { ShelfLifeDetails } from '../macros/ShelfLifeDetails.jsx';
@@ -9,7 +9,9 @@ import { ProduceStorageDetails } from '../macros/ProduceStorageDetails.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel, formatDateDisplay } from '../../lib/date.js';
 import { MACRO_FIELDS, fmtNum, unsaturatedFat, hasMacros, basisLabel, copyMacros, copyToClipboard } from '../../lib/macros.js';
-import { openedDaysFor, openedUntil } from '../../lib/openedShelfLife.js';
+import { openedDaysFor, openedUntil, shelfLifeInfo } from '../../lib/openedShelfLife.js';
+import { unopenedInfo } from '../../lib/unopenedShelfLife.js';
+import { frozenInfo } from '../../lib/frozenShelfLife.js';
 import { btnCircle, primaryButtonStyle, makeInputStyle, pillStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 
@@ -30,6 +32,22 @@ export function DetailItemSheet({
   const [copied, setCopied] = useState(false);
   const [copiedIng, setCopiedIng] = useState(false);
   const [shelfTab, setShelfTab] = useState('opened');
+  // Standardmäßig eingeklappt, wenn in keinem der drei Tabs überhaupt Daten
+  // vorliegen (Regel-Treffer oder eigener Override).
+  const shelfLifeHasData = !!item && (
+    openedDaysFor(item.name, food) != null
+    || shelfLifeInfo(item.name) != null
+    || unopenedInfo(item.name) != null
+    || frozenInfo(item.name) != null
+  );
+  const [shelfSectionOpen, setShelfSectionOpen] = useState(shelfLifeHasData);
+  // Sheet bleibt beim Schließen gemountet (nur `return null` unten) - der
+  // useState-Default würde sonst nur beim allerersten Öffnen greifen. Bei
+  // jedem neuen Artikel den Auf/Zu-Zustand frisch aus den Daten ableiten.
+  useEffect(() => {
+    if (open) setShelfSectionOpen(shelfLifeHasData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, item?.id]);
   if (!open || !item) return null;
   const inputStyle = makeInputStyle(t);
   const shelfTabs = SHELF_TABS(lang);
@@ -241,19 +259,35 @@ export function DetailItemSheet({
         </div>
       )}
 
-      {/* Haltbarkeit: Geöffnet / Ungeöffnet / Tiefgefroren */}
+      {/* Haltbarkeit: Geöffnet / Ungeöffnet / Tiefgefroren – ein-/ausklappbar,
+          standardmäßig eingeklappt, wenn nirgends Daten vorliegen. */}
       <div style={section}>
-        <div style={secLabel}>{tr(lang, 'detail.shelfLife')}</div>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-          {shelfTabs.map((tab) => (
-            <button key={tab.id} type="button" onClick={() => setShelfTab(tab.id)} style={pillStyle(shelfTab === tab.id, t)}>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        {shelfTab === 'opened' && <ShelfLifeDetails name={item.name} food={food} zone={zone} t={t} lang={lang} />}
-        {shelfTab === 'unopened' && <UnopenedShelfLifeDetails name={item.name} t={t} lang={lang} />}
-        {shelfTab === 'frozen' && <FrozenShelfLifeDetails name={item.name} t={t} lang={lang} />}
+        <button
+          type="button"
+          onClick={() => setShelfSectionOpen((v) => !v)}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+            background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
+            marginBottom: shelfSectionOpen ? 8 : 0,
+          }}
+        >
+          <span style={{ ...secLabel, marginBottom: 0 }}>{tr(lang, 'detail.shelfLife')}</span>
+          {shelfSectionOpen ? <ChevronDown size={16} color={t.textFaint} /> : <ChevronRight size={16} color={t.textFaint} />}
+        </button>
+        {shelfSectionOpen && (
+          <>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              {shelfTabs.map((tab) => (
+                <button key={tab.id} type="button" onClick={() => setShelfTab(tab.id)} style={pillStyle(shelfTab === tab.id, t)}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            {shelfTab === 'opened' && <ShelfLifeDetails name={item.name} food={food} zone={zone} t={t} lang={lang} />}
+            {shelfTab === 'unopened' && <UnopenedShelfLifeDetails name={item.name} t={t} lang={lang} />}
+            {shelfTab === 'frozen' && <FrozenShelfLifeDetails name={item.name} t={t} lang={lang} />}
+          </>
+        )}
       </div>
     </Modal>
   );
