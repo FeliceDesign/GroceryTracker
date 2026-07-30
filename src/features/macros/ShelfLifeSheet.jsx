@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Search, Snowflake, Home, ThermometerSun } from 'lucide-react';
+import { Search, Snowflake, Home, ThermometerSun, Refrigerator, Droplets, Microwave, CookingPot } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { OPENED_SHELF_RULES, storageLabel } from '../../lib/openedShelfLife.js';
 import { UNOPENED_SHELF_RULES } from '../../lib/unopenedShelfLife.js';
 import { FROZEN_SHELF_RULES } from '../../lib/frozenShelfLife.js';
+import { THAWING_RULES } from '../../lib/thawing.js';
 import { makeInputStyle, pillStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 
@@ -11,6 +12,14 @@ function StorageIcon({ storage, size = 14, color }) {
   if (storage === 'room') return <Home size={size} color={color} />;
   if (storage === 'both') return <ThermometerSun size={size} color={color} />;
   return <Snowflake size={size} color={color} />;
+}
+
+function MethodIcon({ method, size = 14, color }) {
+  if (method === 'coldWater') return <Droplets size={size} color={color} />;
+  if (method === 'microwave') return <Microwave size={size} color={color} />;
+  if (method === 'room') return <Home size={size} color={color} />;
+  if (method === 'direct') return <CookingPot size={size} color={color} />;
+  return <Refrigerator size={size} color={color} />;
 }
 
 function formatExtraDays(days, lang) {
@@ -23,6 +32,7 @@ const TABS = (lang) => [
   { id: 'opened', label: tr(lang, 'shelfLife.tabOpened') },
   { id: 'unopened', label: tr(lang, 'shelfLife.tabUnopened') },
   { id: 'frozen', label: tr(lang, 'shelfLife.tabFrozen') },
+  { id: 'thawing', label: tr(lang, 'shelfLife.tabThawing') },
 ];
 
 const categoryHeaderStyle = (t) => ({
@@ -40,7 +50,7 @@ export function ShelfLifeSheet({ open, onClose, t, lang = 'de' }) {
   const inputStyle = makeInputStyle(t);
   const tabs = TABS(lang);
 
-  const rules = tab === 'unopened' ? UNOPENED_SHELF_RULES : tab === 'frozen' ? FROZEN_SHELF_RULES : OPENED_SHELF_RULES;
+  const rules = tab === 'unopened' ? UNOPENED_SHELF_RULES : tab === 'frozen' ? FROZEN_SHELF_RULES : tab === 'thawing' ? THAWING_RULES : OPENED_SHELF_RULES;
 
   const list = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -59,12 +69,13 @@ export function ShelfLifeSheet({ open, onClose, t, lang = 'de' }) {
     return Object.entries(byCat).sort(([a], [b]) => a.localeCompare(b, 'de'));
   }, [list]);
 
-  const subtitle = tab === 'unopened' ? tr(lang, 'shelfLife.subUnopened') : tab === 'frozen' ? tr(lang, 'shelfLife.subFrozen') : tr(lang, 'shelfLife.subOpened');
+  const subtitle = tab === 'unopened' ? tr(lang, 'shelfLife.subUnopened') : tab === 'frozen' ? tr(lang, 'shelfLife.subFrozen') : tab === 'thawing' ? tr(lang, 'shelfLife.subThawing') : tr(lang, 'shelfLife.subOpened');
 
   const catLabel = (r) => (lang === 'en' && r.category_en ? r.category_en : r.category) || 'Other';
   const rLabel = (r) => (lang === 'en' && r.label_en ? r.label_en : r.label);
   const rReason = (r) => (lang === 'en' && r.reason_en ? r.reason_en : r.reason);
   const rPrep = (r) => (lang === 'en' && r.prep_en !== undefined ? r.prep_en : r.prep);
+  const rTime = (r) => (lang === 'en' && r.time_en ? r.time_en : r.time);
 
   return (
     <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'shelfLife.title')} subtitle={subtitle}>
@@ -96,6 +107,11 @@ export function ShelfLifeSheet({ open, onClose, t, lang = 'de' }) {
       {tab === 'frozen' && (
         <div style={{ fontSize: 11.5, color: t.textFaint, lineHeight: 1.5, marginBottom: 12 }}>
           {tr(lang, 'shelfLife.hintFrozen')}
+        </div>
+      )}
+      {tab === 'thawing' && (
+        <div style={{ fontSize: 11.5, color: t.textFaint, lineHeight: 1.5, marginBottom: 12 }}>
+          {tr(lang, 'shelfLife.hintThawing')}
         </div>
       )}
 
@@ -145,6 +161,17 @@ export function ShelfLifeSheet({ open, onClose, t, lang = 'de' }) {
                       <b>{tr(lang, 'shelfLife.prep')}</b> {rPrep(r)}
                     </div>
                   )}
+                </div>
+              ))}
+
+              {tab === 'thawing' && entries.map((r) => (
+                <div key={r.label} style={{ background: t.cardAlt, borderRadius: 12, padding: '11px 13px' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>{rLabel(r)}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 11.5, fontWeight: 700, color: t.textMuted }}>
+                    <MethodIcon method={r.method} color={t.textMuted} />
+                    {tr(lang, `thawing.method${r.method.charAt(0).toUpperCase()}${r.method.slice(1)}`)} · {rTime(r)}
+                  </div>
+                  <div style={{ fontSize: 12, color: t.textFaint, marginTop: 5, lineHeight: 1.45 }}>{rReason(r)}</div>
                 </div>
               ))}
             </div>

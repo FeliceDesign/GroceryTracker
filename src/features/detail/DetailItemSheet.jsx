@@ -5,6 +5,7 @@ import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { ShelfLifeDetails } from '../macros/ShelfLifeDetails.jsx';
 import { UnopenedShelfLifeDetails } from '../macros/UnopenedShelfLifeDetails.jsx';
 import { FrozenShelfLifeDetails } from '../macros/FrozenShelfLifeDetails.jsx';
+import { ThawingDetails } from '../macros/ThawingDetails.jsx';
 import { ProduceStorageDetails } from '../macros/ProduceStorageDetails.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel, formatDateDisplay } from '../../lib/date.js';
@@ -12,6 +13,7 @@ import { MACRO_FIELDS, fmtNum, unsaturatedFat, hasMacros, basisLabel, copyMacros
 import { openedDaysFor, openedUntil, shelfLifeInfo } from '../../lib/openedShelfLife.js';
 import { unopenedInfo } from '../../lib/unopenedShelfLife.js';
 import { frozenInfo } from '../../lib/frozenShelfLife.js';
+import { thawInfo } from '../../lib/thawing.js';
 import { btnCircle, primaryButtonStyle, makeInputStyle, pillStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 
@@ -19,6 +21,7 @@ const SHELF_TABS = (lang) => [
   { id: 'opened', label: tr(lang, 'detail.tabOpened') },
   { id: 'unopened', label: tr(lang, 'detail.tabUnopened') },
   { id: 'frozen', label: tr(lang, 'detail.tabFrozen') },
+  { id: 'thawing', label: tr(lang, 'detail.tabThawing') },
 ];
 
 // Schreibgeschützte Detail-Ansicht eines Artikels (Nährwerte, Zutaten,
@@ -39,6 +42,7 @@ export function DetailItemSheet({
     || shelfLifeInfo(item.name) != null
     || unopenedInfo(item.name) != null
     || frozenInfo(item.name) != null
+    || thawInfo(item.name) != null
   );
   const [shelfSectionOpen, setShelfSectionOpen] = useState(shelfLifeHasData);
   // Sheet bleibt beim Schließen gemountet (nur `return null` unten) - der
@@ -286,6 +290,7 @@ export function DetailItemSheet({
             {shelfTab === 'opened' && <ShelfLifeDetails name={item.name} food={food} zone={zone} t={t} lang={lang} />}
             {shelfTab === 'unopened' && <UnopenedShelfLifeDetails name={item.name} t={t} lang={lang} />}
             {shelfTab === 'frozen' && <FrozenShelfLifeDetails name={item.name} t={t} lang={lang} />}
+            {shelfTab === 'thawing' && <ThawingDetails name={item.name} t={t} lang={lang} />}
           </>
         )}
       </div>
