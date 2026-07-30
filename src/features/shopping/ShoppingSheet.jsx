@@ -12,7 +12,10 @@ const UNITS = ['stk', 'g', 'ml'];
 // Eine Einkaufslisten-Zeile mit aufklappbarem Editor (Name/Menge/Einheit/
 // Lagerort) - gleiches Stift-Muster wie in der Favoriten-Verwaltung, damit
 // sich Einträge korrigieren lassen statt löschen+neu-eintippen zu müssen.
-function ShoppingRow({ entry, zone, zones, dark, t, lang, checked, onCheck, onRemove, onUpdate }) {
+// Übernehmen in den Bestand läuft über Tap auf den Eintrag selbst statt
+// einen eigenen Button; der Lösch-Button (X) blendet sich nur ein, wenn
+// `showDelete` (Umschalter oberhalb der Liste) aktiv ist.
+function ShoppingRow({ entry, zone, zones, dark, t, lang, checked, onCheck, onRemove, onUpdate, showDelete }) {
   const pal = zone ? zonePalette(zone.color, dark) : null;
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(entry.name);
@@ -43,24 +46,32 @@ function ShoppingRow({ entry, zone, zones, dark, t, lang, checked, onCheck, onRe
           onClick={() => onCheck(entry)}
           aria-label={tr(lang, 'shopping.checkAria', { name: entry.name })}
           style={{
-            flexShrink: 0, width: 30, height: 30, borderRadius: '50%', cursor: 'pointer',
-            border: `2px solid ${checked ? t.success : t.border}`,
-            background: checked ? t.success : 'transparent',
-            color: checked ? '#fff' : 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12,
+            background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0,
           }}
         >
-          <Check size={16} strokeWidth={3} />
-        </button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14.5, color: t.text, fontWeight: 500, overflowWrap: 'anywhere' }}>{entry.name}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 1, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 11, color: pal ? pal.accent : t.textFaint, fontWeight: 700 }}>
-              {zone ? `${zone.emoji} ${zone.label}` : tr(lang, 'shopping.free')}
+          <span
+            aria-hidden="true"
+            style={{
+              flexShrink: 0, width: 30, height: 30, borderRadius: '50%',
+              border: `2px solid ${checked ? t.success : t.border}`,
+              background: checked ? t.success : 'transparent',
+              color: checked ? '#fff' : 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <Check size={16} strokeWidth={3} />
+          </span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: 'block', fontSize: 14.5, color: t.text, fontWeight: 500, overflowWrap: 'anywhere' }}>{entry.name}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 1, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, color: pal ? pal.accent : t.textFaint, fontWeight: 700 }}>
+                {zone ? `${zone.emoji} ${zone.label}` : tr(lang, 'shopping.free')}
+              </span>
+              <span style={{ fontSize: 11, color: t.textFaint }}>· {unit === 'stk' ? `${qty}x` : `${qty}${unit}`}</span>
             </span>
-            <span style={{ fontSize: 11, color: t.textFaint }}>· {unit === 'stk' ? `${qty}x` : `${qty}${unit}`}</span>
-          </div>
-        </div>
+          </span>
+        </button>
         <button
           type="button"
           onClick={openEditor}
@@ -69,9 +80,11 @@ function ShoppingRow({ entry, zone, zones, dark, t, lang, checked, onCheck, onRe
         >
           <Pencil size={14} />
         </button>
-        <button type="button" onClick={() => onRemove(entry.id)} style={btnCircle('transparent', t.textFaint, 30)} aria-label={tr(lang, 'shopping.removeAria')}>
-          <X size={15} />
-        </button>
+        {showDelete && (
+          <button type="button" onClick={() => onRemove(entry.id)} style={btnCircle('transparent', t.textFaint, 30)} aria-label={tr(lang, 'shopping.removeAria')}>
+            <X size={15} />
+          </button>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateRows: editing ? '1fr' : '0fr', transition: 'grid-template-rows 0.2s ease' }}>
@@ -172,13 +185,16 @@ export function ShoppingSheet({
 }) {
   const inputStyle = makeInputStyle(t);
   const [confirmClear, setConfirmClear] = useState(false);
+  // Lösch-Buttons pro Zeile bleiben standardmäßig ausgeblendet (weniger
+  // Buttons in der Zeile) und erscheinen erst, wenn "Entfernen" antippt wird.
+  const [showDeleteButtons, setShowDeleteButtons] = useState(false);
   const subtitle = shopping.length === 0
     ? tr(lang, 'shopping.allDone')
     : (showCount ? `${shopping.length} ${tr(lang, 'shopping.open')}` : tr(lang, 'shopping.open'));
 
-  // Bestätigung zurücksetzen, sobald das Sheet auf-/zugeht oder die Liste leer wird
+  // Bestätigung/Lösch-Modus zurücksetzen, sobald das Sheet auf-/zugeht oder die Liste leer wird
   useEffect(() => {
-    if (!open || shopping.length === 0) setConfirmClear(false);
+    if (!open || shopping.length === 0) { setConfirmClear(false); setShowDeleteButtons(false); }
   }, [open, shopping.length]);
 
   return (
@@ -205,7 +221,17 @@ export function ShoppingSheet({
       </div>
 
       {shopping.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 16, marginTop: 12 }}>
+          <button
+            type="button"
+            onClick={() => setShowDeleteButtons((v) => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent',
+              color: showDeleteButtons ? t.text : t.textMuted, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', padding: '4px 2px',
+            }}
+          >
+            <X size={14} /> {showDeleteButtons ? tr(lang, 'shopping.doneRemoving') : tr(lang, 'shopping.enableRemove')}
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -242,6 +268,7 @@ export function ShoppingSheet({
               onCheck={onCheck}
               onRemove={onRemove}
               onUpdate={onUpdate}
+              showDelete={showDeleteButtons}
             />
           ))}
         </div>

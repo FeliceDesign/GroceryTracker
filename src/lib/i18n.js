@@ -79,6 +79,7 @@ const DE = {
     empty: 'Deine Einkaufsliste ist leer.', checkAria: '{{name}} abhaken', free: 'frei',
     removeAria: 'Von der Liste entfernen', favoritesLabel: 'Favoriten',
     editAria: '{{name}} bearbeiten', nameAria: 'Name von {{name}}', zoneLabel: 'Lagerort',
+    enableRemove: 'Entfernen', doneRemoving: 'Fertig',
   },
   favorites: {
     title: 'Favoriten', subtitle: '{{count}} Schnellzugriffe',
@@ -408,6 +409,7 @@ const EN = {
     empty: 'Your shopping list is empty.', checkAria: 'Check off {{name}}', free: 'unassigned',
     removeAria: 'Remove from list', favoritesLabel: 'Favorites',
     editAria: 'Edit {{name}}', nameAria: 'Name of {{name}}', zoneLabel: 'Location',
+    enableRemove: 'Remove', doneRemoving: 'Done',
   },
   favorites: {
     title: 'Favorites', subtitle: '{{count}} quick picks',
