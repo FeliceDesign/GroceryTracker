@@ -908,6 +908,12 @@ export default function App() {
             extraHandlers: addLongPress.handlers,
             holdProgress: addLongPress.progress,
           },
+          !prefs.focusMode && {
+            key: 'hideButtons', size: 48,
+            onClick: () => setPrefs((p) => ({ ...p, buttonsHidden: !p.buttonsHidden })),
+            ariaLabel: prefs.buttonsHidden ? tr(lang, 'app.showButtonsAria') : tr(lang, 'app.hideButtonsAria'),
+            icon: prefs.buttonsHidden ? <Eye size={18} strokeWidth={2.2} /> : <EyeOff size={18} strokeWidth={2.2} />,
+          },
           !prefs.focusMode && !prefs.buttonsHidden && prefs.settingsPos === 'bottom' && {
             key: 'settings', size: 48,
             onClick: () => setShowSettings(true),
@@ -940,12 +946,6 @@ export default function App() {
             onClick: toggleSearch,
             ariaLabel: searchOpen ? tr(lang, 'app.searchCloseAria') : tr(lang, 'app.searchAria'),
             icon: searchOpen ? <X size={19} strokeWidth={2.2} /> : <Search size={18} strokeWidth={2.2} />,
-          },
-          !prefs.focusMode && {
-            key: 'hideButtons', size: 48,
-            onClick: () => setPrefs((p) => ({ ...p, buttonsHidden: !p.buttonsHidden })),
-            ariaLabel: prefs.buttonsHidden ? tr(lang, 'app.showButtonsAria') : tr(lang, 'app.hideButtonsAria'),
-            icon: prefs.buttonsHidden ? <Eye size={18} strokeWidth={2.2} /> : <EyeOff size={18} strokeWidth={2.2} />,
           },
         ].filter((x) => x)}
       />
