@@ -1,4 +1,4 @@
-import { Boxes, Tags, Utensils, Clock, ListOrdered, Sprout, ChefHat, Download, Sun, Moon, SunMoon, LayoutGrid, SlidersHorizontal, AlertTriangle, Languages, Star } from 'lucide-react';
+import { Boxes, Tags, Utensils, Clock, ListOrdered, Sprout, ChefHat, Download, Sun, Moon, SunMoon, LayoutGrid, SlidersHorizontal, AlertTriangle, Languages, Star, History } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { Row } from '../../components/Row.jsx';
@@ -16,7 +16,7 @@ const sectionLabel = (t) => ({
 export function SettingsSheet({
   open, onClose, t, lang = 'de', onSetLang, themeOverride, setThemeOverride,
   onManageZones, onManageCategories, onManageFoods, onManageFavorites, onOpenShelfLife, onOpenExpiringView, onOpenProduceStorage, onOpenSpiceGuide,
-  onOpenLayout, onOpenBehavior, onOpenWarnSettings, onOpenBackup,
+  onOpenConsumed, onOpenLayout, onOpenBehavior, onOpenWarnSettings, onOpenBackup,
   stats,
 }) {
   return (
@@ -83,6 +83,13 @@ export function SettingsSheet({
           label={tr(lang, 'settings.expiringTitle')}
           sub={tr(lang, 'settings.expiringSub')}
           onClick={onOpenExpiringView}
+        />
+        <Row
+          t={t}
+          icon={<History size={19} />}
+          label={tr(lang, 'settings.consumedTitle')}
+          sub={tr(lang, 'settings.consumedSub', { count: stats.consumed })}
+          onClick={onOpenConsumed}
         />
       </div>
 

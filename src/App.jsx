@@ -9,9 +9,10 @@ import { useZones } from './hooks/useZones.js';
 import { useCategories } from './hooks/useCategories.js';
 import { useFoods } from './hooks/useFoods.js';
 import { useFavorites } from './hooks/useFavorites.js';
+import { useConsumed } from './hooks/useConsumed.js';
 import { useLongPress } from './hooks/useLongPress.js';
 import { SEED } from './lib/defaults.js';
-import { emptyMacros, foodToMacros, macrosToFood, hasFoodData, defaultBasisForUnit, normalizeName } from './lib/macros.js';
+import { emptyMacros, foodToMacros, macrosToFood, hasFoodData, hasMacros, defaultBasisForUnit, normalizeName } from './lib/macros.js';
 import { openedDaysFor, effectiveExpiry } from './lib/openedShelfLife.js';
 import { daysUntil, todayISO } from './lib/date.js';
 import { isScanSupported } from './scan/scan.js';
@@ -44,6 +45,7 @@ import { ManageFoodsSheet } from './features/macros/ManageFoodsSheet.jsx';
 import { ShelfLifeSheet } from './features/macros/ShelfLifeSheet.jsx';
 import { ProduceStorageSheet } from './features/macros/ProduceStorageSheet.jsx';
 import { SpiceGuideSheet } from './features/macros/SpiceGuideSheet.jsx';
+import { ConsumedSheet } from './features/macros/ConsumedSheet.jsx';
 import { DetailItemSheet } from './features/detail/DetailItemSheet.jsx';
 
 const newId = (prefix = 'i') => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -59,6 +61,7 @@ export default function App() {
     favorites, loaded: favoritesLoaded, isFavorite, addFavorite, updateFavorite, moveFavorite, removeFavorite, removeFavoriteByName,
     clearFavorites, restoreFavorites,
   } = useFavorites();
+  const { consumed, loaded: consumedLoaded, addConsumed } = useConsumed();
   const [items, setItems, itemsLoaded] = useStorage('gt-items-v1', SEED);
   const [shopping, setShopping, shoppingLoaded] = useStorage('gt-shopping-v1', []);
   const [warn, setWarn, warnLoaded] = useStorage('gt-warn-v1', {
@@ -117,6 +120,7 @@ export default function App() {
   const [showShelfLife, setShowShelfLife] = useState(false);
   const [showProduceStorage, setShowProduceStorage] = useState(false);
   const [showSpiceGuide, setShowSpiceGuide] = useState(false);
+  const [showConsumed, setShowConsumed] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
   const [showLayout, setShowLayout] = useState(false);
   const [showBehavior, setShowBehavior] = useState(false);
@@ -148,7 +152,7 @@ export default function App() {
   const shoppingUndoTimerRef = useRef(null);
 
   const scanSupported = isScanSupported();
-  const ready = themeLoaded && zonesLoaded && catsLoaded && foodsLoaded && favoritesLoaded && itemsLoaded && shoppingLoaded && warnLoaded && prefsLoaded
+  const ready = themeLoaded && zonesLoaded && catsLoaded && foodsLoaded && favoritesLoaded && consumedLoaded && itemsLoaded && shoppingLoaded && warnLoaded && prefsLoaded
     && zones !== null && categories !== null && foods !== null && items !== null && shopping !== null && warn !== null && prefs !== null;
 
   // activeZone gültig halten (z.B. nachdem ein Lagerort entfernt wurde) –
@@ -336,6 +340,10 @@ export default function App() {
         return exists ? prev : [...prev, { ...removed, addedAt: Date.now() }];
       });
     }
+    // Nur Artikel mit echten Makrodaten landen in der Verzehr-Historie -
+    // sonst wäre der Eintrag für die Makro-Schnellauswahl nutzlos.
+    const removedFood = getFood(removed.name);
+    if (hasMacros(removedFood)) addConsumed(removedFood);
     setDeletedItem(removed);
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeletedItem(null), 5000);
@@ -1017,11 +1025,12 @@ export default function App() {
         onManageCategories={() => { setShowSettings(false); setShowCategories(true); }}
         onManageFavorites={() => { setShowSettings(false); setShowFavorites(true); }}
         onManageFoods={() => { setShowSettings(false); setShowFoods(true); }}
-        stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length, favorites: favorites.length }}
+        stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length, favorites: favorites.length, consumed: consumed.length }}
         onOpenShelfLife={() => { setShowSettings(false); setShowShelfLife(true); }}
         onOpenExpiringView={() => { setShowSettings(false); setExpiringView(true); setSearch(''); }}
         onOpenProduceStorage={() => { setShowSettings(false); setShowProduceStorage(true); }}
         onOpenSpiceGuide={() => { setShowSettings(false); setShowSpiceGuide(true); }}
+        onOpenConsumed={() => { setShowSettings(false); setShowConsumed(true); }}
         onOpenBackup={() => { setShowSettings(false); setShowBackup(true); }}
         onOpenLayout={() => { setShowSettings(false); setShowLayout(true); }}
         onOpenBehavior={() => { setShowSettings(false); setShowBehavior(true); }}
@@ -1125,6 +1134,7 @@ export default function App() {
       <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} lang={lang} />
       <ProduceStorageSheet open={showProduceStorage} onClose={() => setShowProduceStorage(false)} t={t} lang={lang} />
       <SpiceGuideSheet open={showSpiceGuide} onClose={() => setShowSpiceGuide(false)} t={t} lang={lang} />
+      <ConsumedSheet open={showConsumed} onClose={() => setShowConsumed(false)} t={t} lang={lang} consumed={consumed} />
       <BackupSheet
         open={showBackup} onClose={() => setShowBackup(false)} t={t} dark={dark} lang={lang} zones={zones} items={items} shopping={shopping}
         stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}

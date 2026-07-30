@@ -128,6 +128,13 @@ const DE = {
     delete: 'Löschen', save: 'Speichern', copyAria: 'Nährwerte kopieren',
     ingredientsPresent: 'Zutaten hinterlegt', noValues: 'keine Werte',
   },
+  consumed: {
+    title: 'Zuletzt verzehrt', subtitle: '{{count}} Einträge',
+    empty: 'Noch nichts aufgebraucht, das Makros hat.',
+    selectAll: 'Alle auswählen', selectNone: 'Auswahl aufheben',
+    copySelected: '{{count}} Makros kopieren', copySelectedOne: '1 Makro kopieren', copied: 'Kopiert!',
+    yesterday: 'gestern',
+  },
   macroEditor: {
     portionSize: 'Portionsgröße', portionPlaceholder: 'z.B. 30',
     scanTable: 'Nährwerttabelle scannen', reading: 'Lese Nährwerttabelle…', pasteText: 'Text einfügen',
@@ -170,6 +177,7 @@ const DE = {
     favoritesTitle: 'Favoriten', favoritesSub: '{{count}} Schnellzugriffe',
     foodsTitle: 'Stammdaten / Makros', foodsSub: 'Nährwerte für {{count}} Lebensmittel',
     expiringTitle: 'Alle Artikel nach MHD', expiringSub: 'Zonenübergreifend, nach Ablaufdatum sortiert',
+    consumedTitle: 'Zuletzt verzehrt', consumedSub: '{{count}} Einträge · Makros schnell kopieren',
     guides: 'Ratgeber',
     shelfLifeTitle: 'Haltbarkeits-Ratgeber', shelfLifeSub: 'Geöffnet, ungeöffnet, tiefgefroren',
     produceTitle: 'Obst-&-Gemüse-Ratgeber', produceSub: 'Kühlen, Ethylen, Verpackung',
@@ -445,6 +453,13 @@ const EN = {
     delete: 'Delete', save: 'Save', copyAria: 'Copy nutrition data',
     ingredientsPresent: 'Ingredients on file', noValues: 'no values',
   },
+  consumed: {
+    title: 'Recently consumed', subtitle: '{{count}} entries',
+    empty: 'Nothing used up yet that has macro data.',
+    selectAll: 'Select all', selectNone: 'Clear selection',
+    copySelected: 'Copy {{count}} macros', copySelectedOne: 'Copy 1 macro', copied: 'Copied!',
+    yesterday: 'yesterday',
+  },
   macroEditor: {
     portionSize: 'Portion size', portionPlaceholder: 'e.g. 30',
     scanTable: 'Scan nutrition table', reading: 'Reading nutrition table…', pasteText: 'Paste text',
@@ -487,6 +502,7 @@ const EN = {
     favoritesTitle: 'Favorites', favoritesSub: '{{count}} quick picks',
     foodsTitle: 'Nutrition database', foodsSub: 'Nutrition data for {{count}} foods',
     expiringTitle: 'All items by best-before date', expiringSub: 'Across all locations, sorted by expiry',
+    consumedTitle: 'Recently consumed', consumedSub: '{{count}} entries · quick macro copy',
     guides: 'Guides',
     shelfLifeTitle: 'Shelf life guide', shelfLifeSub: 'Opened, unopened, frozen',
     produceTitle: 'Fruit & veg storage guide', produceSub: 'Cooling, ethylene, packaging',
