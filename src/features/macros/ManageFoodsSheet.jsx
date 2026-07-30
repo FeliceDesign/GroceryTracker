@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Copy, Check, Trash2, Search } from 'lucide-react';
+import { Plus, Copy, Check, Trash2, Search, Star } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { MacroEditor } from './MacroEditor.jsx';
@@ -14,7 +14,10 @@ import {
 // bearbeiten, neu anlegen, kopieren und löschen. `initialEditName` springt
 // beim Öffnen direkt in den Editor für diesen Namen (z.B. von einem
 // Favoriten aus) - vorhandene Stammdaten werden geladen, sonst leer angelegt.
-export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpsert, onRemove, scanSupported, initialEditName, stepGml }) {
+export function ManageFoodsSheet({
+  open, onClose, t, lang = 'de', foods, onUpsert, onRemove, scanSupported, initialEditName, stepGml,
+  onRenameLinkedFavorite, isFavorite, onToggleFavorite,
+}) {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null); // { name, macros } oder null
   const [copiedKey, setCopiedKey] = useState(null);
@@ -35,8 +38,8 @@ export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpser
     } else if (initialEditName) {
       const existing = (foods || []).find((f) => normalizeName(f.name) === normalizeName(initialEditName));
       setEditing(existing
-        ? { key: existing.key, name: existing.name, macros: foodToMacros(existing) }
-        : { name: initialEditName, macros: emptyMacros('100g') });
+        ? { key: existing.key, name: existing.name, originalName: existing.name, macros: foodToMacros(existing) }
+        : { name: initialEditName, originalName: initialEditName, macros: emptyMacros('100g') });
       setDirectEntry(true);
     }
     // foods absichtlich ausgelassen - nur open/initialEditName sollen den Einstieg auslösen
@@ -52,19 +55,31 @@ export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpser
 
   const list = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const arr = (foods || []).filter((f) => !q || f.name.toLowerCase().includes(q));
+    // Komplett leere Datensätze (weder Nährwerte noch Zutaten noch eigene
+    // Haltbarkeit) nicht anzeigen - es gibt dort nichts zu verwalten.
+    const arr = (foods || []).filter((f) => hasFoodData(f) && (!q || f.name.toLowerCase().includes(q)));
     return arr.slice().sort((a, b) => a.name.localeCompare(b.name, 'de'));
   }, [foods, search]);
 
   const startNew = () => { setDirectEntry(false); setEditing({ name: search.trim(), macros: emptyMacros('100g') }); };
-  const startEdit = (food) => { setDirectEntry(false); setEditing({ key: food.key, name: food.name, macros: foodToMacros(food) }); };
+  const startEdit = (food) => { setDirectEntry(false); setEditing({ key: food.key, name: food.name, originalName: food.name, macros: foodToMacros(food) }); };
 
   const save = () => {
     const name = (editing.name || '').trim();
     if (!name) return;
-    onUpsert(macrosToFood(editing.macros, name));
-    // Falls umbenannt (anderer Schlüssel): alten Datensatz entfernen.
-    if (editing.key && editing.key !== normalizeName(name)) onRemove(editing.key);
+    // Nur speichern, wenn tatsächlich Nährwerte/Zutaten/eigene Haltbarkeit
+    // vorliegen - sonst bliebe ein leerer Karteileichen-Datensatz zurück
+    // (z.B. bei einer reinen Umbenennung ohne weitere Angaben).
+    if (hasFoodData(editing.macros)) {
+      onUpsert(macrosToFood(editing.macros, name));
+      // Falls umbenannt (anderer Schlüssel): alten Datensatz entfernen.
+      if (editing.key && editing.key !== normalizeName(name)) onRemove(editing.key);
+    }
+    // Bei Umbenennung einen verknüpften Favoriten mit umbenennen, damit die
+    // Verknüpfung (die rein über den Namen läuft) nicht auseinanderläuft.
+    if (editing.originalName && normalizeName(editing.originalName) !== normalizeName(name)) {
+      onRenameLinkedFavorite?.(editing.originalName, name);
+    }
     finishEditing();
   };
 
@@ -108,9 +123,27 @@ export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpser
     );
     return (
       <Modal open={open} onClose={finishEditing} t={t} lang={lang} title={editing.key ? tr(lang, 'foods.editTitle') : tr(lang, 'foods.newTitle')} footer={footer}>
-        <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 4 }}>
-          {tr(lang, 'foods.name')}
-        </label>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+          <label style={{ fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            {tr(lang, 'foods.name')}
+          </label>
+          {onToggleFavorite && (
+            <button
+              type="button"
+              onClick={() => onToggleFavorite({ name: editing.name })}
+              aria-pressed={isFavorite?.(editing.name)}
+              aria-label={tr(lang, isFavorite?.(editing.name) ? 'detail.unfavoriteAria' : 'detail.favoriteAria')}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 28, height: 28, borderRadius: 8, border: 'none', cursor: 'pointer',
+                background: isFavorite?.(editing.name) ? t.warningBg : t.cardAlt,
+                color: isFavorite?.(editing.name) ? t.warning : t.textFaint,
+              }}
+            >
+              <Star size={14} fill={isFavorite?.(editing.name) ? 'currentColor' : 'none'} />
+            </button>
+          )}
+        </div>
         <ClearableInput
           t={t}
           lang={lang}
@@ -135,7 +168,7 @@ export function ManageFoodsSheet({ open, onClose, t, lang = 'de', foods, onUpser
 
   // ----- Listen-Ansicht ------------------------------------------------------
   return (
-    <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'foods.title')} subtitle={tr(lang, 'foods.subtitle', { count: (foods || []).length })}>
+    <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'foods.title')} subtitle={tr(lang, 'foods.subtitle', { count: (foods || []).filter(hasFoodData).length })}>
       <div style={{ position: 'relative', marginTop: 4, marginBottom: 12 }}>
         <Search size={16} color={t.textFaint} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
         <input

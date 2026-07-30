@@ -11,7 +11,7 @@ import { useFoods } from './hooks/useFoods.js';
 import { useFavorites } from './hooks/useFavorites.js';
 import { useLongPress } from './hooks/useLongPress.js';
 import { SEED } from './lib/defaults.js';
-import { emptyMacros, foodToMacros, macrosToFood, hasFoodData, defaultBasisForUnit } from './lib/macros.js';
+import { emptyMacros, foodToMacros, macrosToFood, hasFoodData, defaultBasisForUnit, normalizeName } from './lib/macros.js';
 import { openedDaysFor, effectiveExpiry } from './lib/openedShelfLife.js';
 import { daysUntil, todayISO } from './lib/date.js';
 import { isScanSupported } from './scan/scan.js';
@@ -224,6 +224,14 @@ export default function App() {
   const toggleFavorite = (item) => {
     if (isFavorite(item.name)) removeFavoriteByName(item.name);
     else addFavorite({ name: item.name, zone: item.zone, category: item.category, unit: item.unit });
+  };
+
+  // Wird ein Stammdaten-Datensatz umbenannt (Stammdaten-Editor), einen
+  // verknüpften Favoriten (Verknüpfung läuft rein über den Namen) mit
+  // umbenennen, damit die Verknüpfung nicht auseinanderläuft.
+  const renameLinkedFavorite = (oldName, newName) => {
+    const fav = favorites.find((f) => normalizeName(f.name) === normalizeName(oldName));
+    if (fav) updateFavorite(fav.id, { name: (newName || '').trim() });
   };
 
   // Ein-/Ausklappen der Favoriten-Chip-Leiste (gilt für Hauptliste und
@@ -1058,6 +1066,8 @@ export default function App() {
         t={t} lang={lang}
         foods={foods} onUpsert={upsertFood} onRemove={removeFood}
         scanSupported={scanSupported} initialEditName={editFoodName} stepGml={prefs.stepGml}
+        onRenameLinkedFavorite={renameLinkedFavorite}
+        isFavorite={isFavorite} onToggleFavorite={toggleFavorite}
       />
 
       <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} lang={lang} />
