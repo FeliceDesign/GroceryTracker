@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff } from 'lucide-react';
+import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History } from 'lucide-react';
 
 import { useSystemTheme, buildTheme } from './lib/theme.js';
 import { zonePalette, ZONE_COLOR_CHOICES, MHD_COLOR_CHOICES } from './lib/colors.js';
@@ -77,7 +77,8 @@ export default function App() {
     autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
     favoritesCollapsed: false, zoneEmojiBothSides: false, favoritesPos: 'off', showFavoriteChips: true, searchPos: 'top',
     favoritesSortMode: 'manual', mainSortMode: 'category', compactList: false, defaultZoneId: null,
-    focusMode: false, buttonsHidden: false, bottomButtonsLayout: 'stack',
+    focusMode: false, buttonsHidden: false, bottomButtonsLayout: 'stack', consumedPos: 'off',
+    hideAddWithButtons: false, swapAddHideOrder: false,
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -787,6 +788,27 @@ export default function App() {
   // Live-Objekt für die Detail-Ansicht (wird ausgeblendet, wenn der Artikel weg ist).
   const detailLive = detailItem ? items.find((i) => i.id === detailItem.id) || null : null;
 
+  // Add- und Ausblende-Button unten: getrennt definiert, damit sich ihre
+  // Reihenfolge (welcher die Ankerposition besetzt) über eine Einstellung
+  // vertauschen lässt. `hideAddWithButtons` erlaubt es zusätzlich, den
+  // Add-Button selbst mit auszublenden (Standard: Add bleibt immer sichtbar).
+  const addBottomBtn = !prefs.focusMode && (prefs.addPos || 'bottom') === 'bottom'
+    && !(prefs.buttonsHidden && prefs.hideAddWithButtons) && {
+      key: 'add', size: 60, primary: true,
+      onClick: openAdd,
+      ariaLabel: tr(lang, 'app.addAria'),
+      icon: <Plus size={28} strokeWidth={2.6} />,
+      extraHandlers: addLongPress.handlers,
+      holdProgress: addLongPress.progress,
+    };
+  const hideBottomBtn = !prefs.focusMode && {
+    key: 'hideButtons', size: 48,
+    onClick: () => setPrefs((p) => ({ ...p, buttonsHidden: !p.buttonsHidden })),
+    ariaLabel: prefs.buttonsHidden ? tr(lang, 'app.showButtonsAria') : tr(lang, 'app.hideButtonsAria'),
+    icon: prefs.buttonsHidden ? <Eye size={18} strokeWidth={2.2} /> : <EyeOff size={18} strokeWidth={2.2} />,
+  };
+  const addHidePair = prefs.swapAddHideOrder ? [hideBottomBtn, addBottomBtn] : [addBottomBtn, hideBottomBtn];
+
   return (
     <>
     <div className="gt-hide-while-scanning" style={{ minHeight: '100dvh', background: t.bg, paddingBottom: 110 }}>
@@ -802,13 +824,15 @@ export default function App() {
           onSettings={() => setShowSettings(true)}
           onAdd={openAdd}
           onFavorites={() => setShowFavorites(true)}
+          onConsumed={() => setShowConsumed(true)}
           onToggleSearch={toggleSearch} searchOpen={searchOpen}
           onZoneClick={() => setShowZones(true)}
           showShoppingButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.shoppingPos || 'top') === 'top'}
           showSettingsButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.settingsPos || 'top') !== 'bottom'}
-          showAddButton={!prefs.focusMode && (prefs.addPos || 'bottom') === 'top'}
+          showAddButton={!prefs.focusMode && (prefs.addPos || 'bottom') === 'top' && !(prefs.buttonsHidden && prefs.hideAddWithButtons)}
           showFavoritesButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.favoritesPos || 'off') === 'top'}
           showSearchButton={!prefs.focusMode && !prefs.buttonsHidden && !expiringView && (prefs.searchPos || 'top') === 'top'}
+          showConsumedButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.consumedPos || 'off') === 'top'}
           addExtraHandlers={addLongPress.handlers} addHoldProgress={addLongPress.progress}
         />
         <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={(id) => { setActiveZone(id); setExpiringView(false); }} t={t} dark={dark} />
@@ -908,20 +932,7 @@ export default function App() {
       <FloatingActions
         zone={zone} dark={dark} t={t} layout={prefs.bottomButtonsLayout || 'stack'}
         items={[
-          !prefs.focusMode && (prefs.addPos || 'bottom') === 'bottom' && {
-            key: 'add', size: 60, primary: true,
-            onClick: openAdd,
-            ariaLabel: tr(lang, 'app.addAria'),
-            icon: <Plus size={28} strokeWidth={2.6} />,
-            extraHandlers: addLongPress.handlers,
-            holdProgress: addLongPress.progress,
-          },
-          !prefs.focusMode && {
-            key: 'hideButtons', size: 48,
-            onClick: () => setPrefs((p) => ({ ...p, buttonsHidden: !p.buttonsHidden })),
-            ariaLabel: prefs.buttonsHidden ? tr(lang, 'app.showButtonsAria') : tr(lang, 'app.hideButtonsAria'),
-            icon: prefs.buttonsHidden ? <Eye size={18} strokeWidth={2.2} /> : <EyeOff size={18} strokeWidth={2.2} />,
-          },
+          ...addHidePair,
           !prefs.focusMode && !prefs.buttonsHidden && prefs.settingsPos === 'bottom' && {
             key: 'settings', size: 48,
             onClick: () => setShowSettings(true),
@@ -954,6 +965,12 @@ export default function App() {
             onClick: toggleSearch,
             ariaLabel: searchOpen ? tr(lang, 'app.searchCloseAria') : tr(lang, 'app.searchAria'),
             icon: searchOpen ? <X size={19} strokeWidth={2.2} /> : <Search size={18} strokeWidth={2.2} />,
+          },
+          !prefs.focusMode && !prefs.buttonsHidden && (prefs.consumedPos || 'off') === 'bottom' && {
+            key: 'consumed', size: 48,
+            onClick: () => setShowConsumed(true),
+            ariaLabel: tr(lang, 'app.consumedAria'),
+            icon: <History size={18} strokeWidth={2.2} />,
           },
         ].filter((x) => x)}
       />
@@ -1053,10 +1070,16 @@ export default function App() {
         onSetFavoritesPos={(v) => setPrefs((p) => ({ ...p, favoritesPos: v }))}
         searchPos={prefs.searchPos || 'top'}
         onSetSearchPos={(v) => setPrefs((p) => ({ ...p, searchPos: v }))}
+        consumedPos={prefs.consumedPos || 'off'}
+        onSetConsumedPos={(v) => setPrefs((p) => ({ ...p, consumedPos: v }))}
         zoneEmojiBothSides={prefs.zoneEmojiBothSides === true}
         onToggleZoneEmojiBothSides={(on) => setPrefs((p) => ({ ...p, zoneEmojiBothSides: on }))}
         bottomButtonsLayout={prefs.bottomButtonsLayout || 'stack'}
         onSetBottomButtonsLayout={(v) => setPrefs((p) => ({ ...p, bottomButtonsLayout: v }))}
+        hideAddWithButtons={prefs.hideAddWithButtons === true}
+        onToggleHideAddWithButtons={(on) => setPrefs((p) => ({ ...p, hideAddWithButtons: on }))}
+        swapAddHideOrder={prefs.swapAddHideOrder === true}
+        onToggleSwapAddHideOrder={(on) => setPrefs((p) => ({ ...p, swapAddHideOrder: on }))}
       />
 
       <BehaviorSheet

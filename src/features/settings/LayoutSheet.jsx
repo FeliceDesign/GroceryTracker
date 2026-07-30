@@ -11,9 +11,10 @@ import { tr } from '../../lib/i18n.js';
 export function LayoutSheet({
   open, onClose, t, lang = 'de', headerAlign, onSetHeaderAlign, appTitle, onSetAppTitle,
   shoppingPos, onSetShoppingPos, settingsPos, onSetSettingsPos, addPos, onSetAddPos,
-  favoritesPos, onSetFavoritesPos, searchPos, onSetSearchPos,
+  favoritesPos, onSetFavoritesPos, searchPos, onSetSearchPos, consumedPos, onSetConsumedPos,
   zoneEmojiBothSides, onToggleZoneEmojiBothSides,
   bottomButtonsLayout, onSetBottomButtonsLayout,
+  hideAddWithButtons, onToggleHideAddWithButtons, swapAddHideOrder, onToggleSwapAddHideOrder,
 }) {
   const inputStyle = makeInputStyle(t);
 
@@ -131,6 +132,34 @@ export function LayoutSheet({
               ]}
             />
           </div>
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>{tr(lang, 'layout.consumedButton')}</div>
+            <Segmented
+              t={t}
+              value={consumedPos || 'off'}
+              onChange={onSetConsumedPos}
+              options={[
+                { value: 'top', label: tr(lang, 'layout.top') },
+                { value: 'bottom', label: tr(lang, 'layout.bottom') },
+                { value: 'off', label: tr(lang, 'layout.off') },
+              ]}
+            />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <SettingRow
+            t={t}
+            label={tr(lang, 'layout.swapAddHide')}
+            sub={tr(lang, 'layout.swapAddHideSub')}
+            control={<Toggle t={t} on={swapAddHideOrder === true} onChange={onToggleSwapAddHideOrder} />}
+          />
+          <SettingRow
+            t={t}
+            label={tr(lang, 'layout.hideAddToo')}
+            sub={tr(lang, 'layout.hideAddTooSub')}
+            control={<Toggle t={t} on={hideAddWithButtons === true} onChange={onToggleHideAddWithButtons} />}
+          />
         </div>
       </div>
     </Modal>
