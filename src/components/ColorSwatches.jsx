@@ -25,10 +25,11 @@ export function ColorSwatches({ choices, customChoices = [], value, onChange, al
             width: 26, height: 26, borderRadius: '50%', cursor: 'pointer',
             background: t ? t.cardAlt : '#e5e5e5',
             border: value == null ? `3px solid ${t ? t.textMuted : '#888'}` : '3px solid transparent',
+            boxShadow: value == null ? `0 0 0 2px ${t ? t.textMuted : '#888'}` : 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <SunMoon size={13} color={t ? t.textMuted : '#888'} />
+          {value == null ? <Check size={13} color={t ? t.textMuted : '#888'} strokeWidth={3} /> : <SunMoon size={13} color={t ? t.textMuted : '#888'} />}
         </button>
       )}
 
