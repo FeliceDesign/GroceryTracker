@@ -24,5 +24,11 @@ export function useConsumed() {
     [setConsumed],
   );
 
-  return { consumed, loaded, addConsumed };
+  // Einzelnen (z.B. versehentlich geloggten) Eintrag wieder entfernen.
+  const removeConsumed = useCallback(
+    (id) => setConsumed((prev) => (prev || []).filter((c) => c.id !== id)),
+    [setConsumed],
+  );
+
+  return { consumed, loaded, addConsumed, removeConsumed };
 }

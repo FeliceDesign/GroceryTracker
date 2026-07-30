@@ -16,7 +16,7 @@ import {
 // Favoriten aus) - vorhandene Stammdaten werden geladen, sonst leer angelegt.
 export function ManageFoodsSheet({
   open, onClose, t, lang = 'de', foods, onUpsert, onRemove, scanSupported, initialEditName, stepGml,
-  onRenameLinkedFavorite, isFavorite, onToggleFavorite,
+  onRenameLinkedFavorite, isFavorite, onToggleFavorite, onMacrosCopied,
 }) {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null); // { name, macros } oder null
@@ -93,6 +93,7 @@ export function ManageFoodsSheet({
     if (ok) {
       setCopiedKey(food.key);
       setTimeout(() => setCopiedKey((k) => (k === food.key ? null : k)), 1600);
+      onMacrosCopied?.(food);
     }
   };
 

@@ -61,7 +61,11 @@ export default function App() {
     favorites, loaded: favoritesLoaded, isFavorite, addFavorite, updateFavorite, moveFavorite, removeFavorite, removeFavoriteByName,
     clearFavorites, restoreFavorites,
   } = useFavorites();
-  const { consumed, loaded: consumedLoaded, addConsumed } = useConsumed();
+  const { consumed, loaded: consumedLoaded, addConsumed, removeConsumed } = useConsumed();
+  // Zentraler Trigger für "Zuletzt verzehrt": nur Lebensmittel mit echten
+  // Makrodaten werden geloggt (sonst wäre der Eintrag für die
+  // Makro-Schnellauswahl nutzlos).
+  const logConsumed = (food) => { if (hasMacros(food)) addConsumed(food); };
   const [items, setItems, itemsLoaded] = useStorage('gt-items-v1', SEED);
   const [shopping, setShopping, shoppingLoaded] = useStorage('gt-shopping-v1', []);
   const [warn, setWarn, warnLoaded] = useStorage('gt-warn-v1', {
@@ -212,6 +216,9 @@ export default function App() {
       removeItem(id);
       return;
     }
+    // Teilweiser Verbrauch (Menge verringert, aber nicht auf 0) zählt
+    // ebenfalls als "verzehrt" - z.B. ein Joghurt aus einer 4er-Packung.
+    if (direction < 0) logConsumed(getFood(item.name));
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, qty: next } : i)));
     flash(id);
   };
@@ -341,10 +348,7 @@ export default function App() {
         return exists ? prev : [...prev, { ...removed, addedAt: Date.now() }];
       });
     }
-    // Nur Artikel mit echten Makrodaten landen in der Verzehr-Historie -
-    // sonst wäre der Eintrag für die Makro-Schnellauswahl nutzlos.
-    const removedFood = getFood(removed.name);
-    if (hasMacros(removedFood)) addConsumed(removedFood);
+    logConsumed(getFood(removed.name));
     setDeletedItem(removed);
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeletedItem(null), 5000);
@@ -416,6 +420,10 @@ export default function App() {
       setEditItem(null);
       return;
     }
+    // Menge im Bearbeiten-Formular manuell verringert (aber nicht auf 0)
+    // zählt ebenfalls als teilweiser Verzehr.
+    const originalItem = items.find((i) => i.id === editItem.id);
+    if (originalItem && editItem.qty < originalItem.qty) logConsumed(editItem.macros ? macrosToFood(editItem.macros, name) : getFood(name));
     setItems((prev) => prev.map((i) => (i.id === editItem.id
       ? {
         ...i, name, zone: editItem.zone, category: editItem.category, qty: editItem.qty, unit: editItem.unit,
@@ -1152,12 +1160,13 @@ export default function App() {
         scanSupported={scanSupported} initialEditName={editFoodName} stepGml={prefs.stepGml}
         onRenameLinkedFavorite={renameLinkedFavorite}
         isFavorite={isFavorite} onToggleFavorite={toggleFavorite}
+        onMacrosCopied={logConsumed}
       />
 
       <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} lang={lang} />
       <ProduceStorageSheet open={showProduceStorage} onClose={() => setShowProduceStorage(false)} t={t} lang={lang} />
       <SpiceGuideSheet open={showSpiceGuide} onClose={() => setShowSpiceGuide(false)} t={t} lang={lang} />
-      <ConsumedSheet open={showConsumed} onClose={() => setShowConsumed(false)} t={t} lang={lang} consumed={consumed} />
+      <ConsumedSheet open={showConsumed} onClose={() => setShowConsumed(false)} t={t} lang={lang} consumed={consumed} onRemoveConsumed={removeConsumed} />
       <BackupSheet
         open={showBackup} onClose={() => setShowBackup(false)} t={t} dark={dark} lang={lang} zones={zones} items={items} shopping={shopping}
         stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
@@ -1178,6 +1187,7 @@ export default function App() {
         onRemove={(id) => { setDetailItem(null); removeItem(id); }}
         onToggleOpened={toggleOpened}
         onChangeMhd={changeMhd}
+        onMacrosCopied={logConsumed}
       />
     </div>
 

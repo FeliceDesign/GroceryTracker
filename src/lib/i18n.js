@@ -135,7 +135,7 @@ const DE = {
     empty: 'Noch nichts aufgebraucht, das Makros hat.',
     selectAll: 'Alle auswählen', selectNone: 'Auswahl aufheben',
     copySelected: '{{count}} Makros kopieren', copySelectedOne: '1 Makro kopieren', copied: 'Kopiert!',
-    yesterday: 'gestern',
+    yesterday: 'gestern', removeAria: '{{name}} aus dem Verlauf entfernen',
   },
   macroEditor: {
     portionSize: 'Portionsgröße', portionPlaceholder: 'z.B. 30',
@@ -465,7 +465,7 @@ const EN = {
     empty: 'Nothing used up yet that has macro data.',
     selectAll: 'Select all', selectNone: 'Clear selection',
     copySelected: 'Copy {{count}} macros', copySelectedOne: 'Copy 1 macro', copied: 'Copied!',
-    yesterday: 'yesterday',
+    yesterday: 'yesterday', removeAria: 'Remove {{name}} from history',
   },
   macroEditor: {
     portionSize: 'Portion size', portionPlaceholder: 'e.g. 30',

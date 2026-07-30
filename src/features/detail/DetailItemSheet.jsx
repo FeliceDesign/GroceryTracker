@@ -30,7 +30,7 @@ const SHELF_TABS = (lang) => [
 export function DetailItemSheet({
   open, item, zone, food, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = {}, dateFormat = 'dmy',
   isFavorite = false, onToggleFavorite,
-  onClose, onEdit, onChangeQty, onRemove, onToggleOpened, onChangeMhd,
+  onClose, onEdit, onChangeQty, onRemove, onToggleOpened, onChangeMhd, onMacrosCopied,
 }) {
   const [copied, setCopied] = useState(false);
   const [copiedIng, setCopiedIng] = useState(false);
@@ -73,8 +73,9 @@ export function DetailItemSheet({
   const unsat = unsaturatedFat(food);
 
   const doCopy = async () => {
-    const ok = await copyMacros({ ...food, name: item.name }, lang);
-    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); }
+    const merged = { ...food, name: item.name };
+    const ok = await copyMacros(merged, lang);
+    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); onMacrosCopied?.(merged); }
   };
 
   const doCopyIngredients = async () => {

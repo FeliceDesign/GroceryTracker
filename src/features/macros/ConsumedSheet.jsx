@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
-import { primaryButtonStyle, pillStyle } from '../../lib/styles.js';
+import { primaryButtonStyle, pillStyle, btnCircle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 import { macroSummary, formatMacroTable, copyToClipboard } from '../../lib/macros.js';
 
@@ -22,7 +22,7 @@ function formatWhen(ts, lang) {
 // Makros in einem Rutsch (nacheinander, im bestehenden Kopier-Format) in die
 // Zwischenablage kopieren - für schnelles Nachtragen mehrerer verzehrter
 // Artikel z.B. in eine Tracking-App.
-export function ConsumedSheet({ open, onClose, t, lang = 'de', consumed }) {
+export function ConsumedSheet({ open, onClose, t, lang = 'de', consumed, onRemoveConsumed }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [copied, setCopied] = useState(false);
 
@@ -40,6 +40,11 @@ export function ConsumedSheet({ open, onClose, t, lang = 'de', consumed }) {
 
   const selectAll = () => setSelectedIds((consumed || []).map((c) => c.id));
   const selectNone = () => setSelectedIds([]);
+
+  const removeEntry = (id) => {
+    setSelectedIds((prev) => prev.filter((x) => x !== id));
+    onRemoveConsumed?.(id);
+  };
 
   const copySelected = async () => {
     const chosen = (consumed || []).filter((c) => selectedIds.includes(c.id));
@@ -92,34 +97,49 @@ export function ConsumedSheet({ open, onClose, t, lang = 'de', consumed }) {
             {consumed.map((entry) => {
               const selected = selectedIds.includes(entry.id);
               return (
-                <button
+                <div
                   key={entry.id}
-                  type="button"
-                  onClick={() => toggle(entry.id)}
-                  aria-pressed={selected}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left',
-                    background: t.cardAlt, borderRadius: 14, padding: '10px 12px', border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    background: t.cardAlt, borderRadius: 14, padding: '10px 12px',
                   }}
                 >
-                  <span style={{
-                    flexShrink: 0, width: 22, height: 22, borderRadius: 7,
-                    border: `2px solid ${selected ? t.pillActive : t.border}`,
-                    background: selected ? t.pillActive : 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
+                  <button
+                    type="button"
+                    onClick={() => toggle(entry.id)}
+                    aria-pressed={selected}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, textAlign: 'left',
+                      background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
+                    }}
                   >
-                    {selected && <Check size={14} color={t.pillActiveText} strokeWidth={3} />}
-                  </span>
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere' }}>
-                      {entry.food.name}
+                    <span style={{
+                      flexShrink: 0, width: 22, height: 22, borderRadius: 7,
+                      border: `2px solid ${selected ? t.pillActive : t.border}`,
+                      background: selected ? t.pillActive : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                    >
+                      {selected && <Check size={14} color={t.pillActiveText} strokeWidth={3} />}
                     </span>
-                    <span style={{ display: 'block', fontSize: 11.5, color: t.textFaint, marginTop: 2 }}>
-                      {macroSummary(entry.food, lang)} · {formatWhen(entry.consumedAt, lang)}
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere' }}>
+                        {entry.food.name}
+                      </span>
+                      <span style={{ display: 'block', fontSize: 11.5, color: t.textFaint, marginTop: 2 }}>
+                        {macroSummary(entry.food, lang)} · {formatWhen(entry.consumedAt, lang)}
+                      </span>
                     </span>
-                  </span>
-                </button>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeEntry(entry.id)}
+                    aria-label={tr(lang, 'consumed.removeAria', { name: entry.food.name })}
+                    style={btnCircle('transparent', t.textFaint, 30)}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               );
             })}
           </div>
