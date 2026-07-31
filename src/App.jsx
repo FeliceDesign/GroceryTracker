@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History, Utensils } from 'lucide-react';
+import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History, Utensils, Trash2, Check } from 'lucide-react';
 
 import { useSystemTheme, buildTheme } from './lib/theme.js';
 import { zonePalette, ZONE_COLOR_CHOICES, MHD_COLOR_CHOICES } from './lib/colors.js';
@@ -905,12 +905,11 @@ export default function App() {
             <button
               type="button"
               onClick={() => setShowItemTrash((v) => !v)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent',
-                color: showItemTrash ? t.text : t.textMuted, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', padding: '4px 2px',
-              }}
+              aria-label={showItemTrash ? tr(lang, 'app.doneRemoving') : tr(lang, 'app.enableRemove')}
+              aria-pressed={showItemTrash}
+              style={btnCircle(showItemTrash ? t.pillActive : 'transparent', showItemTrash ? t.pillActiveText : t.textMuted, 30)}
             >
-              <X size={14} /> {showItemTrash ? tr(lang, 'app.doneRemoving') : tr(lang, 'app.enableRemove')}
+              {showItemTrash ? <Check size={15} /> : <Trash2 size={14} />}
             </button>
           </div>
         )}
