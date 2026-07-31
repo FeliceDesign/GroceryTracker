@@ -321,7 +321,7 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
     <Modal
       open={open} onClose={onClose} t={t} lang={lang}
       title={tr(lang, 'history.title')}
-      subtitle={tr(lang, 'history.subtitle', { count: (history || []).length })}
+      subtitle={tr(lang, (history || []).length === 1 ? 'history.subtitleOne' : 'history.subtitle', { count: (history || []).length })}
       footer={footer}
     >
       {(history || []).length === 0 ? (

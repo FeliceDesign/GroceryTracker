@@ -135,7 +135,7 @@ const DE = {
     noMacrosSection: 'Ohne Makros ({{count}})',
   },
   history: {
-    title: 'Historie', subtitle: '{{count}} Einträge',
+    title: 'Historie', subtitle: '{{count}} Einträge', subtitleOne: '1 Eintrag',
     empty: 'Noch nichts mit Makros hinzugefügt oder aufgebraucht.',
     emptyFiltered: 'Nichts in dieser Kategorie.',
     filterAll: 'Alle', filterAdded: 'Hinzugefügt', filterConsumed: 'Verzehrt',
@@ -478,7 +478,7 @@ const EN = {
     noMacrosSection: 'Without macros ({{count}})',
   },
   history: {
-    title: 'History', subtitle: '{{count}} entries',
+    title: 'History', subtitle: '{{count}} entries', subtitleOne: '1 entry',
     empty: 'Nothing added or used up yet that has macro data.',
     emptyFiltered: 'Nothing in this category.',
     filterAll: 'All', filterAdded: 'Added', filterConsumed: 'Consumed',
