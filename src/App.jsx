@@ -61,7 +61,7 @@ export default function App() {
     favorites, loaded: favoritesLoaded, isFavorite, addFavorite, updateFavorite, moveFavorite, removeFavorite, removeFavoriteByName,
     clearFavorites, restoreFavorites,
   } = useFavorites();
-  const { history, loaded: historyLoaded, addHistory, removeHistory } = useHistory();
+  const { history, loaded: historyLoaded, addHistory, removeHistory, updateHistory } = useHistory();
   // Zentraler Trigger für die Historie: standardmäßig nur Lebensmittel mit
   // echten Makrodaten (sonst wäre der Eintrag für die Makro-Schnellauswahl
   // nutzlos) - mit `historyAllItems` auch ohne Makros, dann nur mit Namen
@@ -1232,7 +1232,7 @@ export default function App() {
       <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} lang={lang} />
       <ProduceStorageSheet open={showProduceStorage} onClose={() => setShowProduceStorage(false)} t={t} lang={lang} />
       <SpiceGuideSheet open={showSpiceGuide} onClose={() => setShowSpiceGuide(false)} t={t} lang={lang} />
-      <HistorySheet open={showHistory} onClose={() => setShowHistory(false)} t={t} lang={lang} history={history} onRemoveHistory={removeHistory} />
+      <HistorySheet open={showHistory} onClose={() => setShowHistory(false)} t={t} lang={lang} history={history} onRemoveHistory={removeHistory} onUpdateHistory={updateHistory} />
       <BackupSheet
         open={showBackup} onClose={() => setShowBackup(false)} t={t} dark={dark} lang={lang} zones={zones} items={items} shopping={shopping}
         stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}

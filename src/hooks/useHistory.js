@@ -36,5 +36,12 @@ export function useHistory() {
     [setRaw],
   );
 
-  return { history, loaded, addHistory, removeHistory };
+  // Einzelnes Feld eines bestehenden Eintrags nachträglich korrigieren
+  // (z.B. eine falsch erfasste Menge).
+  const updateHistory = useCallback(
+    (id, patch) => setRaw((prev) => (prev || []).map((c) => (c.id === id ? { ...c, ...patch } : c))),
+    [setRaw],
+  );
+
+  return { history, loaded, addHistory, removeHistory, updateHistory };
 }

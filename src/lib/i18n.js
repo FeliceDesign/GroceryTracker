@@ -143,6 +143,8 @@ const DE = {
     copySelected: '{{count}} Makros kopieren', copySelectedOne: '1 Makro kopieren', copied: 'Kopiert!',
     yesterday: 'gestern', removeAria: '{{name}} aus der Historie entfernen',
     copyOneAria: 'Makros von {{name}} kopieren',
+    searchPlaceholder: 'Verlauf durchsuchen…',
+    weekStats: 'Letzte 7 Tage: {{added}}× hinzugefügt, {{consumed}}× verzehrt',
   },
   macroEditor: {
     portionSize: 'Portionsgröße', portionPlaceholder: 'z.B. 30',
@@ -484,6 +486,8 @@ const EN = {
     copySelected: 'Copy {{count}} macros', copySelectedOne: 'Copy 1 macro', copied: 'Copied!',
     yesterday: 'yesterday', removeAria: 'Remove {{name}} from history',
     copyOneAria: 'Copy macros of {{name}}',
+    searchPlaceholder: 'Search history…',
+    weekStats: 'Last 7 days: {{added}}× added, {{consumed}}× consumed',
   },
   macroEditor: {
     portionSize: 'Portion size', portionPlaceholder: 'e.g. 30',

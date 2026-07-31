@@ -1,22 +1,32 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, Copy, Trash2, PackagePlus, Utensils } from 'lucide-react';
+import { Check, Copy, Trash2, PackagePlus, Utensils, Search } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
-import { primaryButtonStyle, pillStyle, btnCircle } from '../../lib/styles.js';
+import { primaryButtonStyle, pillStyle, btnCircle, makeInputStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 import { macroSummary, formatMacroTable, copyToClipboard, hasMacros } from '../../lib/macros.js';
 
-// Datum/Uhrzeit eines Historie-Eintrags kompakt darstellen: "heute · 14:32",
-// "gestern · 09:10", sonst "12.03. · 09:10".
-function formatWhen(ts, lang) {
+// Innerhalb eines Tages gelten Einträge derselben Aktion (hinzugefügt/
+// verzehrt) als eine "Mahlzeit", wenn sie höchstens 30 Minuten auseinander
+// liegen - z.B. mehrere Zutaten, die kurz hintereinander verzehrt wurden.
+const MEAL_GAP_MS = 30 * 60 * 1000;
+
+const startOfDay = (date) => { const c = new Date(date); c.setHours(0, 0, 0, 0); return c; };
+
+// Tages-Label für Gruppenüberschriften: "Heute", "Gestern", sonst "12.03.".
+function dayLabel(ts, lang) {
   const locale = lang === 'en' ? 'en-US' : 'de-DE';
   const d = new Date(ts);
-  const time = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-  const startOfDay = (date) => { const c = new Date(date); c.setHours(0, 0, 0, 0); return c; };
   const diffDays = Math.round((startOfDay(new Date()) - startOfDay(d)) / 86400000);
-  if (diffDays === 0) return `${tr(lang, 'date.today')} · ${time}`;
-  if (diffDays === 1) return `${tr(lang, 'history.yesterday')} · ${time}`;
-  return `${d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })} · ${time}`;
+  if (diffDays === 0) return tr(lang, 'date.today');
+  if (diffDays === 1) return tr(lang, 'history.yesterday');
+  return d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
+}
+
+// Nur die Uhrzeit - das Datum steht bereits in der Tages-Gruppenüberschrift.
+function timeOnly(ts, lang) {
+  const locale = lang === 'en' ? 'en-US' : 'de-DE';
+  return new Date(ts).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }
 
 // Kleines Icon je Aktions-Kategorie: neu hinzugefügt vs. verzehrt/aufgebraucht.
@@ -25,23 +35,156 @@ function ActionIcon({ action, t }) {
   return <Icon size={13} color={t.textFaint} />;
 }
 
-// Gespeicherte Menge kompakt darstellen ("2x", "200g", "500ml") - null/0,
+// Gespeicherte Menge kompakt darstellen ("2x", "200g", "500ml") - leer,
 // wenn für den Eintrag keine Menge hinterlegt wurde (z.B. reines Makros-Kopieren).
 function formatQty(qty, unit) {
   if (qty == null || qty <= 0) return '';
   return unit === 'stk' ? `${qty}×` : `${qty}${unit || ''}`;
 }
 
+// Einträge zuerst nach Tag gruppieren, innerhalb eines Tages zusätzlich nach
+// "Mahlzeit" (siehe MEAL_GAP_MS). `entries` ist bereits neueste-zuerst
+// sortiert (so wie sie aus der Historie kommen) - diese Reihenfolge bleibt
+// erhalten, sowohl über die Tage als auch innerhalb einer Mahlzeit.
+function groupHistory(entries, lang) {
+  const days = [];
+  for (const entry of entries) {
+    const key = startOfDay(entry.consumedAt).getTime();
+    let day = days[days.length - 1];
+    if (!day || day.key !== key) {
+      day = { key, label: dayLabel(entry.consumedAt, lang), meals: [] };
+      days.push(day);
+    }
+    const lastMeal = day.meals[day.meals.length - 1];
+    const prevEntry = lastMeal ? lastMeal.entries[lastMeal.entries.length - 1] : null;
+    if (lastMeal && lastMeal.action === entry.action && (prevEntry.consumedAt - entry.consumedAt) <= MEAL_GAP_MS) {
+      lastMeal.entries.push(entry);
+    } else {
+      day.meals.push({ action: entry.action, entries: [entry] });
+    }
+  }
+  return days;
+}
+
+// Eine einzelne Historie-Zeile: Auswahl-Häkchen, Name, Makro-Icon (falls
+// vorhanden), Menge (antippbar zum Nachkorrigieren), Kopieren, Löschen.
+function EntryRow({ entry, t, lang, selected, onToggle, onCopy, copied, onRemove, onUpdateQty, isLast }) {
+  const [editingQty, setEditingQty] = useState(false);
+  const [qtyText, setQtyText] = useState(String(entry.qty ?? ''));
+  useEffect(() => { setQtyText(String(entry.qty ?? '')); }, [entry.qty]);
+
+  const hasQty = entry.qty != null && entry.qty > 0;
+  const summary = macroSummary(entry.food, lang);
+
+  const commitQty = () => {
+    const v = parseFloat(qtyText.replace(',', '.'));
+    if (Number.isFinite(v) && v > 0) onUpdateQty(entry.id, v);
+    else setQtyText(String(entry.qty ?? ''));
+    setEditingQty(false);
+  };
+
+  return (
+    <div
+      style={{
+        display: 'flex', alignItems: 'center', gap: 4, padding: '10px 12px',
+        borderBottom: !isLast ? `1px solid ${t.border}` : 'none',
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => onToggle(entry.id)}
+        aria-pressed={selected}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, textAlign: 'left',
+          background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
+        }}
+      >
+        <span style={{
+          flexShrink: 0, width: 22, height: 22, borderRadius: 7,
+          border: `2px solid ${selected ? t.pillActive : t.border}`,
+          background: selected ? t.pillActive : 'transparent',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+        >
+          {selected && <Check size={14} color={t.pillActiveText} strokeWidth={3} />}
+        </span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <ActionIcon action={entry.action} t={t} />
+            <span style={{ fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere' }}>
+              {entry.food.name}
+            </span>
+            {hasMacros(entry.food) && (
+              <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ flexShrink: 0, display: 'flex' }}>
+                <Utensils size={11} color={t.textFaint} />
+              </span>
+            )}
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: t.textFaint, marginTop: 2 }}>
+            {summary && <span>{summary} ·</span>}
+            {hasQty && (
+              editingQty ? (
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  autoFocus
+                  value={qtyText}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => setQtyText(e.target.value)}
+                  onBlur={commitQty}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                  style={{
+                    width: 52, fontSize: 11.5, color: t.text, background: t.card,
+                    border: `1px solid ${t.border}`, borderRadius: 6, padding: '1px 4px',
+                  }}
+                />
+              ) : (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => { e.stopPropagation(); setEditingQty(true); }}
+                  style={{ textDecoration: 'underline dotted', cursor: 'pointer' }}
+                >
+                  {formatQty(entry.qty, entry.unit)}
+                </span>
+              )
+            )}
+            {hasQty && <span>·</span>}
+            <span>{timeOnly(entry.consumedAt, lang)}</span>
+          </span>
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onCopy(entry)}
+        aria-label={tr(lang, 'history.copyOneAria', { name: entry.food.name })}
+        style={btnCircle('transparent', copied ? t.success : t.textFaint, 30)}
+      >
+        {copied ? <Check size={15} /> : <Copy size={14} />}
+      </button>
+      <button
+        type="button"
+        onClick={() => onRemove(entry.id)}
+        aria-label={tr(lang, 'history.removeAria', { name: entry.food.name })}
+        style={btnCircle('transparent', t.textFaint, 30)}
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+  );
+}
+
 // Historie von Bestandsänderungen mit Makrodaten: "hinzugefügt" und
-// "verzehrt" getrennt filterbar. Mehrere Einträge markieren und ihre Makros
-// in einem Rutsch (nacheinander, im bestehenden Kopier-Format) in die
-// Zwischenablage kopieren - für schnelles Nachtragen z.B. in eine
-// Tracking-App.
-export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveHistory }) {
+// "verzehrt" getrennt filterbar, durchsuchbar und nach Tag/Mahlzeit
+// gruppiert. Mehrere Einträge markieren und ihre Makros in einem Rutsch
+// (nacheinander, im bestehenden Kopier-Format) in die Zwischenablage
+// kopieren - für schnelles Nachtragen z.B. in eine Tracking-App.
+export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveHistory, onUpdateHistory }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [copied, setCopied] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all' | 'added' | 'consumed'
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (!open) {
@@ -49,13 +192,28 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
       setCopied(false);
       setCopiedId(null);
       setFilter('all');
+      setSearch('');
     }
   }, [open]);
 
-  const visible = useMemo(
-    () => (history || []).filter((h) => filter === 'all' || h.action === filter),
-    [history, filter],
-  );
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (history || []).filter((h) => (filter === 'all' || h.action === filter)
+      && (!q || h.food.name.toLowerCase().includes(q)));
+  }, [history, filter, search]);
+
+  const groupedHistory = useMemo(() => groupHistory(visible, lang), [visible, lang]);
+
+  // Reine Zähl-Statistik der letzten 7 Tage, unabhängig von Filter/Suche.
+  const weeklyStats = useMemo(() => {
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const recent = (history || []).filter((h) => h.consumedAt >= weekAgo);
+    return {
+      total: recent.length,
+      added: recent.filter((h) => h.action === 'added').length,
+      consumed: recent.filter((h) => h.action === 'consumed').length,
+    };
+  }, [history]);
 
   const toggle = (id) => {
     setCopied(false);
@@ -69,6 +227,8 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
     setSelectedIds((prev) => prev.filter((x) => x !== id));
     onRemoveHistory?.(id);
   };
+
+  const updateQty = (id, qty) => onUpdateHistory?.(id, { qty });
 
   const copyOne = async (entry) => {
     const ok = await copyToClipboard(formatMacroTable(entry.food, lang));
@@ -121,6 +281,22 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
         </div>
       ) : (
         <>
+          {weeklyStats.total > 0 && (
+            <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10 }}>
+              {tr(lang, 'history.weekStats', { added: weeklyStats.added, consumed: weeklyStats.consumed })}
+            </div>
+          )}
+
+          <div style={{ position: 'relative', marginBottom: 12 }}>
+            <Search size={16} color={t.textFaint} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={tr(lang, 'history.searchPlaceholder')}
+              style={{ ...makeInputStyle(t), marginTop: 0, paddingLeft: 36 }}
+            />
+          </div>
+
           <Segmented
             t={t}
             value={filter}
@@ -135,78 +311,44 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
             <button type="button" onClick={selectAll} style={pillStyle(false, t)}>{tr(lang, 'history.selectAll')}</button>
             <button type="button" onClick={selectNone} style={pillStyle(false, t)}>{tr(lang, 'history.selectNone')}</button>
           </div>
-          {visible.length === 0 ? (
+          {groupedHistory.length === 0 ? (
             <div style={{ textAlign: 'center', color: t.textFaint, padding: '24px 12px', fontSize: 13.5 }}>
               {tr(lang, 'history.emptyFiltered')}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {visible.map((entry) => {
-                const selected = selectedIds.includes(entry.id);
-                return (
-                  <div
-                    key={entry.id}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      background: t.cardAlt, borderRadius: 14, padding: '10px 12px',
-                    }}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {groupedHistory.map((day) => (
+                <div key={day.key}>
+                  <div style={{
+                    fontSize: 11.5, fontWeight: 700, color: t.textFaint, textTransform: 'uppercase',
+                    letterSpacing: '0.04em', marginBottom: 6,
+                  }}
                   >
-                    <button
-                      type="button"
-                      onClick={() => toggle(entry.id)}
-                      aria-pressed={selected}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, textAlign: 'left',
-                        background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
-                      }}
-                    >
-                      <span style={{
-                        flexShrink: 0, width: 22, height: 22, borderRadius: 7,
-                        border: `2px solid ${selected ? t.pillActive : t.border}`,
-                        background: selected ? t.pillActive : 'transparent',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}
-                      >
-                        {selected && <Check size={14} color={t.pillActiveText} strokeWidth={3} />}
-                      </span>
-                      <span style={{ flex: 1, minWidth: 0 }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <ActionIcon action={entry.action} t={t} />
-                          <span style={{ fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere' }}>
-                            {entry.food.name}
-                          </span>
-                          {hasMacros(entry.food) && (
-                            <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ flexShrink: 0, display: 'flex' }}>
-                              <Utensils size={11} color={t.textFaint} />
-                            </span>
-                          )}
-                        </span>
-                        <span style={{ display: 'block', fontSize: 11.5, color: t.textFaint, marginTop: 2 }}>
-                          {macroSummary(entry.food, lang) ? `${macroSummary(entry.food, lang)} · ` : ''}
-                          {formatQty(entry.qty, entry.unit) ? `${formatQty(entry.qty, entry.unit)} · ` : ''}
-                          {formatWhen(entry.consumedAt, lang)}
-                        </span>
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => copyOne(entry)}
-                      aria-label={tr(lang, 'history.copyOneAria', { name: entry.food.name })}
-                      style={btnCircle('transparent', copiedId === entry.id ? t.success : t.textFaint, 30)}
-                    >
-                      {copiedId === entry.id ? <Check size={15} /> : <Copy size={14} />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeEntry(entry.id)}
-                      aria-label={tr(lang, 'history.removeAria', { name: entry.food.name })}
-                      style={btnCircle('transparent', t.textFaint, 30)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    {day.label}
                   </div>
-                );
-              })}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {day.meals.map((meal, mi) => (
+                      <div key={mi} style={{ background: t.cardAlt, borderRadius: 14, overflow: 'hidden' }}>
+                        {meal.entries.map((entry, ei) => (
+                          <EntryRow
+                            key={entry.id}
+                            entry={entry}
+                            t={t}
+                            lang={lang}
+                            selected={selectedIds.includes(entry.id)}
+                            onToggle={toggle}
+                            onCopy={copyOne}
+                            copied={copiedId === entry.id}
+                            onRemove={removeEntry}
+                            onUpdateQty={updateQty}
+                            isLast={ei === meal.entries.length - 1}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </>
