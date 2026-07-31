@@ -79,7 +79,7 @@ function FavoriteRow({
           aria-label={tr(lang, 'favorites.editFoodAria', { name: fav.name })}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere' }}>{fav.name}</span>
+            <span style={{ fontSize: 14.5, fontWeight: 700, color: t.text, wordBreak: 'break-word' }}>{fav.name}</span>
           </div>
           {(zone || hasFoodMacros) && (
             <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -139,16 +139,18 @@ function EntryRow({ row, t, lang, selected, onToggle, onCopy, copied, onRemove, 
           {selected && <Check size={14} color={t.pillActiveText} strokeWidth={3} />}
         </span>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <ActionIcon action={row.action} t={t} />
-            <span style={{ fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere' }}>
-              {row.food.name}
+          <span style={{ display: 'flex', alignItems: 'flex-start', gap: 5 }}>
+            <span style={{ flexShrink: 0, display: 'flex', marginTop: 2 }}>
+              <ActionIcon action={row.action} t={t} />
             </span>
-            {hasMacros(row.food) && (
-              <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ flexShrink: 0, display: 'flex' }}>
-                <Utensils size={11} color={t.textMuted} />
-              </span>
-            )}
+            <span style={{ fontSize: 14.5, fontWeight: 700, color: t.text, wordBreak: 'break-word' }}>
+              {row.food.name}
+              {hasMacros(row.food) && (
+                <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: 5 }}>
+                  <Utensils size={11} color={t.textMuted} />
+                </span>
+              )}
+            </span>
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: t.textFaint, marginTop: 2 }}>
             {summary && <span>{summary} ·</span>}
