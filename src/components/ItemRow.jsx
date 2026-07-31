@@ -54,10 +54,9 @@ export function ItemRow({
     <div
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        // Rechts deutlich mehr Rand als links, damit die Mengen-/Lösch-Gruppe
-        // nicht unter dem schwebenden Button-Stapel unten rechts verschwindet
-        // (der reicht bis zu ~80px vom rechten Bildschirmrand).
-        padding: compact ? '6px 70px 6px 14px' : '13px 70px 13px 14px',
+        // Etwas mehr Rand als links, damit die Mengen-/Lösch-Gruppe nicht
+        // unter dem schwebenden Button-Stapel unten rechts verschwindet.
+        padding: compact ? '6px 26px 6px 14px' : '13px 26px 13px 14px',
         borderBottom: !isLast ? `1px solid ${t.border}` : 'none',
         background: justChanged === item.id ? pal.accentBg : 'transparent',
         transition: 'background 0.3s ease',
