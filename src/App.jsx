@@ -61,17 +61,6 @@ export default function App() {
     favorites, loaded: favoritesLoaded, isFavorite, addFavorite, updateFavorite, moveFavorite, removeFavorite, removeFavoriteByName,
     clearFavorites, restoreFavorites,
   } = useFavorites();
-  const { history, loaded: historyLoaded, addHistory, removeHistory, updateHistory } = useHistory();
-  // Zentraler Trigger für die Historie: standardmäßig nur Lebensmittel mit
-  // echten Makrodaten (sonst wäre der Eintrag für die Makro-Schnellauswahl
-  // nutzlos) - mit `historyAllItems` auch ohne Makros, dann nur mit Namen
-  // (`food` kann null sein, wenn es gar keine Stammdaten gibt).
-  // action: 'added' | 'consumed'. `qty`/`unit` optional (z.B. beim reinen
-  // Makros-Kopieren gibt es keine zugehörige Mengenänderung).
-  const logHistory = (name, food, action, qty, unit) => {
-    if (prefs.historyAllItems) addHistory(food || { name }, action, qty, unit);
-    else if (hasMacros(food)) addHistory(food, action, qty, unit);
-  };
   const [items, setItems, itemsLoaded] = useStorage('gt-items-v1', SEED);
   const [shopping, setShopping, shoppingLoaded] = useStorage('gt-shopping-v1', []);
   const [warn, setWarn, warnLoaded] = useStorage('gt-warn-v1', {
@@ -94,6 +83,19 @@ export default function App() {
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
+  const {
+    history, loaded: historyLoaded, addHistory, removeHistory, updateHistory, restoreHistory,
+  } = useHistory(prefs?.historyMaxEntries || 50);
+  // Zentraler Trigger für die Historie: standardmäßig nur Lebensmittel mit
+  // echten Makrodaten (sonst wäre der Eintrag für die Makro-Schnellauswahl
+  // nutzlos) - mit `historyAllItems` auch ohne Makros, dann nur mit Namen
+  // (`food` kann null sein, wenn es gar keine Stammdaten gibt).
+  // action: 'added' | 'consumed'. `qty`/`unit` optional (z.B. beim reinen
+  // Makros-Kopieren gibt es keine zugehörige Mengenänderung).
+  const logHistory = (name, food, action, qty, unit) => {
+    if (prefs.historyAllItems) addHistory(food || { name }, action, qty, unit);
+    else if (hasMacros(food)) addHistory(food, action, qty, unit);
+  };
   const [customZoneColors, setCustomZoneColors] = useStorage('gt-custom-zone-colors-v1', []);
   const [customMhdColors, setCustomMhdColors] = useStorage('gt-custom-mhd-colors-v1', []);
 
@@ -1178,6 +1180,8 @@ export default function App() {
         onToggleShowMacroIconMain={(on) => setPrefs((p) => ({ ...p, showMacroIconMain: on }))}
         showMacroIconFavorites={prefs.showMacroIconFavorites !== false}
         onToggleShowMacroIconFavorites={(on) => setPrefs((p) => ({ ...p, showMacroIconFavorites: on }))}
+        historyMaxEntries={prefs.historyMaxEntries || 50}
+        onSetHistoryMaxEntries={(v) => setPrefs((p) => ({ ...p, historyMaxEntries: v }))}
       />
 
       <WarnSheet

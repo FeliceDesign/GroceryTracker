@@ -14,6 +14,7 @@ export function BehaviorSheet({
   mainSortMode, onSetMainSortMode, compactList, onToggleCompactList,
   historyAllItems, onToggleHistoryAllItems,
   showMacroIconMain, onToggleShowMacroIconMain, showMacroIconFavorites, onToggleShowMacroIconFavorites,
+  historyMaxEntries, onSetHistoryMaxEntries,
 }) {
   return (
     <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'behavior.title')} subtitle={tr(lang, 'behavior.subtitle')}>
@@ -161,6 +162,31 @@ export function BehaviorSheet({
           sub={tr(lang, 'behavior.showMacroIconFavoritesHint')}
           control={<Toggle t={t} on={showMacroIconFavorites !== false} onChange={onToggleShowMacroIconFavorites} />}
         />
+
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.historyMaxEntries')}</div>
+          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
+            {tr(lang, 'behavior.historyMaxEntriesHint')}
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {[50, 100, 200, 500].map((val) => {
+              const active = (historyMaxEntries || 50) === val;
+              return (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => onSetHistoryMaxEntries(val)}
+                  style={{
+                    padding: '8px 14px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                    background: active ? t.pillActive : t.card, color: active ? t.pillActiveText : t.textMuted,
+                  }}
+                >
+                  {val}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.dateFormat')}</div>

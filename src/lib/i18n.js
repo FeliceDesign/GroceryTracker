@@ -229,6 +229,7 @@ const DE = {
     historyAllItems: 'Alle Artikel in der Historie', historyAllItemsHint: 'Auch Artikel ohne Makrodaten werden hinzugefügt/verzehrt geloggt, nicht nur die mit Nährwerten.',
     showMacroIconMain: 'Makro-Symbol im Bestand', showMacroIconMainHint: 'Kleines Symbol neben Artikeln mit hinterlegten Nährwerten in der Hauptansicht.',
     showMacroIconFavorites: 'Makro-Symbol bei Favoriten', showMacroIconFavoritesHint: 'Kleines Symbol neben Favoriten mit hinterlegten Nährwerten.',
+    historyMaxEntries: 'Historie: maximale Einträge', historyMaxEntriesHint: 'Älteste Einträge werden automatisch entfernt, sobald das Limit erreicht ist.',
   },
   warn: {
     title: 'MHD-Warnungen', subtitle: 'Schwellwerte, Farben, Erinnerungen',
@@ -572,6 +573,7 @@ const EN = {
     historyAllItems: 'All items in history', historyAllItemsHint: 'Items without macro data are also logged as added/consumed, not just ones with nutrition data.',
     showMacroIconMain: 'Macro icon in inventory', showMacroIconMainHint: 'Small icon next to items with nutrition data on file, in the main inventory view.',
     showMacroIconFavorites: 'Macro icon on favorites', showMacroIconFavoritesHint: 'Small icon next to favorites with nutrition data on file.',
+    historyMaxEntries: 'History: max. entries', historyMaxEntriesHint: 'Oldest entries are automatically removed once the limit is reached.',
   },
   warn: {
     title: 'Best-before warnings', subtitle: 'Thresholds, colors, reminders',
