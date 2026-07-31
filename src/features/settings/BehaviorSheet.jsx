@@ -12,6 +12,7 @@ export function BehaviorSheet({
   showSlider, onToggleShowSlider, showWarnDot, onToggleShowWarnDot, dateFormat, onSetDateFormat,
   stripBrandNames, onToggleStripBrandNames, showFavoriteChips, onToggleShowFavoriteChips,
   mainSortMode, onSetMainSortMode, compactList, onToggleCompactList,
+  historyAllItems, onToggleHistoryAllItems,
 }) {
   return (
     <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'behavior.title')} subtitle={tr(lang, 'behavior.subtitle')}>
@@ -137,6 +138,13 @@ export function BehaviorSheet({
           label={tr(lang, 'behavior.compactList')}
           sub={tr(lang, 'behavior.compactListHint')}
           control={<Toggle t={t} on={compactList === true} onChange={onToggleCompactList} />}
+        />
+
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.historyAllItems')}
+          sub={tr(lang, 'behavior.historyAllItemsHint')}
+          control={<Toggle t={t} on={historyAllItems === true} onChange={onToggleHistoryAllItems} />}
         />
 
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>

@@ -1,13 +1,13 @@
-import { ShoppingCart, Settings, Plus, Star, Search, X, History } from 'lucide-react';
+import { ShoppingCart, Settings, Plus, Star, History } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
 import { tr } from '../lib/i18n.js';
 import { CountBadge } from './CountBadge.jsx';
 
 export function Header({
   zone, dark, t, lang = 'de', totalInZone, shoppingCount, shoppingBadgeMode = 'count', align = 'left', title,
-  onShopping, onSettings, onAdd, onFavorites, onHistory, onToggleSearch, searchOpen = false, onZoneClick,
+  onShopping, onSettings, onAdd, onFavorites, onHistory, onZoneClick,
   showShoppingButton = true, showSettingsButton = true, showAddButton = false, showFavoritesButton = false,
-  showSearchButton = false, showHistoryButton = false,
+  showHistoryButton = false,
   emojiBothSides = false,
   addExtraHandlers, addHoldProgress = 0,
 }) {
@@ -18,7 +18,7 @@ export function Header({
     width: 44, height: 44, color: t.headerText, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
   };
-  const buttonCount = (showSearchButton ? 1 : 0) + (showShoppingButton ? 1 : 0) + (showSettingsButton ? 1 : 0) + (showAddButton ? 1 : 0) + (showFavoritesButton ? 1 : 0) + (showHistoryButton ? 1 : 0);
+  const buttonCount = (showShoppingButton ? 1 : 0) + (showSettingsButton ? 1 : 0) + (showAddButton ? 1 : 0) + (showFavoritesButton ? 1 : 0) + (showHistoryButton ? 1 : 0);
   // Breite der Buttons-Gruppe – im „zentriert"-Modus als Gegengewicht links,
   // damit der Zonenname wirklich mittig sitzt statt vom Buttons-Platz nach
   // links verschoben zu wirken. Passt sich an, wenn Buttons nach unten
@@ -69,15 +69,6 @@ export function Header({
 
           {buttonCount > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8, flexShrink: 0 }}>
-              {showSearchButton && (
-                <button
-                  onClick={onToggleSearch}
-                  style={iconBtn}
-                  aria-label={searchOpen ? tr(lang, 'app.searchCloseAria') : tr(lang, 'app.searchAria')}
-                >
-                  {searchOpen ? <X size={20} strokeWidth={2.2} /> : <Search size={19} strokeWidth={2.2} />}
-                </button>
-              )}
               {showShoppingButton && (
                 <button onClick={onShopping} style={iconBtn} aria-label={`${tr(lang, 'app.shoppingAria')}${shoppingCount > 0 ? ` (${shoppingCount})` : ''}`}>
                   <ShoppingCart size={20} strokeWidth={2.2} />

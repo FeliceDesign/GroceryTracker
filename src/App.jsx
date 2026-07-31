@@ -62,10 +62,15 @@ export default function App() {
     clearFavorites, restoreFavorites,
   } = useFavorites();
   const { history, loaded: historyLoaded, addHistory, removeHistory } = useHistory();
-  // Zentraler Trigger für die Historie: nur Lebensmittel mit echten
-  // Makrodaten werden geloggt (sonst wäre der Eintrag für die
-  // Makro-Schnellauswahl nutzlos). action: 'added' | 'consumed'.
-  const logHistory = (food, action) => { if (hasMacros(food)) addHistory(food, action); };
+  // Zentraler Trigger für die Historie: standardmäßig nur Lebensmittel mit
+  // echten Makrodaten (sonst wäre der Eintrag für die Makro-Schnellauswahl
+  // nutzlos) - mit `historyAllItems` auch ohne Makros, dann nur mit Namen
+  // (`food` kann null sein, wenn es gar keine Stammdaten gibt).
+  // action: 'added' | 'consumed'.
+  const logHistory = (name, food, action) => {
+    if (prefs.historyAllItems) addHistory(food || { name }, action);
+    else if (hasMacros(food)) addHistory(food, action);
+  };
   const [items, setItems, itemsLoaded] = useStorage('gt-items-v1', SEED);
   const [shopping, setShopping, shoppingLoaded] = useStorage('gt-shopping-v1', []);
   const [warn, setWarn, warnLoaded] = useStorage('gt-warn-v1', {
@@ -79,10 +84,10 @@ export default function App() {
     headerAlign: 'left', appTitle: '', showWarnDot: true,
     shoppingPos: 'top', settingsPos: 'top', addPos: 'bottom',
     autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
-    favoritesCollapsed: false, zoneEmojiBothSides: false, favoritesPos: 'off', showFavoriteChips: true, searchPos: 'top',
+    favoritesCollapsed: false, zoneEmojiBothSides: false, favoritesPos: 'off', showFavoriteChips: true,
     favoritesSortMode: 'manual', mainSortMode: 'category', compactList: false, defaultZoneId: null,
     focusMode: false, buttonsHidden: false, bottomButtonsLayout: 'stack', historyPos: 'off',
-    hideAddWithButtons: false, swapAddHideOrder: false,
+    hideAddWithButtons: false, swapAddHideOrder: false, addSameSize: false, historyAllItems: false,
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -222,7 +227,7 @@ export default function App() {
     }
     // Teilweiser Verbrauch (Menge verringert, aber nicht auf 0) zählt
     // ebenfalls als "verzehrt" - z.B. ein Joghurt aus einer 4er-Packung.
-    if (direction < 0) logHistory(getFood(item.name), 'consumed');
+    if (direction < 0) logHistory(item.name, getFood(item.name), 'consumed');
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, qty: next } : i)));
     flash(id);
   };
@@ -293,7 +298,7 @@ export default function App() {
       return [...prev, { id: newId(), name: fav.name, zone: favZone, category: favCategory, qty: favQty, unit: favUnit, mhd: null }];
     });
     setActiveZone(favZone);
-    logHistory(getFood(fav.name), 'added');
+    logHistory(fav.name, getFood(fav.name), 'added');
   };
 
   // Favorit auf die Einkaufsliste setzen - trägt Lagerort/Kategorie/Einheit/
@@ -349,22 +354,25 @@ export default function App() {
     if (!removed) return;
     setItems((prev) => prev.filter((i) => i.id !== id));
     // Aufgebrauchtes wandert automatisch auf die Einkaufsliste (ohne Duplikate) –
-    // abschaltbar in den Einstellungen.
-    if (prefs.autoShoppingOnRemove !== false) {
-      setShopping((prev) => {
-        const exists = prev.some((s) => s.zone === removed.zone && s.name.toLowerCase() === removed.name.toLowerCase());
-        return exists ? prev : [...prev, { ...removed, addedAt: Date.now() }];
-      });
+    // abschaltbar in den Einstellungen. Ob es diesmal wirklich passiert ist
+    // (Einstellung aus, oder Duplikat schon auf der Liste), wird für den
+    // Toast-Hinweis festgehalten - anhand des aktuellen `shopping`-Standes
+    // VOR dem Update ermittelt, nicht innerhalb des setShopping-Updaters.
+    const alreadyOnShopping = shopping.some((s) => s.zone === removed.zone && s.name.toLowerCase() === removed.name.toLowerCase());
+    const addedToShopping = prefs.autoShoppingOnRemove !== false && !alreadyOnShopping;
+    if (prefs.autoShoppingOnRemove !== false && !alreadyOnShopping) {
+      setShopping((prev) => [...prev, { ...removed, addedAt: Date.now() }]);
     }
-    logHistory(getFood(removed.name), 'consumed');
-    setDeletedItem(removed);
+    logHistory(removed.name, getFood(removed.name), 'consumed');
+    setDeletedItem({ ...removed, addedToShopping });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeletedItem(null), 5000);
   };
 
   const undoDelete = () => {
     if (!deletedItem) return;
-    setItems((prev) => [...prev, deletedItem]);
+    const { addedToShopping: _a, ...restored } = deletedItem;
+    setItems((prev) => [...prev, restored]);
     setShopping((prev) => prev.filter((s) => s.id !== deletedItem.id || s.manual));
     setDeletedItem(null);
     clearTimeout(undoTimerRef.current);
@@ -410,7 +418,7 @@ export default function App() {
       name, qty: newItem.qty, unit: newItem.unit, mhd: newItem.mhd || null,
     }]);
     saveFoodMacros(name, newItem.macros);
-    logHistory(newItem.macros ? macrosToFood(newItem.macros, name) : getFood(name), 'added');
+    logHistory(name, newItem.macros ? macrosToFood(newItem.macros, name) : getFood(name), 'added');
     setShopping((prev) => prev.filter((s) =>
       !(s.name.toLowerCase() === name.toLowerCase() && (s.zone === zoneId || s.zone === null))));
     setActiveZone(zoneId);
@@ -432,7 +440,7 @@ export default function App() {
     // Menge im Bearbeiten-Formular manuell verringert (aber nicht auf 0)
     // zählt ebenfalls als teilweiser Verzehr.
     const originalItem = items.find((i) => i.id === editItem.id);
-    if (originalItem && editItem.qty < originalItem.qty) logHistory(editItem.macros ? macrosToFood(editItem.macros, name) : getFood(name), 'consumed');
+    if (originalItem && editItem.qty < originalItem.qty) logHistory(name, editItem.macros ? macrosToFood(editItem.macros, name) : getFood(name), 'consumed');
     setItems((prev) => prev.map((i) => (i.id === editItem.id
       ? {
         ...i, name, zone: editItem.zone, category: editItem.category, qty: editItem.qty, unit: editItem.unit,
@@ -494,7 +502,7 @@ export default function App() {
     valid.forEach((b) => {
       const trimmedName = b.name.trim();
       saveFoodMacros(trimmedName, b.macros);
-      logHistory(b.macros ? macrosToFood(b.macros, trimmedName) : getFood(trimmedName), 'added');
+      logHistory(trimmedName, b.macros ? macrosToFood(b.macros, trimmedName) : getFood(trimmedName), 'added');
     });
     setShopping((prev) => prev.filter((s) =>
       !newOnes.some((n) => n.name.toLowerCase() === s.name.toLowerCase() && (s.zone === n.zone || s.zone === null))));
@@ -547,7 +555,7 @@ export default function App() {
       setItems((prev) => [...prev, { ...item, qty: entry.qty > 0 ? entry.qty : 1 }]);
     }
     setActiveZone(entry.zone);
-    logHistory(getFood(entry.name), 'added');
+    logHistory(entry.name, getFood(entry.name), 'added');
     setRestoredShopping({ entry, mergedItemId, mergedPrevQty, createdItemId });
     clearTimeout(shoppingUndoTimerRef.current);
     shoppingUndoTimerRef.current = setTimeout(() => setRestoredShopping(null), 5000);
@@ -816,10 +824,10 @@ export default function App() {
   // Add-Button selbst mit auszublenden (Standard: Add bleibt immer sichtbar).
   const addBottomBtn = !prefs.focusMode && (prefs.addPos || 'bottom') === 'bottom'
     && !(prefs.buttonsHidden && prefs.hideAddWithButtons) && {
-      key: 'add', size: 60, primary: true,
+      key: 'add', size: prefs.addSameSize ? 48 : 60, primary: !prefs.addSameSize,
       onClick: openAdd,
       ariaLabel: tr(lang, 'app.addAria'),
-      icon: <Plus size={28} strokeWidth={2.6} />,
+      icon: <Plus size={prefs.addSameSize ? 19 : 28} strokeWidth={prefs.addSameSize ? 2.2 : 2.6} />,
       extraHandlers: addLongPress.handlers,
       holdProgress: addLongPress.progress,
     };
@@ -847,13 +855,11 @@ export default function App() {
           onAdd={openAdd}
           onFavorites={() => setShowFavorites(true)}
           onHistory={() => setShowHistory(true)}
-          onToggleSearch={toggleSearch} searchOpen={searchOpen}
           onZoneClick={() => setShowZones(true)}
           showShoppingButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.shoppingPos || 'top') === 'top'}
           showSettingsButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.settingsPos || 'top') !== 'bottom'}
           showAddButton={!prefs.focusMode && (prefs.addPos || 'bottom') === 'top' && !(prefs.buttonsHidden && prefs.hideAddWithButtons)}
           showFavoritesButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.favoritesPos || 'off') === 'top'}
-          showSearchButton={!prefs.focusMode && !prefs.buttonsHidden && !expiringView && (prefs.searchPos || 'top') === 'top'}
           showHistoryButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.historyPos || 'off') === 'top'}
           addExtraHandlers={addLongPress.handlers} addHoldProgress={addLongPress.progress}
         />
@@ -996,17 +1002,19 @@ export default function App() {
             ariaLabel: tr(lang, 'app.favoritesAria'),
             icon: <Star size={18} strokeWidth={2.2} />,
           },
-          !prefs.focusMode && !prefs.buttonsHidden && !expiringView && prefs.searchPos === 'bottom' && {
-            key: 'search', size: 48,
-            onClick: toggleSearch,
-            ariaLabel: searchOpen ? tr(lang, 'app.searchCloseAria') : tr(lang, 'app.searchAria'),
-            icon: searchOpen ? <X size={19} strokeWidth={2.2} /> : <Search size={18} strokeWidth={2.2} />,
-          },
           !prefs.focusMode && !prefs.buttonsHidden && (prefs.historyPos || 'off') === 'bottom' && {
             key: 'history', size: 48,
             onClick: () => setShowHistory(true),
             ariaLabel: tr(lang, 'app.historyAria'),
             icon: <History size={18} strokeWidth={2.2} />,
+          },
+          // Suche ist nicht mehr positionierbar - sitzt immer im Stapel unten,
+          // als letzter (= oberster) Eintrag, unabhängig von der Ablauf-Ansicht.
+          !prefs.focusMode && !prefs.buttonsHidden && {
+            key: 'search', size: 48,
+            onClick: toggleSearch,
+            ariaLabel: searchOpen ? tr(lang, 'app.searchCloseAria') : tr(lang, 'app.searchAria'),
+            icon: searchOpen ? <X size={19} strokeWidth={2.2} /> : <Search size={18} strokeWidth={2.2} />,
           },
         ].filter((x) => x)}
       />
@@ -1014,7 +1022,7 @@ export default function App() {
       {deletedItem && (
         <Toast
           t={t}
-          message={tr(lang, 'app.toastRemoved', { name: deletedItem.name })}
+          message={tr(lang, deletedItem.addedToShopping ? 'app.toastRemoved' : 'app.toastRemovedPlain', { name: deletedItem.name })}
           actionLabel={tr(lang, 'app.undo')}
           onAction={undoDelete}
         />
@@ -1104,8 +1112,6 @@ export default function App() {
         onSetAddPos={(v) => setPrefs((p) => ({ ...p, addPos: v }))}
         favoritesPos={prefs.favoritesPos || 'off'}
         onSetFavoritesPos={(v) => setPrefs((p) => ({ ...p, favoritesPos: v }))}
-        searchPos={prefs.searchPos || 'top'}
-        onSetSearchPos={(v) => setPrefs((p) => ({ ...p, searchPos: v }))}
         historyPos={prefs.historyPos || 'off'}
         onSetHistoryPos={(v) => setPrefs((p) => ({ ...p, historyPos: v }))}
         zoneEmojiBothSides={prefs.zoneEmojiBothSides === true}
@@ -1116,6 +1122,8 @@ export default function App() {
         onToggleHideAddWithButtons={(on) => setPrefs((p) => ({ ...p, hideAddWithButtons: on }))}
         swapAddHideOrder={prefs.swapAddHideOrder === true}
         onToggleSwapAddHideOrder={(on) => setPrefs((p) => ({ ...p, swapAddHideOrder: on }))}
+        addSameSize={prefs.addSameSize === true}
+        onToggleAddSameSize={(on) => setPrefs((p) => ({ ...p, addSameSize: on }))}
       />
 
       <BehaviorSheet
@@ -1140,6 +1148,8 @@ export default function App() {
         onToggleShowFavoriteChips={(on) => setPrefs((p) => ({ ...p, showFavoriteChips: on }))}
         compactList={prefs.compactList === true}
         onToggleCompactList={(on) => setPrefs((p) => ({ ...p, compactList: on }))}
+        historyAllItems={prefs.historyAllItems === true}
+        onToggleHistoryAllItems={(on) => setPrefs((p) => ({ ...p, historyAllItems: on }))}
       />
 
       <WarnSheet
@@ -1189,7 +1199,7 @@ export default function App() {
         scanSupported={scanSupported} initialEditName={editFoodName} stepGml={prefs.stepGml}
         onRenameLinkedFavorite={renameLinkedFavorite}
         isFavorite={isFavorite} onToggleFavorite={toggleFavorite}
-        onMacrosCopied={(food) => logHistory(food, 'consumed')}
+        onMacrosCopied={(food) => logHistory(food.name, food, 'consumed')}
       />
 
       <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} lang={lang} />
@@ -1216,7 +1226,7 @@ export default function App() {
         onRemove={(id) => { setDetailItem(null); removeItem(id); }}
         onToggleOpened={toggleOpened}
         onChangeMhd={changeMhd}
-        onMacrosCopied={(food) => logHistory(food, 'consumed')}
+        onMacrosCopied={(food) => logHistory(food.name, food, 'consumed')}
       />
     </div>
 

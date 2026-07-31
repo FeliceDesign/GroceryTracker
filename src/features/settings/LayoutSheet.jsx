@@ -11,10 +11,11 @@ import { tr } from '../../lib/i18n.js';
 export function LayoutSheet({
   open, onClose, t, lang = 'de', headerAlign, onSetHeaderAlign, appTitle, onSetAppTitle,
   shoppingPos, onSetShoppingPos, settingsPos, onSetSettingsPos, addPos, onSetAddPos,
-  favoritesPos, onSetFavoritesPos, searchPos, onSetSearchPos, historyPos, onSetHistoryPos,
+  favoritesPos, onSetFavoritesPos, historyPos, onSetHistoryPos,
   zoneEmojiBothSides, onToggleZoneEmojiBothSides,
   bottomButtonsLayout, onSetBottomButtonsLayout,
   hideAddWithButtons, onToggleHideAddWithButtons, swapAddHideOrder, onToggleSwapAddHideOrder,
+  addSameSize, onToggleAddSameSize,
 }) {
   const inputStyle = makeInputStyle(t);
 
@@ -120,19 +121,6 @@ export function LayoutSheet({
             />
           </div>
           <div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>{tr(lang, 'layout.searchButton')}</div>
-            <Segmented
-              t={t}
-              value={searchPos || 'top'}
-              onChange={onSetSearchPos}
-              options={[
-                { value: 'top', label: tr(lang, 'layout.top') },
-                { value: 'bottom', label: tr(lang, 'layout.bottom') },
-                { value: 'off', label: tr(lang, 'layout.off') },
-              ]}
-            />
-          </div>
-          <div>
             <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>{tr(lang, 'layout.historyButton')}</div>
             <Segmented
               t={t}
@@ -160,6 +148,15 @@ export function LayoutSheet({
             sub={tr(lang, 'layout.hideAddTooSub')}
             control={<Toggle t={t} on={hideAddWithButtons === true} onChange={onToggleHideAddWithButtons} />}
           />
+          <SettingRow
+            t={t}
+            label={tr(lang, 'layout.addSameSize')}
+            sub={tr(lang, 'layout.addSameSizeSub')}
+            control={<Toggle t={t} on={addSameSize === true} onChange={onToggleAddSameSize} />}
+          />
+        </div>
+        <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 10, lineHeight: 1.35 }}>
+          {tr(lang, 'layout.searchHint')}
         </div>
       </div>
     </Modal>
