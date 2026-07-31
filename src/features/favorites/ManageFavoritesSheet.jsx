@@ -79,18 +79,20 @@ function FavoriteRow({
           aria-label={tr(lang, 'favorites.editFoodAria', { name: fav.name })}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            {hasFoodMacros && (
-              <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ flexShrink: 0, display: 'flex' }}>
-                <Utensils size={12} color={t.textFaint} />
-              </span>
-            )}
             <span style={{ fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere' }}>{fav.name}</span>
           </div>
-          {zone && (
-            <div style={{ marginTop: 3 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: pal.accent, background: pal.accentBg, borderRadius: 999, padding: '2px 8px' }}>
-                {zone.emoji} {zone.label}
-              </span>
+          {(zone || hasFoodMacros) && (
+            <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+              {zone && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: pal.accent, background: pal.accentBg, borderRadius: 999, padding: '2px 8px' }}>
+                  {zone.emoji} {zone.label}
+                </span>
+              )}
+              {hasFoodMacros && (
+                <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ flexShrink: 0, display: 'flex' }}>
+                  <Utensils size={12} color={t.textMuted} />
+                </span>
+              )}
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>

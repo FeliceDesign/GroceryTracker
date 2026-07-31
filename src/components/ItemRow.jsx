@@ -67,12 +67,12 @@ export function ItemRow({
           {warn && showWarnDot && (
             <span style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', background: wColor, marginTop: compact ? 5 : 6 }} aria-hidden="true" />
           )}
+          <span style={{ fontSize: compact ? 13.5 : 15, color: t.text, fontWeight: 500, overflowWrap: 'anywhere', lineHeight: 1.3 }}>{item.name}</span>
           {hasFoodMacros && (
             <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ flexShrink: 0, display: 'flex', marginTop: compact ? 3 : 4 }}>
-              <Utensils size={compact ? 11 : 12} color={t.textFaint} />
+              <Utensils size={compact ? 11 : 12} color={t.textMuted} />
             </span>
           )}
-          <span style={{ fontSize: compact ? 13.5 : 15, color: t.text, fontWeight: 500, overflowWrap: 'anywhere', lineHeight: 1.3 }}>{item.name}</span>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: compact ? 1 : 3, flexWrap: 'wrap' }}>
           {showZoneBadge && zone && (
