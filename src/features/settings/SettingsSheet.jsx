@@ -3,11 +3,7 @@ import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { Row } from '../../components/Row.jsx';
 import { tr, LANGUAGES } from '../../lib/i18n.js';
-
-const sectionLabel = (t) => ({
-  fontSize: 12, fontWeight: 800, color: t.textMuted, textTransform: 'uppercase',
-  letterSpacing: '0.06em', margin: '30px 2px 10px',
-});
+import { sectionLabelStyle } from '../../lib/styles.js';
 
 // Haupt-Einstellungen: nur noch Theme + Sprache direkt sichtbar (am
 // häufigsten genutzt), alles andere über Untermenüs (Layout, Verhalten,
@@ -21,7 +17,7 @@ export function SettingsSheet({
 }) {
   return (
     <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'settings.title')}>
-      <div style={sectionLabel(t)}>{tr(lang, 'settings.appearance')}</div>
+      <div style={sectionLabelStyle(t)}>{tr(lang, 'settings.appearance')}</div>
       <Segmented
         t={t}
         value={themeOverride}
@@ -33,7 +29,7 @@ export function SettingsSheet({
         ]}
       />
 
-      <div style={{ ...sectionLabel(t), marginTop: 20 }}>{tr(lang, 'settings.language')}</div>
+      <div style={sectionLabelStyle(t, 20)}>{tr(lang, 'settings.language')}</div>
       <Segmented
         t={t}
         value={lang}
@@ -47,7 +43,7 @@ export function SettingsSheet({
         <Row t={t} icon={<AlertTriangle size={19} />} label={tr(lang, 'settings.warnings')} sub={tr(lang, 'settings.warningsSub')} onClick={onOpenWarnSettings} />
       </div>
 
-      <div style={sectionLabel(t)}>{tr(lang, 'settings.structure')}</div>
+      <div style={sectionLabelStyle(t)}>{tr(lang, 'settings.structure')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <Row
           t={t}
@@ -93,7 +89,7 @@ export function SettingsSheet({
         />
       </div>
 
-      <div style={sectionLabel(t)}>{tr(lang, 'settings.guides')}</div>
+      <div style={sectionLabelStyle(t)}>{tr(lang, 'settings.guides')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <Row
           t={t}
@@ -118,7 +114,7 @@ export function SettingsSheet({
         />
       </div>
 
-      <div style={sectionLabel(t)}>{tr(lang, 'settings.data')}</div>
+      <div style={sectionLabelStyle(t)}>{tr(lang, 'settings.data')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <Row t={t} icon={<Download size={19} />} label={tr(lang, 'settings.backupTitle')} sub={tr(lang, 'settings.backupSub', { count: stats.items })} onClick={onOpenBackup} />
         <Row t={t} icon={<Upload size={19} />} label={tr(lang, 'settings.importTitle')} sub={tr(lang, 'settings.importSub')} onClick={onOpenImport} />

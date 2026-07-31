@@ -3,11 +3,7 @@ import { Toggle } from '../../components/Toggle.jsx';
 import { SettingRow } from '../../components/SettingRow.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { tr } from '../../lib/i18n.js';
-
-const sectionLabel = (t) => ({
-  fontSize: 12, fontWeight: 800, color: t.textMuted, textTransform: 'uppercase',
-  letterSpacing: '0.06em', margin: '22px 2px 10px',
-});
+import { sectionLabelStyle } from '../../lib/styles.js';
 
 // Verhaltens-/Anzeige-Toggles + Formate – vorher Teil der Haupt-Einstellungen
 // ("Darstellung"), jetzt eigenes Untermenü (Settings-Declutter). In
@@ -26,7 +22,7 @@ export function BehaviorSheet({
 }) {
   return (
     <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'behavior.title')} subtitle={tr(lang, 'behavior.subtitle')}>
-      <div style={{ ...sectionLabel(t), marginTop: 0 }}>{tr(lang, 'behavior.sectionMainList')}</div>
+      <div style={sectionLabelStyle(t, 0)}>{tr(lang, 'behavior.sectionMainList')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.mainSort')}</div>
@@ -67,7 +63,7 @@ export function BehaviorSheet({
         />
       </div>
 
-      <div style={sectionLabel(t)}>{tr(lang, 'behavior.sectionShopping')}</div>
+      <div style={sectionLabelStyle(t, 22)}>{tr(lang, 'behavior.sectionShopping')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.shoppingCount')}</div>
@@ -101,7 +97,7 @@ export function BehaviorSheet({
         />
       </div>
 
-      <div style={sectionLabel(t)}>{tr(lang, 'behavior.sectionQuantity')}</div>
+      <div style={sectionLabelStyle(t, 22)}>{tr(lang, 'behavior.sectionQuantity')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.step')}</div>
@@ -159,7 +155,7 @@ export function BehaviorSheet({
         />
       </div>
 
-      <div style={sectionLabel(t)}>{tr(lang, 'behavior.sectionHistory')}</div>
+      <div style={sectionLabelStyle(t, 22)}>{tr(lang, 'behavior.sectionHistory')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <SettingRow
           t={t}
@@ -194,7 +190,7 @@ export function BehaviorSheet({
         </div>
       </div>
 
-      <div style={sectionLabel(t)}>{tr(lang, 'behavior.sectionFavorites')}</div>
+      <div style={sectionLabelStyle(t, 22)}>{tr(lang, 'behavior.sectionFavorites')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <SettingRow
           t={t}
@@ -204,7 +200,7 @@ export function BehaviorSheet({
         />
       </div>
 
-      <div style={sectionLabel(t)}>{tr(lang, 'behavior.sectionScan')}</div>
+      <div style={sectionLabelStyle(t, 22)}>{tr(lang, 'behavior.sectionScan')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <SettingRow
           t={t}
@@ -214,7 +210,7 @@ export function BehaviorSheet({
         />
       </div>
 
-      <div style={sectionLabel(t)}>{tr(lang, 'behavior.sectionFormat')}</div>
+      <div style={sectionLabelStyle(t, 22)}>{tr(lang, 'behavior.sectionFormat')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.dateFormat')}</div>

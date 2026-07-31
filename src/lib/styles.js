@@ -60,6 +60,20 @@ export function makeLabelStyle(t) {
   };
 }
 
+// Abschnitts-Überschrift innerhalb der Einstellungs-Sheets ("DARSTELLUNG",
+// "HAUPTLISTE", …). `marginTop` ist einstellbar, weil der erste Abschnitt
+// eines Sheets direkt oben anschließt, die folgenden mehr Luft brauchen.
+export function sectionLabelStyle(t, marginTop = 30) {
+  return {
+    fontSize: 12,
+    fontWeight: 800,
+    color: t.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    margin: `${marginTop}px 2px 10px`,
+  };
+}
+
 export function primaryButtonStyle(t) {
   return {
     flex: 1,
