@@ -66,10 +66,11 @@ export default function App() {
   // echten Makrodaten (sonst wäre der Eintrag für die Makro-Schnellauswahl
   // nutzlos) - mit `historyAllItems` auch ohne Makros, dann nur mit Namen
   // (`food` kann null sein, wenn es gar keine Stammdaten gibt).
-  // action: 'added' | 'consumed'.
-  const logHistory = (name, food, action) => {
-    if (prefs.historyAllItems) addHistory(food || { name }, action);
-    else if (hasMacros(food)) addHistory(food, action);
+  // action: 'added' | 'consumed'. `qty`/`unit` optional (z.B. beim reinen
+  // Makros-Kopieren gibt es keine zugehörige Mengenänderung).
+  const logHistory = (name, food, action, qty, unit) => {
+    if (prefs.historyAllItems) addHistory(food || { name }, action, qty, unit);
+    else if (hasMacros(food)) addHistory(food, action, qty, unit);
   };
   const [items, setItems, itemsLoaded] = useStorage('gt-items-v1', SEED);
   const [shopping, setShopping, shoppingLoaded] = useStorage('gt-shopping-v1', []);
@@ -227,7 +228,7 @@ export default function App() {
     }
     // Teilweiser Verbrauch (Menge verringert, aber nicht auf 0) zählt
     // ebenfalls als "verzehrt" - z.B. ein Joghurt aus einer 4er-Packung.
-    if (direction < 0) logHistory(item.name, getFood(item.name), 'consumed');
+    if (direction < 0) logHistory(item.name, getFood(item.name), 'consumed', item.qty - next, item.unit);
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, qty: next } : i)));
     flash(id);
   };
@@ -298,7 +299,7 @@ export default function App() {
       return [...prev, { id: newId(), name: fav.name, zone: favZone, category: favCategory, qty: favQty, unit: favUnit, mhd: null }];
     });
     setActiveZone(favZone);
-    logHistory(fav.name, getFood(fav.name), 'added');
+    logHistory(fav.name, getFood(fav.name), 'added', favQty, favUnit);
   };
 
   // Favorit auf die Einkaufsliste setzen - trägt Lagerort/Kategorie/Einheit/
@@ -363,7 +364,7 @@ export default function App() {
     if (prefs.autoShoppingOnRemove !== false && !alreadyOnShopping) {
       setShopping((prev) => [...prev, { ...removed, addedAt: Date.now() }]);
     }
-    logHistory(removed.name, getFood(removed.name), 'consumed');
+    logHistory(removed.name, getFood(removed.name), 'consumed', removed.qty, removed.unit);
     setDeletedItem({ ...removed, addedToShopping });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeletedItem(null), 5000);
@@ -422,7 +423,7 @@ export default function App() {
       name, qty: newItem.qty, unit: newItem.unit, mhd: newItem.mhd || null,
     }]);
     saveFoodMacros(name, newItem.macros);
-    logHistory(name, newItem.macros ? macrosToFood(newItem.macros, name) : getFood(name), 'added');
+    logHistory(name, newItem.macros ? macrosToFood(newItem.macros, name) : getFood(name), 'added', newItem.qty, newItem.unit);
     setShopping((prev) => prev.filter((s) =>
       !(s.name.toLowerCase() === name.toLowerCase() && (s.zone === zoneId || s.zone === null))));
     setActiveZone(zoneId);
@@ -442,9 +443,12 @@ export default function App() {
       return;
     }
     // Menge im Bearbeiten-Formular manuell verringert (aber nicht auf 0)
-    // zählt ebenfalls als teilweiser Verzehr.
+    // zählt ebenfalls als teilweiser Verzehr - gespeichert wird die Differenz
+    // (verzehrte Menge), nicht die neue Restmenge.
     const originalItem = items.find((i) => i.id === editItem.id);
-    if (originalItem && editItem.qty < originalItem.qty) logHistory(name, editItem.macros ? macrosToFood(editItem.macros, name) : getFood(name), 'consumed');
+    if (originalItem && editItem.qty < originalItem.qty) {
+      logHistory(name, editItem.macros ? macrosToFood(editItem.macros, name) : getFood(name), 'consumed', originalItem.qty - editItem.qty, editItem.unit);
+    }
     setItems((prev) => prev.map((i) => (i.id === editItem.id
       ? {
         ...i, name, zone: editItem.zone, category: editItem.category, qty: editItem.qty, unit: editItem.unit,
@@ -506,7 +510,7 @@ export default function App() {
     valid.forEach((b) => {
       const trimmedName = b.name.trim();
       saveFoodMacros(trimmedName, b.macros);
-      logHistory(trimmedName, b.macros ? macrosToFood(b.macros, trimmedName) : getFood(trimmedName), 'added');
+      logHistory(trimmedName, b.macros ? macrosToFood(b.macros, trimmedName) : getFood(trimmedName), 'added', b.qty > 0 ? b.qty : 1, b.unit || 'stk');
     });
     setShopping((prev) => prev.filter((s) =>
       !newOnes.some((n) => n.name.toLowerCase() === s.name.toLowerCase() && (s.zone === n.zone || s.zone === null))));
@@ -559,7 +563,7 @@ export default function App() {
       setItems((prev) => [...prev, { ...item, qty: entry.qty > 0 ? entry.qty : 1 }]);
     }
     setActiveZone(entry.zone);
-    logHistory(entry.name, getFood(entry.name), 'added');
+    logHistory(entry.name, getFood(entry.name), 'added', entry.qty > 0 ? entry.qty : 1, entry.unit);
     setRestoredShopping({ entry, mergedItemId, mergedPrevQty, createdItemId });
     clearTimeout(shoppingUndoTimerRef.current);
     shoppingUndoTimerRef.current = setTimeout(() => setRestoredShopping(null), 5000);

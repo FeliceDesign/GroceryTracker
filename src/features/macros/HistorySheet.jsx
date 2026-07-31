@@ -4,7 +4,7 @@ import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { primaryButtonStyle, pillStyle, btnCircle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
-import { macroSummary, formatMacroTable, copyToClipboard } from '../../lib/macros.js';
+import { macroSummary, formatMacroTable, copyToClipboard, hasMacros } from '../../lib/macros.js';
 
 // Datum/Uhrzeit eines Historie-Eintrags kompakt darstellen: "heute · 14:32",
 // "gestern · 09:10", sonst "12.03. · 09:10".
@@ -23,6 +23,13 @@ function formatWhen(ts, lang) {
 function ActionIcon({ action, t }) {
   const Icon = action === 'added' ? PackagePlus : Utensils;
   return <Icon size={13} color={t.textFaint} />;
+}
+
+// Gespeicherte Menge kompakt darstellen ("2x", "200g", "500ml") - null/0,
+// wenn für den Eintrag keine Menge hinterlegt wurde (z.B. reines Makros-Kopieren).
+function formatQty(qty, unit) {
+  if (qty == null || qty <= 0) return '';
+  return unit === 'stk' ? `${qty}×` : `${qty}${unit || ''}`;
 }
 
 // Historie von Bestandsänderungen mit Makrodaten: "hinzugefügt" und
@@ -168,9 +175,16 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
                           <span style={{ fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere' }}>
                             {entry.food.name}
                           </span>
+                          {hasMacros(entry.food) && (
+                            <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ flexShrink: 0, display: 'flex' }}>
+                              <Utensils size={11} color={t.textFaint} />
+                            </span>
+                          )}
                         </span>
                         <span style={{ display: 'block', fontSize: 11.5, color: t.textFaint, marginTop: 2 }}>
-                          {macroSummary(entry.food, lang) ? `${macroSummary(entry.food, lang)} · ` : ''}{formatWhen(entry.consumedAt, lang)}
+                          {macroSummary(entry.food, lang) ? `${macroSummary(entry.food, lang)} · ` : ''}
+                          {formatQty(entry.qty, entry.unit) ? `${formatQty(entry.qty, entry.unit)} · ` : ''}
+                          {formatWhen(entry.consumedAt, lang)}
                         </span>
                       </span>
                     </button>
