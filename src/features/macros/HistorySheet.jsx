@@ -33,12 +33,14 @@ function ActionIcon({ action, t }) {
 export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveHistory }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [copied, setCopied] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all' | 'added' | 'consumed'
 
   useEffect(() => {
     if (!open) {
       setSelectedIds([]);
       setCopied(false);
+      setCopiedId(null);
       setFilter('all');
     }
   }, [open]);
@@ -59,6 +61,14 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
   const removeEntry = (id) => {
     setSelectedIds((prev) => prev.filter((x) => x !== id));
     onRemoveHistory?.(id);
+  };
+
+  const copyOne = async (entry) => {
+    const ok = await copyToClipboard(formatMacroTable(entry.food, lang));
+    if (ok) {
+      setCopiedId(entry.id);
+      setTimeout(() => setCopiedId((k) => (k === entry.id ? null : k)), 1600);
+    }
   };
 
   const copySelected = async () => {
@@ -160,9 +170,17 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
                           </span>
                         </span>
                         <span style={{ display: 'block', fontSize: 11.5, color: t.textFaint, marginTop: 2 }}>
-                          {macroSummary(entry.food, lang)} · {formatWhen(entry.consumedAt, lang)}
+                          {macroSummary(entry.food, lang) ? `${macroSummary(entry.food, lang)} · ` : ''}{formatWhen(entry.consumedAt, lang)}
                         </span>
                       </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => copyOne(entry)}
+                      aria-label={tr(lang, 'history.copyOneAria', { name: entry.food.name })}
+                      style={btnCircle('transparent', copiedId === entry.id ? t.success : t.textFaint, 30)}
+                    >
+                      {copiedId === entry.id ? <Check size={15} /> : <Copy size={14} />}
                     </button>
                     <button
                       type="button"
