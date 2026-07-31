@@ -80,11 +80,15 @@ export function ManageFoodsSheet({
     if (!name) return;
     // Nur speichern, wenn tatsächlich Nährwerte/Zutaten/eigene Haltbarkeit
     // vorliegen - sonst bliebe ein leerer Karteileichen-Datensatz zurück
-    // (z.B. bei einer reinen Umbenennung ohne weitere Angaben).
+    // (z.B. bei einer reinen Umbenennung ohne weitere Angaben). Wurde bei
+    // einem bestehenden Eintrag die letzte verbliebene Angabe gelöscht, den
+    // Eintrag stattdessen entfernen statt ihn unverändert liegen zu lassen.
     if (hasFoodData(editing.macros)) {
       onUpsert(macrosToFood(editing.macros, name));
       // Falls umbenannt (anderer Schlüssel): alten Datensatz entfernen.
       if (editing.key && editing.key !== normalizeName(name)) onRemove(editing.key);
+    } else if (editing.key) {
+      onRemove(editing.key);
     }
     // Bei Umbenennung einen verknüpften Favoriten mit umbenennen, damit die
     // Verknüpfung (die rein über den Namen läuft) nicht auseinanderläuft.

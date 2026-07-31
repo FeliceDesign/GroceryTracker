@@ -20,11 +20,11 @@ export function useHistory() {
   const history = (raw || []).map((h) => (h.action ? h : { ...h, action: 'consumed' }));
 
   const addHistory = useCallback(
-    (food, action) => {
+    (food, action, qty, unit) => {
       if (!food) return;
       setRaw((prev) => {
         const id = 'cs' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-        return [{ id, food, action, consumedAt: Date.now() }, ...(prev || [])].slice(0, MAX_ENTRIES);
+        return [{ id, food, action, consumedAt: Date.now(), qty: qty ?? null, unit: unit ?? null }, ...(prev || [])].slice(0, MAX_ENTRIES);
       });
     },
     [setRaw],

@@ -400,8 +400,12 @@ export default function App() {
   };
 
   // Stammdaten-Entwurf -> Stammdaten (nur wenn Nährwerte ODER Zutaten gesetzt).
+  // Wurde die letzte verbliebene Angabe (z.B. der Öffnen-Override) gelöscht,
+  // bleibt sonst der alte Stammdaten-Eintrag unverändert liegen - deshalb hier
+  // stattdessen entfernen, falls einer existiert.
   const saveFoodMacros = (name, macros) => {
     if (hasFoodData(macros)) upsertFood(macrosToFood(macros, name));
+    else if (getFood(name)) removeFood(normalizeName(name));
   };
 
   const closeAdd = () => {
