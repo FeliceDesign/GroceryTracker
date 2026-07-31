@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History } from 'lucide-react';
+import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History, Utensils } from 'lucide-react';
 
 import { useSystemTheme, buildTheme } from './lib/theme.js';
 import { zonePalette, ZONE_COLOR_CHOICES, MHD_COLOR_CHOICES } from './lib/colors.js';
@@ -89,6 +89,8 @@ export default function App() {
     favoritesSortMode: 'manual', mainSortMode: 'category', compactList: false, defaultZoneId: null,
     focusMode: false, buttonsHidden: false, bottomButtonsLayout: 'stack', historyPos: 'off',
     hideAddWithButtons: false, swapAddHideOrder: false, addSameSize: false, historyAllItems: false,
+    searchPos: 'bottom', foodsPos: 'off',
+    showMacroIconMain: false, showMacroIconFavorites: true,
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -863,12 +865,16 @@ export default function App() {
           onAdd={openAdd}
           onFavorites={() => setShowFavorites(true)}
           onHistory={() => setShowHistory(true)}
+          onToggleSearch={toggleSearch} searchOpen={searchOpen}
           onZoneClick={() => setShowZones(true)}
           showShoppingButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.shoppingPos || 'top') === 'top'}
           showSettingsButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.settingsPos || 'top') !== 'bottom'}
           showAddButton={!prefs.focusMode && (prefs.addPos || 'bottom') === 'top' && !(prefs.buttonsHidden && prefs.hideAddWithButtons)}
           showFavoritesButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.favoritesPos || 'off') === 'top'}
           showHistoryButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.historyPos || 'off') === 'top'}
+          showSearchButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.searchPos || 'bottom') === 'top'}
+          onFoods={() => setShowFoods(true)}
+          showFoodsButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.foodsPos || 'off') === 'top'}
           addExtraHandlers={addLongPress.handlers} addHoldProgress={addLongPress.progress}
         />
         <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={(id) => { setActiveZone(id); setExpiringView(false); }} t={t} dark={dark} />
@@ -1016,13 +1022,17 @@ export default function App() {
             ariaLabel: tr(lang, 'app.historyAria'),
             icon: <History size={18} strokeWidth={2.2} />,
           },
-          // Suche ist nicht mehr positionierbar - sitzt immer im Stapel unten,
-          // als letzter (= oberster) Eintrag, unabhängig von der Ablauf-Ansicht.
-          !prefs.focusMode && !prefs.buttonsHidden && {
+          !prefs.focusMode && !prefs.buttonsHidden && (prefs.searchPos || 'bottom') === 'bottom' && {
             key: 'search', size: 48,
             onClick: toggleSearch,
             ariaLabel: searchOpen ? tr(lang, 'app.searchCloseAria') : tr(lang, 'app.searchAria'),
             icon: searchOpen ? <X size={19} strokeWidth={2.2} /> : <Search size={18} strokeWidth={2.2} />,
+          },
+          !prefs.focusMode && !prefs.buttonsHidden && (prefs.foodsPos || 'off') === 'bottom' && {
+            key: 'foods', size: 48,
+            onClick: () => setShowFoods(true),
+            ariaLabel: tr(lang, 'app.foodsAria'),
+            icon: <Utensils size={18} strokeWidth={2.2} />,
           },
         ].filter((x) => x)}
       />
@@ -1122,6 +1132,10 @@ export default function App() {
         onSetFavoritesPos={(v) => setPrefs((p) => ({ ...p, favoritesPos: v }))}
         historyPos={prefs.historyPos || 'off'}
         onSetHistoryPos={(v) => setPrefs((p) => ({ ...p, historyPos: v }))}
+        searchPos={prefs.searchPos || 'bottom'}
+        onSetSearchPos={(v) => setPrefs((p) => ({ ...p, searchPos: v }))}
+        foodsPos={prefs.foodsPos || 'off'}
+        onSetFoodsPos={(v) => setPrefs((p) => ({ ...p, foodsPos: v }))}
         zoneEmojiBothSides={prefs.zoneEmojiBothSides === true}
         onToggleZoneEmojiBothSides={(on) => setPrefs((p) => ({ ...p, zoneEmojiBothSides: on }))}
         bottomButtonsLayout={prefs.bottomButtonsLayout || 'stack'}

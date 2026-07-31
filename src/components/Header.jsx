@@ -1,13 +1,13 @@
-import { ShoppingCart, Settings, Plus, Star, History } from 'lucide-react';
+import { ShoppingCart, Settings, Plus, Star, History, Search, X, Utensils } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
 import { tr } from '../lib/i18n.js';
 import { CountBadge } from './CountBadge.jsx';
 
 export function Header({
   zone, dark, t, lang = 'de', totalInZone, shoppingCount, shoppingBadgeMode = 'count', align = 'left', title,
-  onShopping, onSettings, onAdd, onFavorites, onHistory, onZoneClick,
+  onShopping, onSettings, onAdd, onFavorites, onHistory, onToggleSearch, searchOpen = false, onFoods, onZoneClick,
   showShoppingButton = true, showSettingsButton = true, showAddButton = false, showFavoritesButton = false,
-  showHistoryButton = false,
+  showHistoryButton = false, showSearchButton = false, showFoodsButton = false,
   emojiBothSides = false,
   addExtraHandlers, addHoldProgress = 0,
 }) {
@@ -18,7 +18,7 @@ export function Header({
     width: 44, height: 44, color: t.headerText, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
   };
-  const buttonCount = (showShoppingButton ? 1 : 0) + (showSettingsButton ? 1 : 0) + (showAddButton ? 1 : 0) + (showFavoritesButton ? 1 : 0) + (showHistoryButton ? 1 : 0);
+  const buttonCount = (showShoppingButton ? 1 : 0) + (showSettingsButton ? 1 : 0) + (showAddButton ? 1 : 0) + (showFavoritesButton ? 1 : 0) + (showSearchButton ? 1 : 0) + (showHistoryButton ? 1 : 0) + (showFoodsButton ? 1 : 0);
   // Breite der Buttons-Gruppe – im „zentriert"-Modus als Gegengewicht links,
   // damit der Zonenname wirklich mittig sitzt statt vom Buttons-Platz nach
   // links verschoben zu wirken. Passt sich an, wenn Buttons nach unten
@@ -104,9 +104,19 @@ export function Header({
                   <Star size={19} strokeWidth={2.2} />
                 </button>
               )}
+              {showSearchButton && (
+                <button onClick={onToggleSearch} style={iconBtn} aria-label={tr(lang, searchOpen ? 'app.searchCloseAria' : 'app.searchAria')}>
+                  {searchOpen ? <X size={20} strokeWidth={2.2} /> : <Search size={19} strokeWidth={2.2} />}
+                </button>
+              )}
               {showHistoryButton && (
                 <button onClick={onHistory} style={iconBtn} aria-label={tr(lang, 'app.historyAria')}>
                   <History size={19} strokeWidth={2.2} />
+                </button>
+              )}
+              {showFoodsButton && (
+                <button onClick={onFoods} style={iconBtn} aria-label={tr(lang, 'app.foodsAria')}>
+                  <Utensils size={19} strokeWidth={2.2} />
                 </button>
               )}
             </div>
