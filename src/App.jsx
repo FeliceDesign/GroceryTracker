@@ -155,6 +155,7 @@ export default function App() {
   const [deletedZone, setDeletedZone] = useState(null);
   const [deletedFavorites, setDeletedFavorites] = useState(null);
   const [restoredShopping, setRestoredShopping] = useState(null);
+  const [deletedHistoryEntries, setDeletedHistoryEntries] = useState(null);
   const [justChanged, setJustChanged] = useState(null);
   const [justChecked, setJustChecked] = useState(null);
   // Lösch-Buttons im Hauptbildschirm bleiben standardmäßig ausgeblendet
@@ -169,6 +170,7 @@ export default function App() {
   const flashTimerRef = useRef(null);
   const checkedTimerRef = useRef(null);
   const shoppingUndoTimerRef = useRef(null);
+  const historyUndoTimerRef = useRef(null);
 
   const scanSupported = isScanSupported();
   const ready = themeLoaded && zonesLoaded && catsLoaded && foodsLoaded && favoritesLoaded && historyLoaded && itemsLoaded && shoppingLoaded && warnLoaded && prefsLoaded
@@ -192,6 +194,7 @@ export default function App() {
     clearTimeout(flashTimerRef.current);
     clearTimeout(checkedTimerRef.current);
     clearTimeout(shoppingUndoTimerRef.current);
+    clearTimeout(historyUndoTimerRef.current);
   }, []);
 
   // MHD-Erinnerungen neu planen, sobald sich Bestand oder Einstellungen ändern.
@@ -591,6 +594,25 @@ export default function App() {
     setShopping((prev) => (prev.some((s) => s.id === entry.id) ? prev : [...prev, entry]));
     setRestoredShopping(null);
     clearTimeout(shoppingUndoTimerRef.current);
+  };
+
+  // Löscht eine oder mehrere Historie-Einträge (Einzel-Zeile, Sammel-Löschen)
+  // mit Rückgängig-Toast - gleiches Muster wie beim Löschen eines Artikels/
+  // Favoriten. Feld-Korrekturen (Menge/Name/Zeitpunkt/Aktion) laufen nicht
+  // hierüber, nur bewusstes Löschen.
+  const removeHistoryEntries = (entries) => {
+    if (!entries || entries.length === 0) return;
+    entries.forEach((e) => removeHistory(e.id));
+    setDeletedHistoryEntries(entries);
+    clearTimeout(historyUndoTimerRef.current);
+    historyUndoTimerRef.current = setTimeout(() => setDeletedHistoryEntries(null), 5000);
+  };
+
+  const undoHistoryDelete = () => {
+    if (!deletedHistoryEntries) return;
+    restoreHistory(deletedHistoryEntries);
+    setDeletedHistoryEntries(null);
+    clearTimeout(historyUndoTimerRef.current);
   };
 
   const checkAndRestore = (entry) => {
@@ -1077,6 +1099,15 @@ export default function App() {
         />
       )}
 
+      {!deletedItem && !deletedZone && !deletedFavorites && !restoredShopping && deletedHistoryEntries && (
+        <Toast
+          t={t}
+          message={tr(lang, deletedHistoryEntries.length === 1 ? 'history.toastRemovedOne' : 'history.toastRemoved', { count: deletedHistoryEntries.length })}
+          actionLabel={tr(lang, 'app.undo')}
+          onAction={undoHistoryDelete}
+        />
+      )}
+
       <AddItemSheet
         open={showAdd} onClose={closeAdd} t={t} dark={dark} lang={lang}
         zones={zones} categories={categories} onAddCategory={addCategory}
@@ -1238,7 +1269,11 @@ export default function App() {
       <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} lang={lang} />
       <ProduceStorageSheet open={showProduceStorage} onClose={() => setShowProduceStorage(false)} t={t} lang={lang} />
       <SpiceGuideSheet open={showSpiceGuide} onClose={() => setShowSpiceGuide(false)} t={t} lang={lang} />
-      <HistorySheet open={showHistory} onClose={() => setShowHistory(false)} t={t} lang={lang} history={history} onRemoveHistory={removeHistory} onUpdateHistory={updateHistory} />
+      <HistorySheet
+        open={showHistory} onClose={() => setShowHistory(false)} t={t} lang={lang} history={history}
+        foods={foods} items={items} getFood={getFood}
+        onRemoveHistory={removeHistory} onRemoveEntries={removeHistoryEntries} onUpdateHistory={updateHistory} onAddHistory={addHistory}
+      />
       <BackupSheet
         open={showBackup} onClose={() => setShowBackup(false)} t={t} dark={dark} lang={lang} zones={zones} items={items} shopping={shopping}
         stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}

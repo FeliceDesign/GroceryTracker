@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, Copy, Trash2, PackagePlus, PackageMinus, Utensils, Search } from 'lucide-react';
+import { Check, Copy, Trash2, PackagePlus, PackageMinus, Utensils, Search, Plus, Repeat, Scissors } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { primaryButtonStyle, pillStyle, btnCircle, makeInputStyle } from '../../lib/styles.js';
@@ -9,9 +9,20 @@ import { macroSummary, formatMacroTable, copyToClipboard, hasMacros } from '../.
 // Innerhalb eines Tages gelten Einträge derselben Aktion (hinzugefügt/
 // verzehrt) als eine "Mahlzeit", wenn sie höchstens 30 Minuten auseinander
 // liegen - z.B. mehrere Zutaten, die kurz hintereinander verzehrt wurden.
+// Lässt sich pro Eintrag manuell übersteuern (siehe forceNewMeal/
+// forceMergeWithPrev in groupHistory) - "Ab hier neue Mahlzeit" bzw.
+// "Mit voriger Mahlzeit zusammenführen" in der UI.
 const MEAL_GAP_MS = 30 * 60 * 1000;
 
 const startOfDay = (date) => { const c = new Date(date); c.setHours(0, 0, 0, 0); return c; };
+
+// Zeitstempel -> Wert für <input type="datetime-local"> (lokale Zeit, keine
+// Zeitzone), und zurück beim Speichern via `new Date(value).getTime()`.
+function toLocalInputValue(ts) {
+  const d = new Date(ts);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 // Tages-Label für Gruppenüberschriften: "Heute", "Gestern", sonst "12.03.".
 function dayLabel(ts, lang) {
@@ -48,7 +59,7 @@ function formatQty(qty, unit) {
 // Name, gleiche Einheit) zu einer Zeile mit aufsummierter Menge zusammengeführt
 // - z.B. zwei Portionen desselben Joghurts kurz hintereinander verzehrt. Jede
 // Zeile behält alle zugrundeliegenden Einträge (`entries`), damit Löschen und
-// Mengen-Korrektur (siehe HistorySheet) darauf zugreifen können.
+// Feld-Korrekturen (siehe HistorySheet) darauf zugreifen können.
 function mergeMealEntries(entries) {
   const rows = [];
   const byKey = new Map();
@@ -70,6 +81,10 @@ function mergeMealEntries(entries) {
 // "Mahlzeit" (siehe MEAL_GAP_MS). `entries` ist bereits neueste-zuerst
 // sortiert (so wie sie aus der Historie kommen) - diese Reihenfolge bleibt
 // erhalten, sowohl über die Tage als auch innerhalb einer Mahlzeit.
+// `forceNewMeal`/`forceMergeWithPrev` auf einem Eintrag übersteuern die
+// automatische 30-Minuten-Regel (manuelles Trennen/Zusammenführen).
+// `boundaryEntryId` je Mahlzeit merkt sich den Eintrag, der die Mahlzeit
+// eröffnet hat - Ziel für "mit voriger Mahlzeit zusammenführen".
 function groupHistory(entries, lang) {
   const days = [];
   for (const entry of entries) {
@@ -81,10 +96,14 @@ function groupHistory(entries, lang) {
     }
     const lastMeal = day.meals[day.meals.length - 1];
     const prevEntry = lastMeal ? lastMeal.entries[lastMeal.entries.length - 1] : null;
-    if (lastMeal && lastMeal.action === entry.action && (prevEntry.consumedAt - entry.consumedAt) <= MEAL_GAP_MS) {
+    const sameAction = lastMeal && lastMeal.action === entry.action;
+    const gapOk = !!prevEntry && (prevEntry.consumedAt - entry.consumedAt) <= MEAL_GAP_MS;
+    const forceBreak = entry.forceNewMeal === true;
+    const forceJoin = entry.forceMergeWithPrev === true;
+    if (lastMeal && sameAction && !forceBreak && (forceJoin || gapOk)) {
       lastMeal.entries.push(entry);
     } else {
-      day.meals.push({ action: entry.action, entries: [entry] });
+      day.meals.push({ action: entry.action, entries: [entry], boundaryEntryId: entry.id });
     }
   }
   for (const day of days) {
@@ -93,25 +112,52 @@ function groupHistory(entries, lang) {
   return days;
 }
 
-// Eine einzelne Historie-Zeile: Auswahl-Häkchen, Name, Makro-Icon (falls
-// vorhanden), Menge (antippbar zum Nachkorrigieren), Kopieren, Löschen.
+// Eine einzelne Historie-Zeile: Auswahl-Häkchen, Aktions-Symbol (antippbar,
+// wechselt hinzugefügt/verzehrt), Name (antippbar zum Umbenennen), Makro-Icon
+// (falls vorhanden), Menge+Einheit (antippbar), Zeitpunkt (antippbar),
+// Duplizieren, Kopieren, Löschen.
 // `row` kann mehrere zusammengeführte Einträge desselben Artikels innerhalb
 // einer Mahlzeit repräsentieren (siehe mergeMealEntries) - Löschen entfernt
-// dann alle, eine Mengen-Korrektur führt sie auf einen Eintrag zusammen.
-function EntryRow({ row, t, lang, selected, onToggle, onCopy, copied, onRemove, onUpdateQty, isLast }) {
+// dann alle, jede Feld-Korrektur führt sie auf einen Eintrag zusammen.
+function EntryRow({ row, t, lang, selected, onToggle, onCopy, copied, onRemove, onUpdateRow, onDuplicate, isLast }) {
   const [editingQty, setEditingQty] = useState(false);
   const [qtyText, setQtyText] = useState(String(row.qty ?? ''));
-  useEffect(() => { setQtyText(String(row.qty ?? '')); }, [row.qty]);
+  const [unitText, setUnitText] = useState(row.unit || 'stk');
+  useEffect(() => { setQtyText(String(row.qty ?? '')); setUnitText(row.unit || 'stk'); }, [row.qty, row.unit]);
+
+  const [editingName, setEditingName] = useState(false);
+  const [nameText, setNameText] = useState(row.food.name);
+  useEffect(() => { setNameText(row.food.name); }, [row.food.name]);
+
+  const [editingTime, setEditingTime] = useState(false);
+  const [timeText, setTimeText] = useState(toLocalInputValue(row.consumedAt));
+  useEffect(() => { setTimeText(toLocalInputValue(row.consumedAt)); }, [row.consumedAt]);
 
   const hasQty = row.qty != null && row.qty > 0;
   const summary = macroSummary(row.food, lang);
 
   const commitQty = () => {
     const v = parseFloat(qtyText.replace(',', '.'));
-    if (Number.isFinite(v) && v > 0) onUpdateQty(row, v);
-    else setQtyText(String(row.qty ?? ''));
+    if (Number.isFinite(v) && v > 0) onUpdateRow(row, { qty: v, unit: unitText });
+    else { setQtyText(String(row.qty ?? '')); setUnitText(row.unit || 'stk'); }
     setEditingQty(false);
   };
+
+  const commitName = () => {
+    const v = nameText.trim();
+    if (v) onUpdateRow(row, { food: { ...row.food, name: v } });
+    else setNameText(row.food.name);
+    setEditingName(false);
+  };
+
+  const commitTime = () => {
+    const ts = new Date(timeText).getTime();
+    if (Number.isFinite(ts)) onUpdateRow(row, { consumedAt: ts });
+    else setTimeText(toLocalInputValue(row.consumedAt));
+    setEditingTime(false);
+  };
+
+  const toggleAction = () => onUpdateRow(row, { action: row.action === 'added' ? 'consumed' : 'added' });
 
   return (
     <div
@@ -140,36 +186,81 @@ function EntryRow({ row, t, lang, selected, onToggle, onCopy, copied, onRemove, 
         </span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'flex', alignItems: 'flex-start', gap: 5 }}>
-            <span style={{ flexShrink: 0, display: 'flex', marginTop: 2 }}>
+            <span
+              role="button"
+              tabIndex={0}
+              title={tr(lang, 'history.toggleActionAria', { action: tr(lang, row.action === 'added' ? 'history.filterAdded' : 'history.filterConsumed') })}
+              onClick={(e) => { e.stopPropagation(); toggleAction(); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); toggleAction(); } }}
+              style={{ flexShrink: 0, display: 'flex', marginTop: 2, cursor: 'pointer' }}
+            >
               <ActionIcon action={row.action} t={t} />
             </span>
-            <span style={{ fontSize: 14.5, fontWeight: 700, color: t.text, wordBreak: 'break-word' }}>
-              {row.food.name}
-              {hasMacros(row.food) && (
-                <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: 5 }}>
-                  <Utensils size={11} color={t.textMuted} />
-                </span>
-              )}
-            </span>
+            {editingName ? (
+              <input
+                autoFocus
+                value={nameText}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setNameText(e.target.value)}
+                onBlur={commitName}
+                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                style={{
+                  flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, color: t.text, background: t.card,
+                  border: `1px solid ${t.border}`, borderRadius: 6, padding: '1px 4px',
+                }}
+              />
+            ) : (
+              <span
+                role="button"
+                tabIndex={0}
+                title={tr(lang, 'history.editNameAria', { name: row.food.name })}
+                onClick={(e) => { e.stopPropagation(); setEditingName(true); }}
+                style={{ fontSize: 14.5, fontWeight: 700, color: t.text, wordBreak: 'break-word', cursor: 'pointer' }}
+              >
+                {row.food.name}
+                {hasMacros(row.food) && (
+                  <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: 5 }}>
+                    <Utensils size={11} color={t.textMuted} />
+                  </span>
+                )}
+              </span>
+            )}
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: t.textFaint, marginTop: 2 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: t.textFaint, marginTop: 2, flexWrap: 'wrap' }}>
             {summary && <span>{summary} ·</span>}
             {hasQty && (
               editingQty ? (
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  autoFocus
-                  value={qtyText}
+                <span
                   onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => setQtyText(e.target.value)}
-                  onBlur={commitQty}
-                  onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                  style={{
-                    width: 52, fontSize: 11.5, color: t.text, background: t.card,
-                    border: `1px solid ${t.border}`, borderRadius: 6, padding: '1px 4px',
-                  }}
-                />
+                  onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) commitQty(); }}
+                  style={{ display: 'inline-flex', gap: 3, alignItems: 'center' }}
+                >
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    autoFocus
+                    value={qtyText}
+                    onChange={(e) => setQtyText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                    style={{
+                      width: 46, fontSize: 11.5, color: t.text, background: t.card,
+                      border: `1px solid ${t.border}`, borderRadius: 6, padding: '1px 4px',
+                    }}
+                  />
+                  <select
+                    value={unitText}
+                    onChange={(e) => setUnitText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                    style={{
+                      fontSize: 11.5, color: t.text, background: t.card,
+                      border: `1px solid ${t.border}`, borderRadius: 6, padding: '1px 2px',
+                    }}
+                  >
+                    <option value="g">g</option>
+                    <option value="ml">ml</option>
+                    <option value="stk">Stk</option>
+                  </select>
+                </span>
               ) : (
                 <span
                   role="button"
@@ -182,9 +273,41 @@ function EntryRow({ row, t, lang, selected, onToggle, onCopy, copied, onRemove, 
               )
             )}
             {hasQty && <span>·</span>}
-            <span>{timeOnly(row.consumedAt, lang)}</span>
+            {editingTime ? (
+              <input
+                type="datetime-local"
+                autoFocus
+                value={timeText}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setTimeText(e.target.value)}
+                onBlur={commitTime}
+                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                style={{
+                  fontSize: 11, color: t.text, background: t.card,
+                  border: `1px solid ${t.border}`, borderRadius: 6, padding: '1px 4px',
+                }}
+              />
+            ) : (
+              <span
+                role="button"
+                tabIndex={0}
+                title={tr(lang, 'history.editTimeAria', { name: row.food.name })}
+                onClick={(e) => { e.stopPropagation(); setEditingTime(true); }}
+                style={{ textDecoration: 'underline dotted', cursor: 'pointer' }}
+              >
+                {timeOnly(row.consumedAt, lang)}
+              </span>
+            )}
           </span>
         </span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onDuplicate(row)}
+        aria-label={tr(lang, 'history.duplicateAria', { name: row.food.name })}
+        style={btnCircle('transparent', t.textFaint, 30)}
+      >
+        <Repeat size={13} />
       </button>
       <button
         type="button"
@@ -207,16 +330,29 @@ function EntryRow({ row, t, lang, selected, onToggle, onCopy, copied, onRemove, 
 }
 
 // Historie von Bestandsänderungen mit Makrodaten: "hinzugefügt" und
-// "verzehrt" getrennt filterbar, durchsuchbar und nach Tag/Mahlzeit
-// gruppiert. Mehrere Einträge markieren und ihre Makros in einem Rutsch
-// (nacheinander, im bestehenden Kopier-Format) in die Zwischenablage
-// kopieren - für schnelles Nachtragen z.B. in eine Tracking-App.
-export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveHistory, onUpdateHistory }) {
+// "verzehrt" getrennt filterbar, durchsuchbar (Name + Zeitraum) und nach
+// Tag/Mahlzeit gruppiert - mit manuellem Trennen/Zusammenführen von
+// Mahlzeiten. Mehrere Einträge (auch ganze Mahlzeiten auf einmal) markieren
+// und ihre Makros in einem Rutsch in die Zwischenablage kopieren - für
+// schnelles Nachtragen z.B. in eine Tracking-App. Einträge sind nachträglich
+// in Name, Menge/Einheit, Aktion und Zeitpunkt korrigierbar, duplizierbar
+// oder manuell neu anlegbar; Löschen ist per Toast rückgängig zu machen.
+export function HistorySheet({
+  open, onClose, t, lang = 'de', history, foods, items, getFood,
+  onRemoveHistory, onRemoveEntries, onUpdateHistory, onAddHistory,
+}) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [copied, setCopied] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all' | 'added' | 'consumed'
+  const [period, setPeriod] = useState('all'); // 'all' | 'today' | '7d' | '30d'
   const [search, setSearch] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addName, setAddName] = useState('');
+  const [addAction, setAddAction] = useState('consumed');
+  const [addQty, setAddQty] = useState('');
+  const [addUnit, setAddUnit] = useState('stk');
+  const [addTime, setAddTime] = useState(() => toLocalInputValue(Date.now()));
 
   useEffect(() => {
     if (!open) {
@@ -224,21 +360,42 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
       setCopied(false);
       setCopiedId(null);
       setFilter('all');
+      setPeriod('all');
       setSearch('');
+      setShowAddForm(false);
+      setAddName(''); setAddAction('consumed'); setAddQty(''); setAddUnit('stk');
+      setAddTime(toLocalInputValue(Date.now()));
     }
   }, [open]);
 
+  // Bekannte Artikelnamen (Stammdaten + aktueller Bestand) als Vorschläge
+  // beim manuellen Anlegen - Makros werden automatisch übernommen, wenn der
+  // Name zu einem Stammdaten-Eintrag passt (siehe submitAdd).
+  const nameSuggestions = useMemo(() => {
+    const names = new Set();
+    (foods || []).forEach((f) => f.name && names.add(f.name));
+    (items || []).forEach((i) => i.name && names.add(i.name));
+    return [...names].sort((a, b) => a.localeCompare(b));
+  }, [foods, items]);
+
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const now = Date.now();
+    const periodStart = period === 'today' ? startOfDay(now).getTime()
+      : period === '7d' ? now - 7 * 24 * 60 * 60 * 1000
+        : period === '30d' ? now - 30 * 24 * 60 * 60 * 1000
+          : null;
     return (history || []).filter((h) => (filter === 'all' || h.action === filter)
-      && (!q || h.food.name.toLowerCase().includes(q)));
-  }, [history, filter, search]);
+      && (!q || h.food.name.toLowerCase().includes(q))
+      && (periodStart == null || h.consumedAt >= periodStart));
+  }, [history, filter, search, period]);
 
   const groupedHistory = useMemo(() => groupHistory(visible, lang), [visible, lang]);
 
   // Flache Liste aller sichtbaren Zeilen (nach Zusammenführung gleicher
-  // Artikel je Mahlzeit) - Grundlage für Alle-auswählen/Sammel-Kopieren,
-  // da diese mit Zeilen statt einzelnen Historie-Einträgen arbeiten.
+  // Artikel je Mahlzeit) - Grundlage für Alle-auswählen/Sammel-Kopieren/
+  // Sammel-Löschen, da diese mit Zeilen statt einzelnen Historie-Einträgen
+  // arbeiten.
   const allRows = useMemo(
     () => groupedHistory.flatMap((day) => day.meals.flatMap((meal) => meal.entries)),
     [groupedHistory],
@@ -263,20 +420,53 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
   const selectAll = () => setSelectedIds(allRows.map((r) => r.id));
   const selectNone = () => setSelectedIds([]);
 
-  // Entfernt eine Zeile - bei zusammengeführten Artikeln (mehrere Einträge
-  // derselben Mahlzeit) alle zugrundeliegenden Historie-Einträge auf einmal.
-  const removeRow = (row) => {
-    setSelectedIds((prev) => prev.filter((x) => x !== row.id));
-    row.entries.forEach((e) => onRemoveHistory?.(e.id));
+  // Ganze Mahlzeit auf einmal (de-)markieren - z.B. um alle Makros einer
+  // Mahlzeit in einem Rutsch zu kopieren.
+  const toggleMeal = (meal) => {
+    const ids = meal.entries.map((r) => r.id);
+    const allSelected = ids.length > 0 && ids.every((id) => selectedIds.includes(id));
+    setSelectedIds((prev) => (allSelected ? prev.filter((id) => !ids.includes(id)) : [...new Set([...prev, ...ids])]));
   };
 
-  // Mengen-Korrektur einer (ggf. zusammengeführten) Zeile: der neue Wert
-  // landet auf dem ersten zugrundeliegenden Eintrag, etwaige weitere werden
-  // gelöscht - sie gehen in der neuen Summe auf.
-  const updateRowQty = (row, qty) => {
+  // Entfernt eine Zeile - bei zusammengeführten Artikeln (mehrere Einträge
+  // derselben Mahlzeit) alle zugrundeliegenden Historie-Einträge auf einmal.
+  // Löst die Rückgängig-Toast in App.jsx aus (onRemoveEntries).
+  const removeRow = (row) => {
+    setSelectedIds((prev) => prev.filter((x) => x !== row.id));
+    onRemoveEntries?.(row.entries);
+  };
+
+  const deleteSelected = () => {
+    const chosenRows = allRows.filter((r) => selectedIds.includes(r.id));
+    if (chosenRows.length === 0) return;
+    setSelectedIds([]);
+    onRemoveEntries?.(chosenRows.flatMap((r) => r.entries));
+  };
+
+  // Generisches Patch auf eine (ggf. zusammengeführte) Zeile - egal ob Menge,
+  // Einheit, Name, Aktion oder Zeitpunkt: die Änderung landet auf dem ersten
+  // zugrundeliegenden Eintrag, etwaige weitere gehen in der neuen
+  // Zusammenfassung auf (kein Undo hierfür - ist Teil der Korrektur selbst,
+  // kein bewusstes Löschen).
+  const updateRow = (row, patch) => {
     const [first, ...rest] = row.entries;
-    onUpdateHistory?.(first.id, { qty });
+    onUpdateHistory?.(first.id, patch);
     rest.forEach((e) => onRemoveHistory?.(e.id));
+  };
+
+  const duplicateRow = (row) => onAddHistory?.(row.food, row.action, row.qty, row.unit, Date.now());
+
+  // Manuelles Trennen: der erste (neueste) zugrundeliegende Eintrag der Zeile
+  // NACH dem Trennpunkt bekommt die neue-Mahlzeit-Markierung.
+  const splitBefore = (nextRow) => {
+    const firstEntry = nextRow.entries[0];
+    onUpdateHistory?.(firstEntry.id, { forceNewMeal: true, forceMergeWithPrev: false });
+  };
+
+  // Manuelles Zusammenführen: der Eintrag, der die (jüngere) Mahlzeit
+  // eröffnet hat, wird trotz Zeitlücke der vorherigen Mahlzeit zugeschlagen.
+  const mergeWithPrev = (meal) => {
+    onUpdateHistory?.(meal.boundaryEntryId, { forceMergeWithPrev: true, forceNewMeal: false });
   };
 
   const copyOne = async (row) => {
@@ -296,6 +486,19 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     }
+  };
+
+  const submitAdd = () => {
+    const name = addName.trim();
+    if (!name) return;
+    const qtyNum = parseFloat(String(addQty).replace(',', '.'));
+    const qty = Number.isFinite(qtyNum) && qtyNum > 0 ? qtyNum : null;
+    const existingFood = getFood?.(name);
+    const food = existingFood || { name };
+    const ts = new Date(addTime).getTime();
+    onAddHistory?.(food, addAction, qty, qty != null ? addUnit : null, Number.isFinite(ts) ? ts : Date.now());
+    setAddName(''); setAddQty(''); setAddTime(toLocalInputValue(Date.now()));
+    setShowAddForm(false);
   };
 
   const footer = (history || []).length > 0 && (
@@ -324,6 +527,76 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
       subtitle={tr(lang, (history || []).length === 1 ? 'history.subtitleOne' : 'history.subtitle', { count: (history || []).length })}
       footer={footer}
     >
+      <button
+        type="button"
+        onClick={() => setShowAddForm((v) => !v)}
+        aria-label={tr(lang, 'history.addEntryAria')}
+        style={{
+          ...pillStyle(showAddForm, t), width: '100%', marginBottom: 12,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+        }}
+      >
+        <Plus size={14} /> {tr(lang, 'history.addEntryTitle')}
+      </button>
+
+      {showAddForm && (
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: 12, marginBottom: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <input
+            list="history-name-suggestions"
+            value={addName}
+            onChange={(e) => setAddName(e.target.value)}
+            placeholder={tr(lang, 'history.addNamePlaceholder')}
+            style={{ ...makeInputStyle(t), marginTop: 0 }}
+          />
+          <datalist id="history-name-suggestions">
+            {nameSuggestions.map((n) => <option key={n} value={n} />)}
+          </datalist>
+          <Segmented
+            t={t}
+            value={addAction}
+            onChange={setAddAction}
+            options={[
+              { value: 'added', label: tr(lang, 'history.filterAdded') },
+              { value: 'consumed', label: tr(lang, 'history.filterConsumed') },
+            ]}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={addQty}
+              onChange={(e) => setAddQty(e.target.value)}
+              placeholder={tr(lang, 'history.addQtyPlaceholder')}
+              style={{ ...makeInputStyle(t), marginTop: 0, flex: 1 }}
+            />
+            <select value={addUnit} onChange={(e) => setAddUnit(e.target.value)} style={{ ...makeInputStyle(t), marginTop: 0, width: 84 }}>
+              <option value="g">g</option>
+              <option value="ml">ml</option>
+              <option value="stk">Stk</option>
+            </select>
+          </div>
+          <input
+            type="datetime-local"
+            value={addTime}
+            onChange={(e) => setAddTime(e.target.value)}
+            style={{ ...makeInputStyle(t), marginTop: 0 }}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" onClick={() => setShowAddForm(false)} style={{ ...pillStyle(false, t), flex: 1 }}>
+              {tr(lang, 'history.addCancel')}
+            </button>
+            <button
+              type="button"
+              onClick={submitAdd}
+              disabled={!addName.trim()}
+              style={{ ...primaryButtonStyle(t), flex: 1, opacity: addName.trim() ? 1 : 0.5, cursor: addName.trim() ? 'pointer' : 'default' }}
+            >
+              {tr(lang, 'history.addSubmit')}
+            </button>
+          </div>
+        </div>
+      )}
+
       {(history || []).length === 0 ? (
         <div style={{ textAlign: 'center', color: t.textFaint, padding: '32px 12px', fontSize: 13.5 }}>
           {tr(lang, 'history.empty')}
@@ -356,9 +629,27 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
               { value: 'consumed', label: tr(lang, 'history.filterConsumed') },
             ]}
           />
-          <div style={{ display: 'flex', gap: 8, marginTop: 12, marginBottom: 12 }}>
+          <div style={{ marginTop: 8 }}>
+            <Segmented
+              t={t}
+              value={period}
+              onChange={setPeriod}
+              options={[
+                { value: 'all', label: tr(lang, 'history.periodAll') },
+                { value: 'today', label: tr(lang, 'history.periodToday') },
+                { value: '7d', label: tr(lang, 'history.period7d') },
+                { value: '30d', label: tr(lang, 'history.period30d') },
+              ]}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, marginBottom: 12, flexWrap: 'wrap' }}>
             <button type="button" onClick={selectAll} style={pillStyle(false, t)}>{tr(lang, 'history.selectAll')}</button>
             <button type="button" onClick={selectNone} style={pillStyle(false, t)}>{tr(lang, 'history.selectNone')}</button>
+            {selectedIds.length > 0 && (
+              <button type="button" onClick={deleteSelected} style={{ ...pillStyle(false, t), color: t.danger }}>
+                {tr(lang, selectedIds.length === 1 ? 'history.deleteSelectedOne' : 'history.deleteSelected', { count: selectedIds.length })}
+              </button>
+            )}
           </div>
           {groupedHistory.length === 0 ? (
             <div style={{ textAlign: 'center', color: t.textFaint, padding: '24px 12px', fontSize: 13.5 }}>
@@ -376,25 +667,81 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
                     {day.label}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {day.meals.map((meal, mi) => (
-                      <div key={mi} style={{ background: t.cardAlt, borderRadius: 14, overflow: 'hidden' }}>
-                        {meal.entries.map((row, ei) => (
-                          <EntryRow
-                            key={row.id}
-                            row={row}
-                            t={t}
-                            lang={lang}
-                            selected={selectedIds.includes(row.id)}
-                            onToggle={toggle}
-                            onCopy={copyOne}
-                            copied={copiedId === row.id}
-                            onRemove={removeRow}
-                            onUpdateQty={updateRowQty}
-                            isLast={ei === meal.entries.length - 1}
-                          />
-                        ))}
-                      </div>
-                    ))}
+                    {day.meals.map((meal, mi) => {
+                      const prevMeal = day.meals[mi - 1];
+                      const canMergeWithPrev = !!prevMeal && prevMeal.action === meal.action;
+                      const mealIds = meal.entries.map((r) => r.id);
+                      const mealSelected = mealIds.length > 0 && mealIds.every((id) => selectedIds.includes(id));
+                      return (
+                        <div key={mi}>
+                          {canMergeWithPrev && (
+                            <button
+                              type="button"
+                              onClick={() => mergeWithPrev(meal)}
+                              style={{
+                                width: '100%', border: 'none', background: 'transparent', cursor: 'pointer',
+                                color: t.textFaint, fontSize: 10.5, fontWeight: 700, padding: '3px 0', textAlign: 'center',
+                              }}
+                            >
+                              {tr(lang, 'history.mergeWithPrev')}
+                            </button>
+                          )}
+                          <div style={{ background: t.cardAlt, borderRadius: 14, overflow: 'hidden' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderBottom: `1px solid ${t.border}` }}>
+                              <button
+                                type="button"
+                                onClick={() => toggleMeal(meal)}
+                                aria-pressed={mealSelected}
+                                aria-label={tr(lang, 'history.selectMealAria')}
+                                style={{
+                                  flexShrink: 0, width: 18, height: 18, borderRadius: 5,
+                                  border: `2px solid ${mealSelected ? t.pillActive : t.border}`,
+                                  background: mealSelected ? t.pillActive : 'transparent',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0,
+                                }}
+                              >
+                                {mealSelected && <Check size={11} color={t.pillActiveText} strokeWidth={3} />}
+                              </button>
+                              <span style={{ fontSize: 10, color: t.textFaint, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                                {tr(lang, 'history.selectMealAria')}
+                              </span>
+                            </div>
+                            {meal.entries.map((row, ei) => (
+                              <div key={row.id}>
+                                <EntryRow
+                                  row={row}
+                                  t={t}
+                                  lang={lang}
+                                  selected={selectedIds.includes(row.id)}
+                                  onToggle={toggle}
+                                  onCopy={copyOne}
+                                  copied={copiedId === row.id}
+                                  onRemove={removeRow}
+                                  onUpdateRow={updateRow}
+                                  onDuplicate={duplicateRow}
+                                  isLast={ei === meal.entries.length - 1}
+                                />
+                                {ei < meal.entries.length - 1 && (
+                                  <div style={{ display: 'flex', justifyContent: 'center', borderBottom: `1px solid ${t.border}` }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => splitBefore(meal.entries[ei + 1])}
+                                      aria-label={tr(lang, 'history.splitAria')}
+                                      style={{
+                                        border: 'none', background: 'transparent', cursor: 'pointer',
+                                        color: t.textFaint, padding: '2px 10px', display: 'flex', alignItems: 'center',
+                                      }}
+                                    >
+                                      <Scissors size={11} />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
