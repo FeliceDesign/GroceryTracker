@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Copy, Check, Trash2, Search, Star } from 'lucide-react';
+import { Plus, Copy, Check, Trash2, Search, Star, ChevronDown, ChevronRight } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { MacroEditor } from './MacroEditor.jsx';
@@ -25,6 +25,8 @@ export function ManageFoodsSheet({
   // Favoriten aus) geöffnet wurde - dann soll Schließen/Speichern/Löschen
   // das ganze Sheet verlassen statt auf die Stammdaten-Liste zurückzufallen.
   const [directEntry, setDirectEntry] = useState(false);
+  // Sektion "Stammdaten ohne Makros" ist standardmäßig eingeklappt.
+  const [showNoMacros, setShowNoMacros] = useState(false);
   const inputStyle = makeInputStyle(t);
 
   // Beim Schließen den Editor-/Suchzustand zurücksetzen; beim Öffnen mit
@@ -35,6 +37,7 @@ export function ManageFoodsSheet({
       setDirectEntry(false);
       setSearch('');
       setCopiedKey(null);
+      setShowNoMacros(false);
     } else if (initialEditName) {
       const existing = (foods || []).find((f) => normalizeName(f.name) === normalizeName(initialEditName));
       setEditing(existing
@@ -53,12 +56,20 @@ export function ManageFoodsSheet({
     if (directEntry) onClose();
   };
 
-  const list = useMemo(() => {
+  // Zwei Sektionen: Artikel mit echten Makros oben (immer sichtbar), Artikel
+  // mit sonstigen Stammdaten (nur Zutaten und/oder eigene Öffnungs-
+  // Haltbarkeit, keine Nährwerte) unten in einer ausklappbaren Sektion.
+  // Komplett leere Datensätze (weder Nährwerte noch Zutaten noch eigene
+  // Haltbarkeit) tauchen in keiner der beiden auf - es gibt dort nichts zu verwalten.
+  const { withMacros, withoutMacros } = useMemo(() => {
     const q = search.trim().toLowerCase();
-    // Komplett leere Datensätze (weder Nährwerte noch Zutaten noch eigene
-    // Haltbarkeit) nicht anzeigen - es gibt dort nichts zu verwalten.
-    const arr = (foods || []).filter((f) => hasFoodData(f) && (!q || f.name.toLowerCase().includes(q)));
-    return arr.slice().sort((a, b) => a.name.localeCompare(b.name, 'de'));
+    const matches = (f) => !q || f.name.toLowerCase().includes(q);
+    const sortByName = (arr) => arr.slice().sort((a, b) => a.name.localeCompare(b.name, 'de'));
+    const all = (foods || []).filter((f) => hasFoodData(f) && matches(f));
+    return {
+      withMacros: sortByName(all.filter((f) => hasMacros(f))),
+      withoutMacros: sortByName(all.filter((f) => !hasMacros(f))),
+    };
   }, [foods, search]);
 
   const startNew = () => { setDirectEntry(false); setEditing({ name: search.trim(), macros: emptyMacros('100g') }); };
@@ -193,61 +204,102 @@ export function ManageFoodsSheet({
         <Plus size={17} /> {tr(lang, 'foods.addNew')}
       </button>
 
-      {list.length === 0 ? (
+      {withMacros.length === 0 && withoutMacros.length === 0 ? (
         <div style={{ textAlign: 'center', color: t.textFaint, padding: '32px 12px', fontSize: 13.5 }}>
           {search.trim() ? tr(lang, 'foods.nothingFound') : tr(lang, 'foods.noneYet')}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {list.map((food) => (
-            <div key={food.key} style={{ display: 'flex', alignItems: 'center', gap: 8, background: t.cardAlt, borderRadius: 14, padding: '10px 12px' }}>
+        <>
+          {withMacros.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {withMacros.map((food) => (
+                <FoodRow
+                  key={food.key} food={food} t={t} lang={lang}
+                  onEdit={startEdit} onCopy={copyRow} copied={copiedKey === food.key}
+                  isFavorite={isFavorite} onToggleFavorite={onToggleFavorite}
+                />
+              ))}
+            </div>
+          )}
+
+          {withoutMacros.length > 0 && (
+            <div style={{ marginTop: withMacros.length > 0 ? 18 : 0 }}>
               <button
                 type="button"
-                onClick={() => startEdit(food)}
-                style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0 }}
+                onClick={() => setShowNoMacros((v) => !v)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, width: '100%', border: 'none', background: 'transparent',
+                  color: t.textMuted, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: '4px 2px', marginBottom: 8,
+                }}
               >
-                <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere', lineHeight: 1.3 }}>
-                  {food.name}
-                </span>
-                <span style={{ display: 'block', fontSize: 11.5, color: t.textFaint, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {hasMacros(food)
-                    ? `${macroSummary(food, lang)} · ${basisLabel(food, lang)}`
-                    : (hasFoodData(food) ? tr(lang, 'foods.ingredientsPresent') : tr(lang, 'foods.noValues'))}
-                </span>
+                {showNoMacros ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                {tr(lang, 'foods.noMacrosSection', { count: withoutMacros.length })}
               </button>
-              {onToggleFavorite && (
-                <button
-                  type="button"
-                  onClick={() => onToggleFavorite({ name: food.name })}
-                  aria-pressed={isFavorite?.(food.name)}
-                  aria-label={tr(lang, isFavorite?.(food.name) ? 'detail.unfavoriteAria' : 'detail.favoriteAria')}
-                  style={{
-                    flexShrink: 0, width: 36, height: 36, borderRadius: 10, border: 'none', cursor: 'pointer',
-                    background: 'transparent', color: isFavorite?.(food.name) ? t.warning : t.textFaint,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  <Star size={16} fill={isFavorite?.(food.name) ? 'currentColor' : 'none'} />
-                </button>
-              )}
-              {hasMacros(food) && (
-                <button
-                  type="button"
-                  onClick={() => copyRow(food)}
-                  aria-label={tr(lang, 'foods.copyAria')}
-                  style={{
-                    flexShrink: 0, width: 36, height: 36, borderRadius: 10, border: 'none', cursor: 'pointer',
-                    background: 'transparent', color: copiedKey === food.key ? t.success : t.textMuted,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  {copiedKey === food.key ? <Check size={17} /> : <Copy size={16} />}
-                </button>
+              {showNoMacros && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {withoutMacros.map((food) => (
+                    <FoodRow
+                      key={food.key} food={food} t={t} lang={lang}
+                      onEdit={startEdit} onCopy={copyRow} copied={copiedKey === food.key}
+                      isFavorite={isFavorite} onToggleFavorite={onToggleFavorite}
+                    />
+                  ))}
+                </div>
               )}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </Modal>
+  );
+}
+
+function FoodRow({ food, t, lang, onEdit, onCopy, copied, isFavorite, onToggleFavorite }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: t.cardAlt, borderRadius: 14, padding: '10px 12px' }}>
+      <button
+        type="button"
+        onClick={() => onEdit(food)}
+        style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0 }}
+      >
+        <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere', lineHeight: 1.3 }}>
+          {food.name}
+        </span>
+        <span style={{ display: 'block', fontSize: 11.5, color: t.textFaint, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {hasMacros(food)
+            ? `${macroSummary(food, lang)} · ${basisLabel(food, lang)}`
+            : (hasFoodData(food) ? tr(lang, 'foods.ingredientsPresent') : tr(lang, 'foods.noValues'))}
+        </span>
+      </button>
+      {onToggleFavorite && (
+        <button
+          type="button"
+          onClick={() => onToggleFavorite({ name: food.name })}
+          aria-pressed={isFavorite?.(food.name)}
+          aria-label={tr(lang, isFavorite?.(food.name) ? 'detail.unfavoriteAria' : 'detail.favoriteAria')}
+          style={{
+            flexShrink: 0, width: 36, height: 36, borderRadius: 10, border: 'none', cursor: 'pointer',
+            background: 'transparent', color: isFavorite?.(food.name) ? t.warning : t.textFaint,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Star size={16} fill={isFavorite?.(food.name) ? 'currentColor' : 'none'} />
+        </button>
+      )}
+      {hasMacros(food) && (
+        <button
+          type="button"
+          onClick={() => onCopy(food)}
+          aria-label={tr(lang, 'foods.copyAria')}
+          style={{
+            flexShrink: 0, width: 36, height: 36, borderRadius: 10, border: 'none', cursor: 'pointer',
+            background: 'transparent', color: copied ? t.success : t.textMuted,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          {copied ? <Check size={17} /> : <Copy size={16} />}
+        </button>
+      )}
+    </div>
   );
 }

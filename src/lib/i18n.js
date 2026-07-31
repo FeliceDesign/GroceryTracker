@@ -131,6 +131,7 @@ const DE = {
     editTitle: 'Nährwerte bearbeiten', newTitle: 'Neues Lebensmittel', name: 'Name', namePlaceholder: 'z.B. Frischmilch',
     delete: 'Löschen', save: 'Speichern', copyAria: 'Nährwerte kopieren',
     ingredientsPresent: 'Zutaten hinterlegt', noValues: 'keine Werte',
+    noMacrosSection: 'Ohne Makros ({{count}})',
   },
   history: {
     title: 'Historie', subtitle: '{{count}} Einträge',
@@ -466,6 +467,7 @@ const EN = {
     editTitle: 'Edit nutrition data', newTitle: 'New food', name: 'Name', namePlaceholder: 'e.g. fresh milk',
     delete: 'Delete', save: 'Save', copyAria: 'Copy nutrition data',
     ingredientsPresent: 'Ingredients on file', noValues: 'no values',
+    noMacrosSection: 'Without macros ({{count}})',
   },
   history: {
     title: 'History', subtitle: '{{count}} entries',
