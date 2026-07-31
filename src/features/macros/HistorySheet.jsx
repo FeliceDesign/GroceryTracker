@@ -166,9 +166,18 @@ function EntryRow({ row, t, lang, selected, onToggle, onCopy, copied, onRemove, 
         borderBottom: !isLast ? `1px solid ${t.border}` : 'none',
       }}
     >
-      <button
-        type="button"
+      {/* Bewusst ein div mit role="button" statt eines echten <button>: die
+          Zeile enthält eigene Eingabefelder (Name, Menge/Einheit, Zeitpunkt)
+          zum Bearbeiten, und interaktive Elemente dürfen nicht in einem
+          <button> verschachtelt werden. */}
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => onToggle(row.id)}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return; // Tastatureingaben in den Feldern nicht abfangen
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(row.id); }
+        }}
         aria-pressed={selected}
         style={{
           display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, textAlign: 'left',
@@ -300,7 +309,7 @@ function EntryRow({ row, t, lang, selected, onToggle, onCopy, copied, onRemove, 
             )}
           </span>
         </span>
-      </button>
+      </div>
       <button
         type="button"
         onClick={() => onDuplicate(row)}
@@ -448,9 +457,15 @@ export function HistorySheet({
   // zugrundeliegenden Eintrag, etwaige weitere gehen in der neuen
   // Zusammenfassung auf (kein Undo hierfür - ist Teil der Korrektur selbst,
   // kein bewusstes Löschen).
+  // Wichtig: die in der Zeile angezeigte Summenmenge muss dabei auf den
+  // verbleibenden Eintrag übertragen werden. Sonst behält dieser nur seine
+  // eigene Teilmenge und die der gelöschten Einträge verschwindet still -
+  // z.B. beim reinen Umbenennen einer Zeile "150 g" (100 g + 50 g).
+  // Ein `qty` im Patch selbst hat Vorrang (Mengen-Korrektur).
   const updateRow = (row, patch) => {
     const [first, ...rest] = row.entries;
-    onUpdateHistory?.(first.id, patch);
+    const carryQty = rest.length > 0 && row.qty != null ? { qty: row.qty, unit: row.unit } : null;
+    onUpdateHistory?.(first.id, { ...carryQty, ...patch });
     rest.forEach((e) => onRemoveHistory?.(e.id));
   };
 
@@ -673,7 +688,11 @@ export function HistorySheet({
                       const mealIds = meal.entries.map((r) => r.id);
                       const mealSelected = mealIds.length > 0 && mealIds.every((id) => selectedIds.includes(id));
                       return (
-                        <div key={mi}>
+                        // Stabiler Key statt Index: der Eintrag, der die
+                        // Mahlzeit eröffnet, identifiziert sie eindeutig -
+                        // beim Trennen/Zusammenführen verschieben sich sonst
+                        // die Indizes und React ordnet die Blöcke falsch zu.
+                        <div key={meal.boundaryEntryId}>
                           {canMergeWithPrev && (
                             <button
                               type="button"
