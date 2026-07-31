@@ -1,4 +1,4 @@
-import { Boxes, Tags, Utensils, Clock, ListOrdered, Sprout, ChefHat, Download, Sun, Moon, SunMoon, LayoutGrid, SlidersHorizontal, AlertTriangle, Languages, Star, History } from 'lucide-react';
+import { Boxes, Tags, Utensils, Clock, ListOrdered, Sprout, ChefHat, Download, Upload, Sun, Moon, SunMoon, LayoutGrid, SlidersHorizontal, AlertTriangle, Languages, Star, History } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { Row } from '../../components/Row.jsx';
@@ -16,7 +16,7 @@ const sectionLabel = (t) => ({
 export function SettingsSheet({
   open, onClose, t, lang = 'de', onSetLang, themeOverride, setThemeOverride,
   onManageZones, onManageCategories, onManageFoods, onManageFavorites, onOpenShelfLife, onOpenExpiringView, onOpenProduceStorage, onOpenSpiceGuide,
-  onOpenHistory, onOpenLayout, onOpenBehavior, onOpenWarnSettings, onOpenBackup,
+  onOpenHistory, onOpenLayout, onOpenBehavior, onOpenWarnSettings, onOpenBackup, onOpenImport,
   stats,
 }) {
   return (
@@ -121,6 +121,7 @@ export function SettingsSheet({
       <div style={sectionLabel(t)}>{tr(lang, 'settings.data')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <Row t={t} icon={<Download size={19} />} label={tr(lang, 'settings.backupTitle')} sub={tr(lang, 'settings.backupSub', { count: stats.items })} onClick={onOpenBackup} />
+        <Row t={t} icon={<Upload size={19} />} label={tr(lang, 'settings.importTitle')} sub={tr(lang, 'settings.importSub')} onClick={onOpenImport} />
       </div>
 
       <div style={{ textAlign: 'center', fontSize: 11.5, color: t.textFaint, marginTop: 24 }}>

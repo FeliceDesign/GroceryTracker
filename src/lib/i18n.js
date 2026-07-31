@@ -204,7 +204,8 @@ const DE = {
     shelfLifeTitle: 'Haltbarkeits-Ratgeber', shelfLifeSub: 'Geöffnet, ungeöffnet, tiefgefroren',
     produceTitle: 'Obst-&-Gemüse-Ratgeber', produceSub: 'Kühlen, Ethylen, Verpackung',
     spiceTitle: 'Gewürz-Ratgeber', spiceSub: 'Passt zu, Haltbarkeit, Lagerung',
-    data: 'Daten', backupTitle: 'Backup, Export & Import', backupSub: '{{count}} Artikel · Sichern, Teilen, Bestandsliste',
+    data: 'Daten', backupTitle: 'Backup & Export', backupSub: '{{count}} Artikel · Sichern, Teilen, Bestandsliste',
+    importTitle: 'Import', importSub: 'Backup aus Datei oder Text wiederherstellen',
     language: 'Sprache', footer: 'Stock-Tracker · lokal gespeichert auf diesem Gerät',
   },
   layout: {
@@ -256,7 +257,7 @@ const DE = {
     time: 'Uhrzeit', hour: 'Uhr', fewer: 'Weniger', more: 'Mehr',
   },
   backup: {
-    title: 'Backup, Export & Import', subtitle: 'Sichern, Teilen, Bestandsliste', tabBackup: 'Backup', tabList: 'Bestandsliste',
+    title: 'Backup & Export', subtitle: 'Sichern, Teilen, Bestandsliste', tabBackup: 'Backup', tabImport: 'Import', tabList: 'Bestandsliste',
     exportMacros: 'Makros mit exportieren', exportMacrosHint: 'Nährwerte von {{count}} Lebensmitteln ins Backup aufnehmen.',
     exportBackup: 'Backup exportieren', exportBackupHint: '{{count}} Artikel als JSON{{macros}} · als Datei speichern',
     withMacros: ' inkl. Makros', withoutMacros: ' ohne Makros',
@@ -561,7 +562,8 @@ const EN = {
     shelfLifeTitle: 'Shelf life guide', shelfLifeSub: 'Opened, unopened, frozen',
     produceTitle: 'Fruit & veg storage guide', produceSub: 'Cooling, ethylene, packaging',
     spiceTitle: 'Spice guide', spiceSub: 'Pairing, shelf life, storage',
-    data: 'Data', backupTitle: 'Backup, export & import', backupSub: '{{count}} items · Save, share, inventory list',
+    data: 'Data', backupTitle: 'Backup & export', backupSub: '{{count}} items · Save, share, inventory list',
+    importTitle: 'Import', importSub: 'Restore a backup from file or text',
     language: 'Language', footer: 'Stock-Tracker · stored locally on this device',
   },
   layout: {
@@ -581,6 +583,8 @@ const EN = {
   },
   behavior: {
     title: 'Behavior', subtitle: 'Shopping list, quantities, formats',
+    sectionMainList: 'Main list', sectionShopping: 'Shopping list', sectionQuantity: 'Quantity input',
+    sectionHistory: 'History', sectionFavorites: 'Favorites', sectionScan: 'Scanning', sectionFormat: 'Format',
     mainSort: 'Main list sorting', mainSortHint: 'How items are shown in the inventory.',
     sortCategory: 'Category', sortName: 'Name', sortMhd: 'Best-before',
     shoppingCount: 'Marker on shopping icon', shoppingCountHint: 'How open items are shown on the shopping list button.',
@@ -611,7 +615,7 @@ const EN = {
     time: 'Time', hour: "o'clock", fewer: 'Fewer', more: 'More',
   },
   backup: {
-    title: 'Backup, export & import', subtitle: 'Save, share, inventory list', tabBackup: 'Backup', tabList: 'Inventory list',
+    title: 'Backup & export', subtitle: 'Save, share, inventory list', tabBackup: 'Backup', tabImport: 'Import', tabList: 'Inventory list',
     exportMacros: 'Include nutrition data in export', exportMacrosHint: 'Include nutrition data for {{count}} foods in the backup.',
     exportBackup: 'Export backup', exportBackupHint: '{{count}} items as JSON{{macros}} · save as file',
     withMacros: ' incl. nutrition data', withoutMacros: ' without nutrition data',

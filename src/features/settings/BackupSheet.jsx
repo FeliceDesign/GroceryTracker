@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Upload, Share2, ClipboardCopy } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
@@ -80,15 +80,22 @@ function buildShoppingText(shopping, lang) {
 
 const TABS = (lang) => [
   { id: 'backup', label: tr(lang, 'backup.tabBackup') },
+  { id: 'import', label: tr(lang, 'backup.tabImport') },
   { id: 'list', label: tr(lang, 'backup.tabList') },
 ];
 
-// Konsolidierte Backup-/Export-Ansicht: JSON-Backup (Sichern/Teilen/
-// Zwischenablage/Import) auf einem Tab, dazu eine separate, zonen-
-// filterbare Bestandsliste als reine Lesetabelle auf einem zweiten Tab.
-export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items, shopping = [], stats, buildBackup, restoreBackup, previewBackup, getFood, dateFormat = 'dmy' }) {
-  const [tab, setTab] = useState('backup');
-  const [importing, setImporting] = useState(false);
+// Konsolidierte Backup-/Export-Ansicht: JSON-Backup sichern/teilen/
+// kopieren auf einem Tab, Import (Datei oder Text) auf einem eigenen Tab -
+// vorher als Unter-Zeile im Backup-Tab versteckt, jetzt auch direkt über
+// einen eigenen Einstellungspunkt unter "Daten" erreichbar (siehe
+// `initialTab`) -, dazu eine separate, zonen-filterbare Bestandsliste als
+// reine Lesetabelle auf einem dritten Tab.
+export function BackupSheet({
+  open, onClose, t, dark, lang = 'de', zones, items, shopping = [], stats, buildBackup, restoreBackup, previewBackup, getFood, dateFormat = 'dmy',
+  initialTab = 'backup',
+}) {
+  const [tab, setTab] = useState(initialTab);
+  useEffect(() => { if (open) setTab(initialTab || 'backup'); }, [open, initialTab]);
   const [importText, setImportText] = useState('');
   const [msg, setMsg] = useState('');
   const [exportMacros, setExportMacros] = useState(true);
@@ -114,7 +121,7 @@ export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items,
     if (!pending) return;
     const res = restoreBackup(pending.text);
     setMsg(res.ok ? '✓ ' + res.message : res.message);
-    if (res.ok) { setImportText(''); setImporting(false); }
+    if (res.ok) setImportText('');
     setPending(null);
     setTimeout(() => setMsg(''), 4000);
   };
@@ -253,48 +260,50 @@ export function BackupSheet({ open, onClose, t, dark, lang = 'de', zones, items,
             <Row t={t} icon={<Download size={19} />} label={tr(lang, 'backup.exportBackup')} sub={tr(lang, 'backup.exportBackupHint', { count: stats.items, macros: exportMacros ? tr(lang, 'backup.withMacros') : tr(lang, 'backup.withoutMacros') })} onClick={doExport} />
             <Row t={t} icon={<Share2 size={19} />} label={tr(lang, 'backup.shareBackup')} sub={tr(lang, 'backup.shareBackupHint')} onClick={doShareExport} />
             <Row t={t} icon={<ClipboardCopy size={19} />} label={tr(lang, 'backup.copyToClipboard')} sub={tr(lang, 'backup.copyToClipboardHint')} onClick={doCopyExport} />
-            <Row t={t} icon={<Upload size={19} />} label={tr(lang, 'backup.importBackup')} sub={tr(lang, 'backup.importBackupHint')} onClick={() => { setImporting((v) => !v); setPending(null); }} />
           </div>
+        </>
+      )}
 
-          {importing && (
-            <div style={{ marginTop: 10 }}>
-              <input ref={fileRef} type="file" accept=".json,application/json" onChange={onPickFile} style={{ display: 'none' }} />
-              <button
-                type="button"
-                onClick={() => fileRef.current && fileRef.current.click()}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  padding: '12px', borderRadius: 12, border: `1.5px solid ${t.border}`,
-                  background: 'transparent', color: t.text, fontWeight: 700, fontSize: 14, cursor: 'pointer',
-                  marginBottom: 10,
-                }}
-              >
-                <Upload size={17} /> {tr(lang, 'backup.pickFile')}
-              </button>
-              <div style={{ fontSize: 11.5, color: t.textFaint, marginBottom: 10, textAlign: 'center' }}>
-                {tr(lang, 'backup.orPasteJson')}
-              </div>
-              <textarea
-                value={importText}
-                onChange={(e) => setImportText(e.target.value)}
-                placeholder={tr(lang, 'backup.pastePlaceholder')}
-                rows={5}
-                style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: 12.5 }}
-              />
-              <button
-                type="button"
-                onClick={doImport}
-                disabled={!importText.trim()}
-                style={{
-                  width: '100%', marginTop: 8, padding: '12px', borderRadius: 12, border: `1.5px solid ${t.border}`,
-                  background: 'transparent', color: t.text, fontWeight: 700,
-                  cursor: importText.trim() ? 'pointer' : 'default', opacity: importText.trim() ? 1 : 0.5,
-                }}
-              >
-                {tr(lang, 'backup.checkText')}
-              </button>
-            </div>
-          )}
+      {tab === 'import' && (
+        <>
+          <div style={{ fontSize: 11.5, color: t.textFaint, lineHeight: 1.5, marginBottom: 12 }}>
+            {tr(lang, 'backup.importBackupHint')}
+          </div>
+          <input ref={fileRef} type="file" accept=".json,application/json" onChange={onPickFile} style={{ display: 'none' }} />
+          <button
+            type="button"
+            onClick={() => fileRef.current && fileRef.current.click()}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '12px', borderRadius: 12, border: `1.5px solid ${t.border}`,
+              background: 'transparent', color: t.text, fontWeight: 700, fontSize: 14, cursor: 'pointer',
+              marginBottom: 10,
+            }}
+          >
+            <Upload size={17} /> {tr(lang, 'backup.pickFile')}
+          </button>
+          <div style={{ fontSize: 11.5, color: t.textFaint, marginBottom: 10, textAlign: 'center' }}>
+            {tr(lang, 'backup.orPasteJson')}
+          </div>
+          <textarea
+            value={importText}
+            onChange={(e) => setImportText(e.target.value)}
+            placeholder={tr(lang, 'backup.pastePlaceholder')}
+            rows={5}
+            style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: 12.5 }}
+          />
+          <button
+            type="button"
+            onClick={doImport}
+            disabled={!importText.trim()}
+            style={{
+              width: '100%', marginTop: 8, padding: '12px', borderRadius: 12, border: `1.5px solid ${t.border}`,
+              background: 'transparent', color: t.text, fontWeight: 700,
+              cursor: importText.trim() ? 'pointer' : 'default', opacity: importText.trim() ? 1 : 0.5,
+            }}
+          >
+            {tr(lang, 'backup.checkText')}
+          </button>
 
           {pending && (
             <div style={{ marginTop: 12, background: t.cardAlt, borderRadius: 14, padding: 14, border: `1.5px solid ${t.dangerBorder}` }}>

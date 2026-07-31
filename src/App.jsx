@@ -137,6 +137,7 @@ export default function App() {
   const [showSpiceGuide, setShowSpiceGuide] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
+  const [backupInitialTab, setBackupInitialTab] = useState('backup');
   const [showLayout, setShowLayout] = useState(false);
   const [showBehavior, setShowBehavior] = useState(false);
   const [showWarnSettings, setShowWarnSettings] = useState(false);
@@ -1145,7 +1146,8 @@ export default function App() {
         onOpenProduceStorage={() => { setShowSettings(false); setShowProduceStorage(true); }}
         onOpenSpiceGuide={() => { setShowSettings(false); setShowSpiceGuide(true); }}
         onOpenHistory={() => { setShowSettings(false); setShowHistory(true); }}
-        onOpenBackup={() => { setShowSettings(false); setShowBackup(true); }}
+        onOpenBackup={() => { setShowSettings(false); setShowBackup(true); setBackupInitialTab('backup'); }}
+        onOpenImport={() => { setShowSettings(false); setShowBackup(true); setBackupInitialTab('import'); }}
         onOpenLayout={() => { setShowSettings(false); setShowLayout(true); }}
         onOpenBehavior={() => { setShowSettings(false); setShowBehavior(true); }}
         onOpenWarnSettings={() => { setShowSettings(false); setShowWarnSettings(true); }}
@@ -1278,7 +1280,7 @@ export default function App() {
         open={showBackup} onClose={() => setShowBackup(false)} t={t} dark={dark} lang={lang} zones={zones} items={items} shopping={shopping}
         stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
         buildBackup={buildBackup} restoreBackup={restoreBackup} previewBackup={previewBackup}
-        getFood={getFood} dateFormat={prefs.dateFormat || 'dmy'}
+        getFood={getFood} dateFormat={prefs.dateFormat || 'dmy'} initialTab={backupInitialTab}
       />
 
       <DetailItemSheet
