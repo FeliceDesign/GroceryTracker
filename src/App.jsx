@@ -1022,17 +1022,17 @@ export default function App() {
             ariaLabel: tr(lang, 'app.historyAria'),
             icon: <History size={18} strokeWidth={2.2} />,
           },
-          !prefs.focusMode && !prefs.buttonsHidden && (prefs.searchPos || 'bottom') === 'bottom' && {
-            key: 'search', size: 48,
-            onClick: toggleSearch,
-            ariaLabel: searchOpen ? tr(lang, 'app.searchCloseAria') : tr(lang, 'app.searchAria'),
-            icon: searchOpen ? <X size={19} strokeWidth={2.2} /> : <Search size={18} strokeWidth={2.2} />,
-          },
           !prefs.focusMode && !prefs.buttonsHidden && (prefs.foodsPos || 'off') === 'bottom' && {
             key: 'foods', size: 48,
             onClick: () => setShowFoods(true),
             ariaLabel: tr(lang, 'app.foodsAria'),
             icon: <Utensils size={18} strokeWidth={2.2} />,
+          },
+          !prefs.focusMode && !prefs.buttonsHidden && (prefs.searchPos || 'bottom') === 'bottom' && {
+            key: 'search', size: 48,
+            onClick: toggleSearch,
+            ariaLabel: searchOpen ? tr(lang, 'app.searchCloseAria') : tr(lang, 'app.searchAria'),
+            icon: searchOpen ? <X size={19} strokeWidth={2.2} /> : <Search size={18} strokeWidth={2.2} />,
           },
         ].filter((x) => x)}
       />
