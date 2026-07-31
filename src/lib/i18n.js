@@ -224,6 +224,8 @@ const DE = {
   },
   behavior: {
     title: 'Verhalten', subtitle: 'Einkaufsliste, Mengen, Formate',
+    sectionMainList: 'Hauptliste', sectionShopping: 'Einkaufsliste', sectionQuantity: 'Mengen-Eingabe',
+    sectionHistory: 'Historie', sectionFavorites: 'Favoriten', sectionScan: 'Scannen', sectionFormat: 'Format',
     mainSort: 'Sortierung der Hauptliste', mainSortHint: 'Wie Artikel im Bestand angezeigt werden.',
     sortCategory: 'Kategorie', sortName: 'Name', sortMhd: 'MHD',
     shoppingCount: 'Markierung am Einkaufs-Symbol', shoppingCountHint: 'Wie offene Artikel am Einkaufslisten-Button angezeigt werden.',
@@ -237,7 +239,7 @@ const DE = {
     stripBrandNames: 'Markennamen beim Scannen entfernen', stripBrandNamesHint: 'Entfernt bekannte Marken (z.B. „Alpro") vom Anfang/Ende des per Barcode gefundenen Produktnamens.',
     showFavoriteChips: 'Favoriten-Schnellzugriff in Einkaufsliste', showFavoriteChipsHint: 'Chip-Leiste mit deinen Favoriten zum schnellen Hinzufügen in der Einkaufsliste.',
     compactList: 'Kompakte Listenansicht', compactListHint: 'Engere Zeilen und kleinere Schrift in der Bestandsliste – mehr Artikel auf einen Blick.',
-    historyAllItems: 'Alle Artikel in der Historie', historyAllItemsHint: 'Auch Artikel ohne Makrodaten werden hinzugefügt/verzehrt geloggt, nicht nur die mit Nährwerten.',
+    historyAllItems: 'Alle Artikel in der Historie', historyAllItemsHint: 'Auch Artikel ohne Makrodaten werden hinzugefügt/verbraucht geloggt, nicht nur die mit Nährwerten.',
     showMacroIconMain: 'Makro-Symbol im Bestand', showMacroIconMainHint: 'Kleines Symbol neben Artikeln mit hinterlegten Nährwerten in der Hauptansicht.',
     showMacroIconFavorites: 'Makro-Symbol bei Favoriten', showMacroIconFavoritesHint: 'Kleines Symbol neben Favoriten mit hinterlegten Nährwerten.',
     historyMaxEntries: 'Historie: maximale Einträge', historyMaxEntriesHint: 'Älteste Einträge werden automatisch entfernt, sobald das Limit erreicht ist.',

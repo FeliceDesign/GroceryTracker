@@ -4,8 +4,16 @@ import { SettingRow } from '../../components/SettingRow.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { tr } from '../../lib/i18n.js';
 
+const sectionLabel = (t) => ({
+  fontSize: 12, fontWeight: 800, color: t.textMuted, textTransform: 'uppercase',
+  letterSpacing: '0.06em', margin: '22px 2px 10px',
+});
+
 // Verhaltens-/Anzeige-Toggles + Formate – vorher Teil der Haupt-Einstellungen
-// ("Darstellung"), jetzt eigenes Untermenü (Settings-Declutter).
+// ("Darstellung"), jetzt eigenes Untermenü (Settings-Declutter). In
+// thematische Abschnitte gegliedert (gleiches Sektions-Muster wie
+// SettingsSheet.jsx), da die Liste über mehrere Sessions organisch auf 13
+// Einstellungen gewachsen war und flach unübersichtlich wurde.
 export function BehaviorSheet({
   open, onClose, t, lang = 'de',
   shoppingBadgeMode, onSetShoppingBadgeMode, autoShoppingOnRemove, onToggleAutoShoppingOnRemove, stepGml, onSetStepGml,
@@ -18,6 +26,7 @@ export function BehaviorSheet({
 }) {
   return (
     <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'behavior.title')} subtitle={tr(lang, 'behavior.subtitle')}>
+      <div style={{ ...sectionLabel(t), marginTop: 0 }}>{tr(lang, 'behavior.sectionMainList')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.mainSort')}</div>
@@ -36,6 +45,30 @@ export function BehaviorSheet({
           />
         </div>
 
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.compactList')}
+          sub={tr(lang, 'behavior.compactListHint')}
+          control={<Toggle t={t} on={compactList === true} onChange={onToggleCompactList} />}
+        />
+
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.warnDot')}
+          sub={tr(lang, 'behavior.warnDotHint')}
+          control={<Toggle t={t} on={showWarnDot !== false} onChange={onToggleShowWarnDot} />}
+        />
+
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.showMacroIconMain')}
+          sub={tr(lang, 'behavior.showMacroIconMainHint')}
+          control={<Toggle t={t} on={showMacroIconMain === true} onChange={onToggleShowMacroIconMain} />}
+        />
+      </div>
+
+      <div style={sectionLabel(t)}>{tr(lang, 'behavior.sectionShopping')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.shoppingCount')}</div>
           <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
@@ -52,6 +85,7 @@ export function BehaviorSheet({
             ]}
           />
         </div>
+
         <SettingRow
           t={t}
           label={tr(lang, 'behavior.autoShopping')}
@@ -59,6 +93,16 @@ export function BehaviorSheet({
           control={<Toggle t={t} on={autoShoppingOnRemove !== false} onChange={onToggleAutoShoppingOnRemove} />}
         />
 
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.showFavoriteChips')}
+          sub={tr(lang, 'behavior.showFavoriteChipsHint')}
+          control={<Toggle t={t} on={showFavoriteChips !== false} onChange={onToggleShowFavoriteChips} />}
+        />
+      </div>
+
+      <div style={sectionLabel(t)}>{tr(lang, 'behavior.sectionQuantity')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.step')}</div>
           <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
@@ -113,54 +157,15 @@ export function BehaviorSheet({
           sub={tr(lang, 'behavior.sliderHint')}
           control={<Toggle t={t} on={showSlider !== false} onChange={onToggleShowSlider} />}
         />
+      </div>
 
-        <SettingRow
-          t={t}
-          label={tr(lang, 'behavior.warnDot')}
-          sub={tr(lang, 'behavior.warnDotHint')}
-          control={<Toggle t={t} on={showWarnDot !== false} onChange={onToggleShowWarnDot} />}
-        />
-
-        <SettingRow
-          t={t}
-          label={tr(lang, 'behavior.stripBrandNames')}
-          sub={tr(lang, 'behavior.stripBrandNamesHint')}
-          control={<Toggle t={t} on={stripBrandNames !== false} onChange={onToggleStripBrandNames} />}
-        />
-
-        <SettingRow
-          t={t}
-          label={tr(lang, 'behavior.showFavoriteChips')}
-          sub={tr(lang, 'behavior.showFavoriteChipsHint')}
-          control={<Toggle t={t} on={showFavoriteChips !== false} onChange={onToggleShowFavoriteChips} />}
-        />
-
-        <SettingRow
-          t={t}
-          label={tr(lang, 'behavior.compactList')}
-          sub={tr(lang, 'behavior.compactListHint')}
-          control={<Toggle t={t} on={compactList === true} onChange={onToggleCompactList} />}
-        />
-
+      <div style={sectionLabel(t)}>{tr(lang, 'behavior.sectionHistory')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <SettingRow
           t={t}
           label={tr(lang, 'behavior.historyAllItems')}
           sub={tr(lang, 'behavior.historyAllItemsHint')}
           control={<Toggle t={t} on={historyAllItems === true} onChange={onToggleHistoryAllItems} />}
-        />
-
-        <SettingRow
-          t={t}
-          label={tr(lang, 'behavior.showMacroIconMain')}
-          sub={tr(lang, 'behavior.showMacroIconMainHint')}
-          control={<Toggle t={t} on={showMacroIconMain === true} onChange={onToggleShowMacroIconMain} />}
-        />
-
-        <SettingRow
-          t={t}
-          label={tr(lang, 'behavior.showMacroIconFavorites')}
-          sub={tr(lang, 'behavior.showMacroIconFavoritesHint')}
-          control={<Toggle t={t} on={showMacroIconFavorites !== false} onChange={onToggleShowMacroIconFavorites} />}
         />
 
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
@@ -187,7 +192,30 @@ export function BehaviorSheet({
             })}
           </div>
         </div>
+      </div>
 
+      <div style={sectionLabel(t)}>{tr(lang, 'behavior.sectionFavorites')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.showMacroIconFavorites')}
+          sub={tr(lang, 'behavior.showMacroIconFavoritesHint')}
+          control={<Toggle t={t} on={showMacroIconFavorites !== false} onChange={onToggleShowMacroIconFavorites} />}
+        />
+      </div>
+
+      <div style={sectionLabel(t)}>{tr(lang, 'behavior.sectionScan')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.stripBrandNames')}
+          sub={tr(lang, 'behavior.stripBrandNamesHint')}
+          control={<Toggle t={t} on={stripBrandNames !== false} onChange={onToggleStripBrandNames} />}
+        />
+      </div>
+
+      <div style={sectionLabel(t)}>{tr(lang, 'behavior.sectionFormat')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.dateFormat')}</div>
           <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
