@@ -272,9 +272,12 @@ export default function App() {
 
   // Suchfeld über den Kopfzeilen-Button auf-/zuklappen - beim Zuklappen wird
   // der Suchtext mitgelöscht, damit die Liste nicht gefiltert hängen bleibt.
+  // Beim Öffnen an den Seitenanfang scrollen, damit das Suchfeld sichtbar
+  // ist, auch wenn die Liste vorher weiter unten stand.
   const toggleSearch = () => {
     setSearchOpen((open) => {
       if (open) setSearch('');
+      else window.scrollTo({ top: 0, behavior: 'smooth' });
       return !open;
     });
   };
