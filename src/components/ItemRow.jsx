@@ -1,4 +1,4 @@
-import { Plus, Minus, Trash2 } from 'lucide-react';
+import { Plus, Minus, Trash2, Utensils } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
 import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel } from '../lib/date.js';
 import { openedUntil } from '../lib/openedShelfLife.js';
@@ -9,9 +9,12 @@ import { tr } from '../lib/i18n.js';
 // falls der Lagerort inzwischen entfernt wurde – dann neutraler Fallback).
 // `openedShelfDays` = aufgelöste Haltbarkeit nach dem Öffnen (oder null).
 // `warnColors` optional: { soon, critical, expired } – eigene Farben aus den Einstellungen.
+// `hasFoodMacros` = ob für den Namen Makrodaten hinterlegt sind (kleines Icon,
+// separat in den Einstellungen einblendbar).
 export function ItemRow({
   item, zone, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = {}, openedShelfDays = null,
   justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast, showWarnDot = true, compact = false, showDelete = true,
+  hasFoodMacros = false,
 }) {
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
   const days = daysUntil(item.mhd); // gedrucktes MHD
@@ -64,6 +67,11 @@ export function ItemRow({
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
           {warn && showWarnDot && (
             <span style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', background: wColor, marginTop: compact ? 5 : 6 }} aria-hidden="true" />
+          )}
+          {hasFoodMacros && (
+            <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ flexShrink: 0, display: 'flex', marginTop: compact ? 3 : 4 }}>
+              <Utensils size={compact ? 11 : 12} color={t.textFaint} />
+            </span>
           )}
           <span style={{ fontSize: compact ? 13.5 : 15, color: t.text, fontWeight: 500, overflowWrap: 'anywhere', lineHeight: 1.3 }}>{item.name}</span>
         </div>

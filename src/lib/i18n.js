@@ -225,6 +225,8 @@ const DE = {
     showFavoriteChips: 'Favoriten-Schnellzugriff in Einkaufsliste', showFavoriteChipsHint: 'Chip-Leiste mit deinen Favoriten zum schnellen Hinzufügen in der Einkaufsliste.',
     compactList: 'Kompakte Listenansicht', compactListHint: 'Engere Zeilen und kleinere Schrift in der Bestandsliste – mehr Artikel auf einen Blick.',
     historyAllItems: 'Alle Artikel in der Historie', historyAllItemsHint: 'Auch Artikel ohne Makrodaten werden hinzugefügt/verzehrt geloggt, nicht nur die mit Nährwerten.',
+    showMacroIconMain: 'Makro-Symbol im Bestand', showMacroIconMainHint: 'Kleines Symbol neben Artikeln mit hinterlegten Nährwerten in der Hauptansicht.',
+    showMacroIconFavorites: 'Makro-Symbol bei Favoriten', showMacroIconFavoritesHint: 'Kleines Symbol neben Favoriten mit hinterlegten Nährwerten.',
   },
   warn: {
     title: 'MHD-Warnungen', subtitle: 'Schwellwerte, Farben, Erinnerungen',
@@ -564,6 +566,8 @@ const EN = {
     showFavoriteChips: 'Favorites quick-access in shopping list', showFavoriteChipsHint: 'Chip row with your favorites for quickly adding items in the shopping list.',
     compactList: 'Compact list view', compactListHint: 'Tighter rows and smaller text in the inventory list – fit more items on screen.',
     historyAllItems: 'All items in history', historyAllItemsHint: 'Items without macro data are also logged as added/consumed, not just ones with nutrition data.',
+    showMacroIconMain: 'Macro icon in inventory', showMacroIconMainHint: 'Small icon next to items with nutrition data on file, in the main inventory view.',
+    showMacroIconFavorites: 'Macro icon on favorites', showMacroIconFavoritesHint: 'Small icon next to favorites with nutrition data on file.',
   },
   warn: {
     title: 'Best-before warnings', subtitle: 'Thresholds, colors, reminders',

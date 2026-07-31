@@ -187,7 +187,7 @@ function FavoriteRow({
 export function ManageFavoritesSheet({
   open, onClose, t, dark, lang = 'de', favorites, zones, onRemove, onUpdate, onMove, onAddToInventory, onAddToShopping,
   hasInventoryItems = false, onAddAllFromInventory, onClearAll, onEditFood, getFood,
-  sortMode = 'manual', onSetSortMode,
+  sortMode = 'manual', onSetSortMode, showMacroIcon = true,
 }) {
   const [confirmAddAll, setConfirmAddAll] = useState(false);
   const [addAllMsg, setAddAllMsg] = useState('');
@@ -292,7 +292,7 @@ export function ManageFavoritesSheet({
                 onRemove={onRemove} onUpdate={onUpdate} onAddToInventory={onAddToInventory} onAddToShopping={onAddToShopping}
                 onEditFood={onEditFood}
                 showMove={sortMode === 'manual'} canMoveUp={idx > 0} canMoveDown={idx < favorites.length - 1} onMove={onMove}
-                hasFoodMacros={hasMacros(getFood?.(f.name))}
+                hasFoodMacros={showMacroIcon && hasMacros(getFood?.(f.name))}
               />
             ))}
           </div>

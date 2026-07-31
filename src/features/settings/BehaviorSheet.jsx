@@ -13,6 +13,7 @@ export function BehaviorSheet({
   stripBrandNames, onToggleStripBrandNames, showFavoriteChips, onToggleShowFavoriteChips,
   mainSortMode, onSetMainSortMode, compactList, onToggleCompactList,
   historyAllItems, onToggleHistoryAllItems,
+  showMacroIconMain, onToggleShowMacroIconMain, showMacroIconFavorites, onToggleShowMacroIconFavorites,
 }) {
   return (
     <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'behavior.title')} subtitle={tr(lang, 'behavior.subtitle')}>
@@ -145,6 +146,20 @@ export function BehaviorSheet({
           label={tr(lang, 'behavior.historyAllItems')}
           sub={tr(lang, 'behavior.historyAllItemsHint')}
           control={<Toggle t={t} on={historyAllItems === true} onChange={onToggleHistoryAllItems} />}
+        />
+
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.showMacroIconMain')}
+          sub={tr(lang, 'behavior.showMacroIconMainHint')}
+          control={<Toggle t={t} on={showMacroIconMain === true} onChange={onToggleShowMacroIconMain} />}
+        />
+
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.showMacroIconFavorites')}
+          sub={tr(lang, 'behavior.showMacroIconFavoritesHint')}
+          control={<Toggle t={t} on={showMacroIconFavorites !== false} onChange={onToggleShowMacroIconFavorites} />}
         />
 
         <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>

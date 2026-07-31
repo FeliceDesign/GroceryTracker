@@ -921,7 +921,7 @@ export default function App() {
                   {expiringSoon.map((item, idx) => (
                     <ItemRow
                       key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
-                      justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                      justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                       showZoneBadge isLast={idx === expiringSoon.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
                     />
                   ))}
@@ -932,7 +932,7 @@ export default function App() {
                   {expiringLater.map((item, idx) => (
                     <ItemRow
                       key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
-                      justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                      justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                       showZoneBadge isLast={idx === expiringLater.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
                     />
                   ))}
@@ -948,7 +948,7 @@ export default function App() {
               {searchResults.map((item, idx) => (
                 <ItemRow
                   key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
-                  justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                  justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                   showZoneBadge isLast={idx === searchResults.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
                 />
               ))}
@@ -963,7 +963,7 @@ export default function App() {
                 {list.map((item, idx) => (
                   <ItemRow
                     key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
-                    justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                    justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                     isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
                   />
                 ))}
@@ -977,7 +977,7 @@ export default function App() {
             {flatSorted.map((item, idx) => (
               <ItemRow
                 key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
-                justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                 isLast={idx === flatSorted.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
               />
             ))}
@@ -1172,6 +1172,10 @@ export default function App() {
         onToggleCompactList={(on) => setPrefs((p) => ({ ...p, compactList: on }))}
         historyAllItems={prefs.historyAllItems === true}
         onToggleHistoryAllItems={(on) => setPrefs((p) => ({ ...p, historyAllItems: on }))}
+        showMacroIconMain={prefs.showMacroIconMain === true}
+        onToggleShowMacroIconMain={(on) => setPrefs((p) => ({ ...p, showMacroIconMain: on }))}
+        showMacroIconFavorites={prefs.showMacroIconFavorites !== false}
+        onToggleShowMacroIconFavorites={(on) => setPrefs((p) => ({ ...p, showMacroIconFavorites: on }))}
       />
 
       <WarnSheet
@@ -1207,6 +1211,7 @@ export default function App() {
         sortMode={prefs.favoritesSortMode || 'manual'}
         onSetSortMode={(v) => setPrefs((p) => ({ ...p, favoritesSortMode: v }))}
         getFood={getFood}
+        showMacroIcon={prefs.showMacroIconFavorites !== false}
       />
 
       <ManageFoodsSheet
