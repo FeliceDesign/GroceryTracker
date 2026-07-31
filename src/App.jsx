@@ -147,6 +147,10 @@ export default function App() {
   const [restoredShopping, setRestoredShopping] = useState(null);
   const [justChanged, setJustChanged] = useState(null);
   const [justChecked, setJustChecked] = useState(null);
+  // Lösch-Buttons im Hauptbildschirm bleiben standardmäßig ausgeblendet
+  // (weniger Buttons pro Zeile) und erscheinen erst nach Tap auf "Entfernen"
+  // über der Liste - gleiches Muster wie in der Einkaufsliste.
+  const [showItemTrash, setShowItemTrash] = useState(false);
   const [shoppingInput, setShoppingInput] = useState('');
 
   const undoTimerRef = useRef(null);
@@ -863,6 +867,20 @@ export default function App() {
 
       {/* Liste */}
       <div style={{ maxWidth: 480, margin: '0 auto', padding: '18px 20px 0' }}>
+        {items.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+            <button
+              type="button"
+              onClick={() => setShowItemTrash((v) => !v)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent',
+                color: showItemTrash ? t.text : t.textMuted, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', padding: '4px 2px',
+              }}
+            >
+              <X size={14} /> {showItemTrash ? tr(lang, 'app.doneRemoving') : tr(lang, 'app.enableRemove')}
+            </button>
+          </div>
+        )}
         {expiringView ? (
           allByExpiry.length === 0 ? (
             <Empty t={t} label={tr(lang, 'app.emptyNoMhd')} />
@@ -874,7 +892,7 @@ export default function App() {
                     <ItemRow
                       key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                       justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                      showZoneBadge isLast={idx === expiringSoon.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true}
+                      showZoneBadge isLast={idx === expiringSoon.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
                     />
                   ))}
                 </Section>
@@ -885,7 +903,7 @@ export default function App() {
                     <ItemRow
                       key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                       justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                      showZoneBadge isLast={idx === expiringLater.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true}
+                      showZoneBadge isLast={idx === expiringLater.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
                     />
                   ))}
                 </Section>
@@ -901,7 +919,7 @@ export default function App() {
                 <ItemRow
                   key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                   justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                  showZoneBadge isLast={idx === searchResults.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true}
+                  showZoneBadge isLast={idx === searchResults.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
                 />
               ))}
             </Section>
@@ -916,7 +934,7 @@ export default function App() {
                   <ItemRow
                     key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                     justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                    isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true}
+                    isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
                   />
                 ))}
               </Section>
@@ -930,7 +948,7 @@ export default function App() {
               <ItemRow
                 key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                 justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                isLast={idx === flatSorted.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true}
+                isLast={idx === flatSorted.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
               />
             ))}
           </Section>

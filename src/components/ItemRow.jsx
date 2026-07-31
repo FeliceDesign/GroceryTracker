@@ -11,7 +11,7 @@ import { tr } from '../lib/i18n.js';
 // `warnColors` optional: { soon, critical, expired } – eigene Farben aus den Einstellungen.
 export function ItemRow({
   item, zone, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = {}, openedShelfDays = null,
-  justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast, showWarnDot = true, compact = false,
+  justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast, showWarnDot = true, compact = false, showDelete = true,
 }) {
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
   const days = daysUntil(item.mhd); // gedrucktes MHD
@@ -112,9 +112,11 @@ export function ItemRow({
         <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent, compact ? 28 : 36)} aria-label={tr(lang, 'itemRow.increaseAria', { name: item.name })}>
           <Plus size={compact ? 12 : 14} strokeWidth={2.5} />
         </button>
-        <button onClick={() => onRemove(item.id)} style={{ ...btnCircle('transparent', t.danger, compact ? 28 : 32), marginLeft: 2 }} aria-label={tr(lang, 'itemRow.removeAria', { name: item.name })}>
-          <Trash2 size={compact ? 12 : 14} strokeWidth={2} />
-        </button>
+        {showDelete && (
+          <button onClick={() => onRemove(item.id)} style={{ ...btnCircle('transparent', t.danger, compact ? 28 : 32), marginLeft: 2 }} aria-label={tr(lang, 'itemRow.removeAria', { name: item.name })}>
+            <Trash2 size={compact ? 12 : 14} strokeWidth={2} />
+          </button>
+        )}
       </div>
     </div>
   );
