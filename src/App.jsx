@@ -244,7 +244,10 @@ export default function App() {
   // Kategorie/Einheit als Vorlage für den Schnellzugriff, keine Menge.
   const toggleFavorite = (item) => {
     if (isFavorite(item.name)) removeFavoriteByName(item.name);
-    else addFavorite({ name: item.name, zone: item.zone, category: item.category, unit: item.unit });
+    // Aus den Stammdaten favorisierte Artikel (kein Bezug zu einem
+    // physischen Artikel) bekommen die aktuell aktive Zone mit, statt ganz
+    // ohne Lagerort zu bleiben.
+    else addFavorite({ name: item.name, zone: item.zone || activeZone, category: item.category, unit: item.unit });
   };
 
   // Wird ein Stammdaten-Datensatz umbenannt (Stammdaten-Editor), einen
