@@ -315,9 +315,21 @@ export function BackupSheet({
                 {tr(lang, 'backup.restoreSummary', { items: pending.summary.items, foods: pending.summary.foods, zones: pending.summary.zones, categories: pending.summary.categories }).split(/(\d+)/).map((part, i) => (
                   /^\d+$/.test(part) ? <b key={i}>{part}</b> : part
                 ))}
+                {pending.summary.hasExtras && (
+                  <>
+                    <br />
+                    {[
+                      tr(lang, pending.summary.favorites === 1 ? 'backup.restoreFavoritesOne' : 'backup.restoreFavoritesMany', { count: pending.summary.favorites }),
+                      tr(lang, pending.summary.history === 1 ? 'backup.restoreHistoryOne' : 'backup.restoreHistoryMany', { count: pending.summary.history }),
+                    ].join(' · ').split(/(\d+)/).map((part, i) => (
+                      /^\d+$/.test(part) ? <b key={i}>{part}</b> : part
+                    ))}
+                    {pending.summary.settings && ` · ${tr(lang, 'backup.restoreSummarySettings')}`}
+                  </>
+                )}
               </div>
               <div style={{ fontSize: 12, color: t.danger, marginTop: 8, lineHeight: 1.4 }}>
-                {tr(lang, 'backup.restoreWarning')}
+                {tr(lang, pending.summary.hasExtras ? 'backup.restoreWarningFull' : 'backup.restoreWarning')}
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                 <button

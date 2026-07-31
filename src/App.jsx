@@ -84,7 +84,7 @@ export default function App() {
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
   const {
-    history, loaded: historyLoaded, addHistory, removeHistory, updateHistory, restoreHistory,
+    history, loaded: historyLoaded, addHistory, removeHistory, updateHistory, restoreHistory, replaceHistory,
   } = useHistory(prefs?.historyMaxEntries || 50);
   // Zentraler Trigger für die Historie: standardmäßig nur Lebensmittel mit
   // echten Makrodaten (sonst wäre der Eintrag für die Makro-Schnellauswahl
@@ -689,8 +689,18 @@ export default function App() {
 
   // -- Backup -----------------------------------------------------------------
   // includeMacros=false lässt die Nährwert-Stammdaten (foods) aus dem Backup weg.
+  // Version 3: zusätzlich Favoriten, Historie und Einstellungen (prefs) im
+  // Backup - vorher gingen die bei einem Gerätewechsel verloren, obwohl oft
+  // die meiste Zeit in genau diese drei Bereiche investiert wurde. Abwärts-
+  // kompatibel: previewBackup/restoreBackup prüfen jedes Feld einzeln, ein
+  // Version-2-Backup ohne diese Felder lässt sich weiterhin einspielen (die
+  // drei neuen Bereiche bleiben dann unverändert).
   const buildBackup = (includeMacros = true) => JSON.stringify(
-    { version: 2, exportedAt: new Date().toISOString(), zones, categories, foods: includeMacros ? foods : undefined, items, shopping, warn },
+    {
+      version: 3, exportedAt: new Date().toISOString(),
+      zones, categories, foods: includeMacros ? foods : undefined, items, shopping, warn,
+      favorites, history, prefs,
+    },
     null, 2,
   );
 
@@ -712,6 +722,10 @@ export default function App() {
         foods: Array.isArray(data.foods) ? data.foods.length : 0,
         zones: data.zones.length,
         categories: Array.isArray(data.categories) ? data.categories.length : 0,
+        favorites: Array.isArray(data.favorites) ? data.favorites.length : 0,
+        history: Array.isArray(data.history) ? data.history.length : 0,
+        settings: !!(data.prefs && typeof data.prefs === 'object'),
+        hasExtras: Array.isArray(data.favorites) || Array.isArray(data.history) || (data.prefs && typeof data.prefs === 'object'),
         exportedAt: data.exportedAt || null,
       },
     };
@@ -733,6 +747,9 @@ export default function App() {
     setItems(data.items);
     setShopping(Array.isArray(data.shopping) ? data.shopping : []);
     if (data.warn && typeof data.warn === 'object') setWarn(data.warn);
+    if (Array.isArray(data.favorites)) restoreFavorites(data.favorites);
+    if (Array.isArray(data.history)) replaceHistory(data.history);
+    if (data.prefs && typeof data.prefs === 'object') setPrefs(data.prefs);
     return { ok: true, message: tr(lang, 'backup.restored', { count: data.items.length }) };
   };
 

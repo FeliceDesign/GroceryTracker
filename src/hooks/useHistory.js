@@ -75,5 +75,12 @@ export function useHistory(maxEntries = DEFAULT_MAX_ENTRIES) {
     [setRaw, maxEntries],
   );
 
-  return { history, loaded, addHistory, removeHistory, updateHistory, restoreHistory };
+  // Komplette Historie ersetzen (Backup-Import) - im Unterschied zu
+  // restoreHistory keine Ergänzung des bestehenden Stands, sondern Ersatz.
+  const replaceHistory = useCallback(
+    (entries) => setRaw(normalize(Array.isArray(entries) ? entries : [], maxEntries)),
+    [setRaw, maxEntries],
+  );
+
+  return { history, loaded, addHistory, removeHistory, updateHistory, restoreHistory, replaceHistory };
 }
