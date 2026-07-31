@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Trash2, ListPlus, PackagePlus, ShoppingCart, Check, Pencil, Minus, Plus, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trash2, ListPlus, PackagePlus, ShoppingCart, Check, Pencil, Minus, Plus, ChevronUp, ChevronDown, Utensils } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { Toggle } from '../../components/Toggle.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { btnCircle, pillStyle, makeInputStyle } from '../../lib/styles.js';
+import { hasMacros } from '../../lib/macros.js';
 import { tr } from '../../lib/i18n.js';
 
 const UNITS = ['stk', 'g', 'ml'];
 
 function FavoriteRow({
   fav, zone, dark, t, lang, onRemove, onUpdate, onAddToInventory, onAddToShopping, onEditFood,
-  showMove = false, canMoveUp = false, canMoveDown = false, onMove,
+  showMove = false, canMoveUp = false, canMoveDown = false, onMove, hasFoodMacros = false,
 }) {
   const pal = zonePalette(zone ? zone.color : null, dark);
   // Kurzes Häkchen-Feedback nach dem Antippen, analog zum Kopieren-Feedback
@@ -77,7 +78,14 @@ function FavoriteRow({
           style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0 }}
           aria-label={tr(lang, 'favorites.editFoodAria', { name: fav.name })}
         >
-          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere' }}>{fav.name}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            {hasFoodMacros && (
+              <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ flexShrink: 0, display: 'flex' }}>
+                <Utensils size={12} color={t.textFaint} />
+              </span>
+            )}
+            <span style={{ fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere' }}>{fav.name}</span>
+          </div>
           {zone && (
             <div style={{ marginTop: 3 }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: pal.accent, background: pal.accentBg, borderRadius: 999, padding: '2px 8px' }}>
@@ -178,7 +186,7 @@ function FavoriteRow({
 // "Bestand übernehmen"-Button hier, kein eigenes Anlegen-Formular.
 export function ManageFavoritesSheet({
   open, onClose, t, dark, lang = 'de', favorites, zones, onRemove, onUpdate, onMove, onAddToInventory, onAddToShopping,
-  hasInventoryItems = false, onAddAllFromInventory, onClearAll, onEditFood,
+  hasInventoryItems = false, onAddAllFromInventory, onClearAll, onEditFood, getFood,
   sortMode = 'manual', onSetSortMode,
 }) {
   const [confirmAddAll, setConfirmAddAll] = useState(false);
@@ -284,6 +292,7 @@ export function ManageFavoritesSheet({
                 onRemove={onRemove} onUpdate={onUpdate} onAddToInventory={onAddToInventory} onAddToShopping={onAddToShopping}
                 onEditFood={onEditFood}
                 showMove={sortMode === 'manual'} canMoveUp={idx > 0} canMoveDown={idx < favorites.length - 1} onMove={onMove}
+                hasFoodMacros={hasMacros(getFood?.(f.name))}
               />
             ))}
           </div>

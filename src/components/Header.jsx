@@ -5,9 +5,9 @@ import { CountBadge } from './CountBadge.jsx';
 
 export function Header({
   zone, dark, t, lang = 'de', totalInZone, shoppingCount, shoppingBadgeMode = 'count', align = 'left', title,
-  onShopping, onSettings, onAdd, onFavorites, onConsumed, onToggleSearch, searchOpen = false, onZoneClick,
+  onShopping, onSettings, onAdd, onFavorites, onHistory, onToggleSearch, searchOpen = false, onZoneClick,
   showShoppingButton = true, showSettingsButton = true, showAddButton = false, showFavoritesButton = false,
-  showSearchButton = false, showConsumedButton = false,
+  showSearchButton = false, showHistoryButton = false,
   emojiBothSides = false,
   addExtraHandlers, addHoldProgress = 0,
 }) {
@@ -18,7 +18,7 @@ export function Header({
     width: 44, height: 44, color: t.headerText, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
   };
-  const buttonCount = (showSearchButton ? 1 : 0) + (showShoppingButton ? 1 : 0) + (showSettingsButton ? 1 : 0) + (showAddButton ? 1 : 0) + (showFavoritesButton ? 1 : 0) + (showConsumedButton ? 1 : 0);
+  const buttonCount = (showSearchButton ? 1 : 0) + (showShoppingButton ? 1 : 0) + (showSettingsButton ? 1 : 0) + (showAddButton ? 1 : 0) + (showFavoritesButton ? 1 : 0) + (showHistoryButton ? 1 : 0);
   // Breite der Buttons-Gruppe – im „zentriert"-Modus als Gegengewicht links,
   // damit der Zonenname wirklich mittig sitzt statt vom Buttons-Platz nach
   // links verschoben zu wirken. Passt sich an, wenn Buttons nach unten
@@ -113,8 +113,8 @@ export function Header({
                   <Star size={19} strokeWidth={2.2} />
                 </button>
               )}
-              {showConsumedButton && (
-                <button onClick={onConsumed} style={iconBtn} aria-label={tr(lang, 'app.consumedAria')}>
+              {showHistoryButton && (
+                <button onClick={onHistory} style={iconBtn} aria-label={tr(lang, 'app.historyAria')}>
                   <History size={19} strokeWidth={2.2} />
                 </button>
               )}

@@ -16,7 +16,7 @@ const sectionLabel = (t) => ({
 export function SettingsSheet({
   open, onClose, t, lang = 'de', onSetLang, themeOverride, setThemeOverride,
   onManageZones, onManageCategories, onManageFoods, onManageFavorites, onOpenShelfLife, onOpenExpiringView, onOpenProduceStorage, onOpenSpiceGuide,
-  onOpenConsumed, onOpenLayout, onOpenBehavior, onOpenWarnSettings, onOpenBackup,
+  onOpenHistory, onOpenLayout, onOpenBehavior, onOpenWarnSettings, onOpenBackup,
   stats,
 }) {
   return (
@@ -87,9 +87,9 @@ export function SettingsSheet({
         <Row
           t={t}
           icon={<History size={19} />}
-          label={tr(lang, 'settings.consumedTitle')}
-          sub={tr(lang, 'settings.consumedSub', { count: stats.consumed })}
-          onClick={onOpenConsumed}
+          label={tr(lang, 'settings.historyTitle')}
+          sub={tr(lang, 'settings.historySub', { count: stats.history })}
+          onClick={onOpenHistory}
         />
       </div>
 

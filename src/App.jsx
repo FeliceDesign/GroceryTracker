@@ -9,7 +9,7 @@ import { useZones } from './hooks/useZones.js';
 import { useCategories } from './hooks/useCategories.js';
 import { useFoods } from './hooks/useFoods.js';
 import { useFavorites } from './hooks/useFavorites.js';
-import { useConsumed } from './hooks/useConsumed.js';
+import { useHistory } from './hooks/useHistory.js';
 import { useLongPress } from './hooks/useLongPress.js';
 import { SEED } from './lib/defaults.js';
 import { emptyMacros, foodToMacros, macrosToFood, hasFoodData, hasMacros, defaultBasisForUnit, normalizeName } from './lib/macros.js';
@@ -45,7 +45,7 @@ import { ManageFoodsSheet } from './features/macros/ManageFoodsSheet.jsx';
 import { ShelfLifeSheet } from './features/macros/ShelfLifeSheet.jsx';
 import { ProduceStorageSheet } from './features/macros/ProduceStorageSheet.jsx';
 import { SpiceGuideSheet } from './features/macros/SpiceGuideSheet.jsx';
-import { ConsumedSheet } from './features/macros/ConsumedSheet.jsx';
+import { HistorySheet } from './features/macros/HistorySheet.jsx';
 import { DetailItemSheet } from './features/detail/DetailItemSheet.jsx';
 
 const newId = (prefix = 'i') => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -61,11 +61,11 @@ export default function App() {
     favorites, loaded: favoritesLoaded, isFavorite, addFavorite, updateFavorite, moveFavorite, removeFavorite, removeFavoriteByName,
     clearFavorites, restoreFavorites,
   } = useFavorites();
-  const { consumed, loaded: consumedLoaded, addConsumed, removeConsumed } = useConsumed();
-  // Zentraler Trigger für "Zuletzt verzehrt": nur Lebensmittel mit echten
+  const { history, loaded: historyLoaded, addHistory, removeHistory } = useHistory();
+  // Zentraler Trigger für die Historie: nur Lebensmittel mit echten
   // Makrodaten werden geloggt (sonst wäre der Eintrag für die
-  // Makro-Schnellauswahl nutzlos).
-  const logConsumed = (food) => { if (hasMacros(food)) addConsumed(food); };
+  // Makro-Schnellauswahl nutzlos). action: 'added' | 'consumed'.
+  const logHistory = (food, action) => { if (hasMacros(food)) addHistory(food, action); };
   const [items, setItems, itemsLoaded] = useStorage('gt-items-v1', SEED);
   const [shopping, setShopping, shoppingLoaded] = useStorage('gt-shopping-v1', []);
   const [warn, setWarn, warnLoaded] = useStorage('gt-warn-v1', {
@@ -81,7 +81,7 @@ export default function App() {
     autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
     favoritesCollapsed: false, zoneEmojiBothSides: false, favoritesPos: 'off', showFavoriteChips: true, searchPos: 'top',
     favoritesSortMode: 'manual', mainSortMode: 'category', compactList: false, defaultZoneId: null,
-    focusMode: false, buttonsHidden: false, bottomButtonsLayout: 'stack', consumedPos: 'off',
+    focusMode: false, buttonsHidden: false, bottomButtonsLayout: 'stack', historyPos: 'off',
     hideAddWithButtons: false, swapAddHideOrder: false,
   });
   const lang = (prefs && prefs.language) || 'de';
@@ -125,7 +125,7 @@ export default function App() {
   const [showShelfLife, setShowShelfLife] = useState(false);
   const [showProduceStorage, setShowProduceStorage] = useState(false);
   const [showSpiceGuide, setShowSpiceGuide] = useState(false);
-  const [showConsumed, setShowConsumed] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
   const [showLayout, setShowLayout] = useState(false);
   const [showBehavior, setShowBehavior] = useState(false);
@@ -161,7 +161,7 @@ export default function App() {
   const shoppingUndoTimerRef = useRef(null);
 
   const scanSupported = isScanSupported();
-  const ready = themeLoaded && zonesLoaded && catsLoaded && foodsLoaded && favoritesLoaded && consumedLoaded && itemsLoaded && shoppingLoaded && warnLoaded && prefsLoaded
+  const ready = themeLoaded && zonesLoaded && catsLoaded && foodsLoaded && favoritesLoaded && historyLoaded && itemsLoaded && shoppingLoaded && warnLoaded && prefsLoaded
     && zones !== null && categories !== null && foods !== null && items !== null && shopping !== null && warn !== null && prefs !== null;
 
   // activeZone gültig halten (z.B. nachdem ein Lagerort entfernt wurde) –
@@ -222,7 +222,7 @@ export default function App() {
     }
     // Teilweiser Verbrauch (Menge verringert, aber nicht auf 0) zählt
     // ebenfalls als "verzehrt" - z.B. ein Joghurt aus einer 4er-Packung.
-    if (direction < 0) logConsumed(getFood(item.name));
+    if (direction < 0) logHistory(getFood(item.name), 'consumed');
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, qty: next } : i)));
     flash(id);
   };
@@ -290,6 +290,7 @@ export default function App() {
       return [...prev, { id: newId(), name: fav.name, zone: favZone, category: favCategory, qty: favQty, unit: favUnit, mhd: null }];
     });
     setActiveZone(favZone);
+    logHistory(getFood(fav.name), 'added');
   };
 
   // Favorit auf die Einkaufsliste setzen - trägt Lagerort/Kategorie/Einheit/
@@ -352,7 +353,7 @@ export default function App() {
         return exists ? prev : [...prev, { ...removed, addedAt: Date.now() }];
       });
     }
-    logConsumed(getFood(removed.name));
+    logHistory(getFood(removed.name), 'consumed');
     setDeletedItem(removed);
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeletedItem(null), 5000);
@@ -406,6 +407,7 @@ export default function App() {
       name, qty: newItem.qty, unit: newItem.unit, mhd: newItem.mhd || null,
     }]);
     saveFoodMacros(name, newItem.macros);
+    logHistory(newItem.macros ? macrosToFood(newItem.macros, name) : getFood(name), 'added');
     setShopping((prev) => prev.filter((s) =>
       !(s.name.toLowerCase() === name.toLowerCase() && (s.zone === zoneId || s.zone === null))));
     setActiveZone(zoneId);
@@ -427,7 +429,7 @@ export default function App() {
     // Menge im Bearbeiten-Formular manuell verringert (aber nicht auf 0)
     // zählt ebenfalls als teilweiser Verzehr.
     const originalItem = items.find((i) => i.id === editItem.id);
-    if (originalItem && editItem.qty < originalItem.qty) logConsumed(editItem.macros ? macrosToFood(editItem.macros, name) : getFood(name));
+    if (originalItem && editItem.qty < originalItem.qty) logHistory(editItem.macros ? macrosToFood(editItem.macros, name) : getFood(name), 'consumed');
     setItems((prev) => prev.map((i) => (i.id === editItem.id
       ? {
         ...i, name, zone: editItem.zone, category: editItem.category, qty: editItem.qty, unit: editItem.unit,
@@ -486,7 +488,11 @@ export default function App() {
     }));
     setItems((prev) => [...prev, ...newOnes]);
     // Gescannte Nährwerte in die Stammdaten übernehmen (per Name).
-    valid.forEach((b) => saveFoodMacros(b.name.trim(), b.macros));
+    valid.forEach((b) => {
+      const trimmedName = b.name.trim();
+      saveFoodMacros(trimmedName, b.macros);
+      logHistory(b.macros ? macrosToFood(b.macros, trimmedName) : getFood(trimmedName), 'added');
+    });
     setShopping((prev) => prev.filter((s) =>
       !newOnes.some((n) => n.name.toLowerCase() === s.name.toLowerCase() && (s.zone === n.zone || s.zone === null))));
     if (newOnes[0]) setActiveZone(newOnes[0].zone);
@@ -538,6 +544,7 @@ export default function App() {
       setItems((prev) => [...prev, { ...item, qty: entry.qty > 0 ? entry.qty : 1 }]);
     }
     setActiveZone(entry.zone);
+    logHistory(getFood(entry.name), 'added');
     setRestoredShopping({ entry, mergedItemId, mergedPrevQty, createdItemId });
     clearTimeout(shoppingUndoTimerRef.current);
     shoppingUndoTimerRef.current = setTimeout(() => setRestoredShopping(null), 5000);
@@ -836,7 +843,7 @@ export default function App() {
           onSettings={() => setShowSettings(true)}
           onAdd={openAdd}
           onFavorites={() => setShowFavorites(true)}
-          onConsumed={() => setShowConsumed(true)}
+          onHistory={() => setShowHistory(true)}
           onToggleSearch={toggleSearch} searchOpen={searchOpen}
           onZoneClick={() => setShowZones(true)}
           showShoppingButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.shoppingPos || 'top') === 'top'}
@@ -844,7 +851,7 @@ export default function App() {
           showAddButton={!prefs.focusMode && (prefs.addPos || 'bottom') === 'top' && !(prefs.buttonsHidden && prefs.hideAddWithButtons)}
           showFavoritesButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.favoritesPos || 'off') === 'top'}
           showSearchButton={!prefs.focusMode && !prefs.buttonsHidden && !expiringView && (prefs.searchPos || 'top') === 'top'}
-          showConsumedButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.consumedPos || 'off') === 'top'}
+          showHistoryButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.historyPos || 'off') === 'top'}
           addExtraHandlers={addLongPress.handlers} addHoldProgress={addLongPress.progress}
         />
         <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={(id) => { setActiveZone(id); setExpiringView(false); }} t={t} dark={dark} />
@@ -992,10 +999,10 @@ export default function App() {
             ariaLabel: searchOpen ? tr(lang, 'app.searchCloseAria') : tr(lang, 'app.searchAria'),
             icon: searchOpen ? <X size={19} strokeWidth={2.2} /> : <Search size={18} strokeWidth={2.2} />,
           },
-          !prefs.focusMode && !prefs.buttonsHidden && (prefs.consumedPos || 'off') === 'bottom' && {
-            key: 'consumed', size: 48,
-            onClick: () => setShowConsumed(true),
-            ariaLabel: tr(lang, 'app.consumedAria'),
+          !prefs.focusMode && !prefs.buttonsHidden && (prefs.historyPos || 'off') === 'bottom' && {
+            key: 'history', size: 48,
+            onClick: () => setShowHistory(true),
+            ariaLabel: tr(lang, 'app.historyAria'),
             icon: <History size={18} strokeWidth={2.2} />,
           },
         ].filter((x) => x)}
@@ -1068,12 +1075,12 @@ export default function App() {
         onManageCategories={() => { setShowSettings(false); setShowCategories(true); }}
         onManageFavorites={() => { setShowSettings(false); setShowFavorites(true); }}
         onManageFoods={() => { setShowSettings(false); setShowFoods(true); }}
-        stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length, favorites: favorites.length, consumed: consumed.length }}
+        stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length, favorites: favorites.length, history: history.length }}
         onOpenShelfLife={() => { setShowSettings(false); setShowShelfLife(true); }}
         onOpenExpiringView={() => { setShowSettings(false); setExpiringView(true); setSearch(''); }}
         onOpenProduceStorage={() => { setShowSettings(false); setShowProduceStorage(true); }}
         onOpenSpiceGuide={() => { setShowSettings(false); setShowSpiceGuide(true); }}
-        onOpenConsumed={() => { setShowSettings(false); setShowConsumed(true); }}
+        onOpenHistory={() => { setShowSettings(false); setShowHistory(true); }}
         onOpenBackup={() => { setShowSettings(false); setShowBackup(true); }}
         onOpenLayout={() => { setShowSettings(false); setShowLayout(true); }}
         onOpenBehavior={() => { setShowSettings(false); setShowBehavior(true); }}
@@ -1096,8 +1103,8 @@ export default function App() {
         onSetFavoritesPos={(v) => setPrefs((p) => ({ ...p, favoritesPos: v }))}
         searchPos={prefs.searchPos || 'top'}
         onSetSearchPos={(v) => setPrefs((p) => ({ ...p, searchPos: v }))}
-        consumedPos={prefs.consumedPos || 'off'}
-        onSetConsumedPos={(v) => setPrefs((p) => ({ ...p, consumedPos: v }))}
+        historyPos={prefs.historyPos || 'off'}
+        onSetHistoryPos={(v) => setPrefs((p) => ({ ...p, historyPos: v }))}
         zoneEmojiBothSides={prefs.zoneEmojiBothSides === true}
         onToggleZoneEmojiBothSides={(on) => setPrefs((p) => ({ ...p, zoneEmojiBothSides: on }))}
         bottomButtonsLayout={prefs.bottomButtonsLayout || 'stack'}
@@ -1164,6 +1171,7 @@ export default function App() {
         onEditFood={(name) => { setShowFavorites(false); setEditFoodName(name); setFoodsFromFavorites(true); setShowFoods(true); }}
         sortMode={prefs.favoritesSortMode || 'manual'}
         onSetSortMode={(v) => setPrefs((p) => ({ ...p, favoritesSortMode: v }))}
+        getFood={getFood}
       />
 
       <ManageFoodsSheet
@@ -1178,13 +1186,13 @@ export default function App() {
         scanSupported={scanSupported} initialEditName={editFoodName} stepGml={prefs.stepGml}
         onRenameLinkedFavorite={renameLinkedFavorite}
         isFavorite={isFavorite} onToggleFavorite={toggleFavorite}
-        onMacrosCopied={logConsumed}
+        onMacrosCopied={(food) => logHistory(food, 'consumed')}
       />
 
       <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} lang={lang} />
       <ProduceStorageSheet open={showProduceStorage} onClose={() => setShowProduceStorage(false)} t={t} lang={lang} />
       <SpiceGuideSheet open={showSpiceGuide} onClose={() => setShowSpiceGuide(false)} t={t} lang={lang} />
-      <ConsumedSheet open={showConsumed} onClose={() => setShowConsumed(false)} t={t} lang={lang} consumed={consumed} onRemoveConsumed={removeConsumed} />
+      <HistorySheet open={showHistory} onClose={() => setShowHistory(false)} t={t} lang={lang} history={history} onRemoveHistory={removeHistory} />
       <BackupSheet
         open={showBackup} onClose={() => setShowBackup(false)} t={t} dark={dark} lang={lang} zones={zones} items={items} shopping={shopping}
         stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length }}
@@ -1205,7 +1213,7 @@ export default function App() {
         onRemove={(id) => { setDetailItem(null); removeItem(id); }}
         onToggleOpened={toggleOpened}
         onChangeMhd={changeMhd}
-        onMacrosCopied={logConsumed}
+        onMacrosCopied={(food) => logHistory(food, 'consumed')}
       />
     </div>
 
