@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, Copy, Trash2, PackagePlus, Utensils, Search } from 'lucide-react';
+import { Check, Copy, Trash2, PackagePlus, PackageMinus, Utensils, Search } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { primaryButtonStyle, pillStyle, btnCircle, makeInputStyle } from '../../lib/styles.js';
@@ -30,8 +30,10 @@ function timeOnly(ts, lang) {
 }
 
 // Kleines Icon je Aktions-Kategorie: neu hinzugefügt vs. verzehrt/aufgebraucht.
+// Bewusst nicht Utensils, damit es nicht wie das Makro-Icon (hinter dem Namen)
+// aussieht und fälschlich "hat Makros" suggeriert.
 function ActionIcon({ action, t }) {
-  const Icon = action === 'added' ? PackagePlus : Utensils;
+  const Icon = action === 'added' ? PackagePlus : PackageMinus;
   return <Icon size={13} color={t.textFaint} />;
 }
 
@@ -40,6 +42,28 @@ function ActionIcon({ action, t }) {
 function formatQty(qty, unit) {
   if (qty == null || qty <= 0) return '';
   return unit === 'stk' ? `${qty}×` : `${qty}${unit || ''}`;
+}
+
+// Innerhalb einer Mahlzeit werden mehrere Einträge desselben Artikels (gleicher
+// Name, gleiche Einheit) zu einer Zeile mit aufsummierter Menge zusammengeführt
+// - z.B. zwei Portionen desselben Joghurts kurz hintereinander verzehrt. Jede
+// Zeile behält alle zugrundeliegenden Einträge (`entries`), damit Löschen und
+// Mengen-Korrektur (siehe HistorySheet) darauf zugreifen können.
+function mergeMealEntries(entries) {
+  const rows = [];
+  const byKey = new Map();
+  for (const entry of entries) {
+    const key = `${entry.food.name}|${entry.unit || ''}`;
+    let row = byKey.get(key);
+    if (!row) {
+      row = { id: entry.id, food: entry.food, action: entry.action, unit: entry.unit, qty: null, consumedAt: entry.consumedAt, entries: [] };
+      byKey.set(key, row);
+      rows.push(row);
+    }
+    row.entries.push(entry);
+    if (entry.qty != null && entry.qty > 0) row.qty = (row.qty || 0) + entry.qty;
+  }
+  return rows;
 }
 
 // Einträge zuerst nach Tag gruppieren, innerhalb eines Tages zusätzlich nach
@@ -63,23 +87,29 @@ function groupHistory(entries, lang) {
       day.meals.push({ action: entry.action, entries: [entry] });
     }
   }
+  for (const day of days) {
+    for (const meal of day.meals) meal.entries = mergeMealEntries(meal.entries);
+  }
   return days;
 }
 
 // Eine einzelne Historie-Zeile: Auswahl-Häkchen, Name, Makro-Icon (falls
 // vorhanden), Menge (antippbar zum Nachkorrigieren), Kopieren, Löschen.
-function EntryRow({ entry, t, lang, selected, onToggle, onCopy, copied, onRemove, onUpdateQty, isLast }) {
+// `row` kann mehrere zusammengeführte Einträge desselben Artikels innerhalb
+// einer Mahlzeit repräsentieren (siehe mergeMealEntries) - Löschen entfernt
+// dann alle, eine Mengen-Korrektur führt sie auf einen Eintrag zusammen.
+function EntryRow({ row, t, lang, selected, onToggle, onCopy, copied, onRemove, onUpdateQty, isLast }) {
   const [editingQty, setEditingQty] = useState(false);
-  const [qtyText, setQtyText] = useState(String(entry.qty ?? ''));
-  useEffect(() => { setQtyText(String(entry.qty ?? '')); }, [entry.qty]);
+  const [qtyText, setQtyText] = useState(String(row.qty ?? ''));
+  useEffect(() => { setQtyText(String(row.qty ?? '')); }, [row.qty]);
 
-  const hasQty = entry.qty != null && entry.qty > 0;
-  const summary = macroSummary(entry.food, lang);
+  const hasQty = row.qty != null && row.qty > 0;
+  const summary = macroSummary(row.food, lang);
 
   const commitQty = () => {
     const v = parseFloat(qtyText.replace(',', '.'));
-    if (Number.isFinite(v) && v > 0) onUpdateQty(entry.id, v);
-    else setQtyText(String(entry.qty ?? ''));
+    if (Number.isFinite(v) && v > 0) onUpdateQty(row, v);
+    else setQtyText(String(row.qty ?? ''));
     setEditingQty(false);
   };
 
@@ -92,7 +122,7 @@ function EntryRow({ entry, t, lang, selected, onToggle, onCopy, copied, onRemove
     >
       <button
         type="button"
-        onClick={() => onToggle(entry.id)}
+        onClick={() => onToggle(row.id)}
         aria-pressed={selected}
         style={{
           display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, textAlign: 'left',
@@ -110,13 +140,13 @@ function EntryRow({ entry, t, lang, selected, onToggle, onCopy, copied, onRemove
         </span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <ActionIcon action={entry.action} t={t} />
+            <ActionIcon action={row.action} t={t} />
             <span style={{ fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere' }}>
-              {entry.food.name}
+              {row.food.name}
             </span>
-            {hasMacros(entry.food) && (
+            {hasMacros(row.food) && (
               <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ flexShrink: 0, display: 'flex' }}>
-                <Utensils size={11} color={t.textFaint} />
+                <Utensils size={11} color={t.textMuted} />
               </span>
             )}
           </span>
@@ -145,27 +175,27 @@ function EntryRow({ entry, t, lang, selected, onToggle, onCopy, copied, onRemove
                   onClick={(e) => { e.stopPropagation(); setEditingQty(true); }}
                   style={{ textDecoration: 'underline dotted', cursor: 'pointer' }}
                 >
-                  {formatQty(entry.qty, entry.unit)}
+                  {formatQty(row.qty, row.unit)}
                 </span>
               )
             )}
             {hasQty && <span>·</span>}
-            <span>{timeOnly(entry.consumedAt, lang)}</span>
+            <span>{timeOnly(row.consumedAt, lang)}</span>
           </span>
         </span>
       </button>
       <button
         type="button"
-        onClick={() => onCopy(entry)}
-        aria-label={tr(lang, 'history.copyOneAria', { name: entry.food.name })}
+        onClick={() => onCopy(row)}
+        aria-label={tr(lang, 'history.copyOneAria', { name: row.food.name })}
         style={btnCircle('transparent', copied ? t.success : t.textFaint, 30)}
       >
         {copied ? <Check size={15} /> : <Copy size={14} />}
       </button>
       <button
         type="button"
-        onClick={() => onRemove(entry.id)}
-        aria-label={tr(lang, 'history.removeAria', { name: entry.food.name })}
+        onClick={() => onRemove(row)}
+        aria-label={tr(lang, 'history.removeAria', { name: row.food.name })}
         style={btnCircle('transparent', t.textFaint, 30)}
       >
         <Trash2 size={14} />
@@ -204,6 +234,14 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
 
   const groupedHistory = useMemo(() => groupHistory(visible, lang), [visible, lang]);
 
+  // Flache Liste aller sichtbaren Zeilen (nach Zusammenführung gleicher
+  // Artikel je Mahlzeit) - Grundlage für Alle-auswählen/Sammel-Kopieren,
+  // da diese mit Zeilen statt einzelnen Historie-Einträgen arbeiten.
+  const allRows = useMemo(
+    () => groupedHistory.flatMap((day) => day.meals.flatMap((meal) => meal.entries)),
+    [groupedHistory],
+  );
+
   // Reine Zähl-Statistik der letzten 7 Tage, unabhängig von Filter/Suche.
   const weeklyStats = useMemo(() => {
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -220,28 +258,37 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const selectAll = () => setSelectedIds(visible.map((c) => c.id));
+  const selectAll = () => setSelectedIds(allRows.map((r) => r.id));
   const selectNone = () => setSelectedIds([]);
 
-  const removeEntry = (id) => {
-    setSelectedIds((prev) => prev.filter((x) => x !== id));
-    onRemoveHistory?.(id);
+  // Entfernt eine Zeile - bei zusammengeführten Artikeln (mehrere Einträge
+  // derselben Mahlzeit) alle zugrundeliegenden Historie-Einträge auf einmal.
+  const removeRow = (row) => {
+    setSelectedIds((prev) => prev.filter((x) => x !== row.id));
+    row.entries.forEach((e) => onRemoveHistory?.(e.id));
   };
 
-  const updateQty = (id, qty) => onUpdateHistory?.(id, { qty });
+  // Mengen-Korrektur einer (ggf. zusammengeführten) Zeile: der neue Wert
+  // landet auf dem ersten zugrundeliegenden Eintrag, etwaige weitere werden
+  // gelöscht - sie gehen in der neuen Summe auf.
+  const updateRowQty = (row, qty) => {
+    const [first, ...rest] = row.entries;
+    onUpdateHistory?.(first.id, { qty });
+    rest.forEach((e) => onRemoveHistory?.(e.id));
+  };
 
-  const copyOne = async (entry) => {
-    const ok = await copyToClipboard(formatMacroTable(entry.food, lang));
+  const copyOne = async (row) => {
+    const ok = await copyToClipboard(formatMacroTable(row.food, lang));
     if (ok) {
-      setCopiedId(entry.id);
-      setTimeout(() => setCopiedId((k) => (k === entry.id ? null : k)), 1600);
+      setCopiedId(row.id);
+      setTimeout(() => setCopiedId((k) => (k === row.id ? null : k)), 1600);
     }
   };
 
   const copySelected = async () => {
-    const chosen = (history || []).filter((c) => selectedIds.includes(c.id));
+    const chosen = allRows.filter((r) => selectedIds.includes(r.id));
     if (chosen.length === 0) return;
-    const text = chosen.map((c) => formatMacroTable(c.food, lang)).join('\n\n');
+    const text = chosen.map((r) => formatMacroTable(r.food, lang)).join('\n\n');
     const ok = await copyToClipboard(text);
     if (ok) {
       setCopied(true);
@@ -329,18 +376,18 @@ export function HistorySheet({ open, onClose, t, lang = 'de', history, onRemoveH
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {day.meals.map((meal, mi) => (
                       <div key={mi} style={{ background: t.cardAlt, borderRadius: 14, overflow: 'hidden' }}>
-                        {meal.entries.map((entry, ei) => (
+                        {meal.entries.map((row, ei) => (
                           <EntryRow
-                            key={entry.id}
-                            entry={entry}
+                            key={row.id}
+                            row={row}
                             t={t}
                             lang={lang}
-                            selected={selectedIds.includes(entry.id)}
+                            selected={selectedIds.includes(row.id)}
                             onToggle={toggle}
                             onCopy={copyOne}
-                            copied={copiedId === entry.id}
-                            onRemove={removeEntry}
-                            onUpdateQty={updateQty}
+                            copied={copiedId === row.id}
+                            onRemove={removeRow}
+                            onUpdateQty={updateRowQty}
                             isLast={ei === meal.entries.length - 1}
                           />
                         ))}
