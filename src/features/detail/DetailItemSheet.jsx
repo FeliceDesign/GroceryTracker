@@ -27,8 +27,10 @@ const SHELF_TABS = (lang) => [
 // Schreibgeschützte Detail-Ansicht eines Artikels (Nährwerte, Zutaten,
 // Haltbarkeit). „Bearbeiten" öffnet das Formular. `warnColors` optional:
 // { soon, critical, expired } – eigene Farben aus den Einstellungen.
+const NO_WARN_COLORS = {};
+
 export function DetailItemSheet({
-  open, item, zone, food, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = {}, dateFormat = 'dmy',
+  open, item, zone, food, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = NO_WARN_COLORS, dateFormat = 'dmy',
   isFavorite = false, onToggleFavorite,
   onClose, onEdit, onChangeQty, onRemove, onToggleOpened, onChangeMhd, onMacrosCopied,
 }) {

@@ -14,7 +14,9 @@ import { tr } from '../lib/i18n.js';
 // Palette um vom Nutzer selbst hinzugefügte Farben: ein "+"-Kreis öffnet den
 // nativen Farbwähler (`input[type=color]`), eigene Farben tragen zusätzlich
 // ein kleines "x" zum Entfernen (die feste Palette bleibt unantastbar).
-export function ColorSwatches({ choices, customChoices = [], value, onChange, allowAuto, autoColor, onAddCustom, onRemoveCustom, t, lang = 'de' }) {
+const NO_CUSTOM_CHOICES = [];
+
+export function ColorSwatches({ choices, customChoices = NO_CUSTOM_CHOICES, value, onChange, allowAuto, autoColor, onAddCustom, onRemoveCustom, t, lang = 'de' }) {
   const colorInputRef = useRef(null);
 
   return (

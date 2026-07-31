@@ -90,8 +90,10 @@ const TABS = (lang) => [
 // einen eigenen Einstellungspunkt unter "Daten" erreichbar (siehe
 // `initialTab`) -, dazu eine separate, zonen-filterbare Bestandsliste als
 // reine Lesetabelle auf einem dritten Tab.
+const NO_SHOPPING = [];
+
 export function BackupSheet({
-  open, onClose, t, dark, lang = 'de', zones, items, shopping = [], stats, buildBackup, restoreBackup, previewBackup, getFood, dateFormat = 'dmy',
+  open, onClose, t, dark, lang = 'de', zones, items, shopping = NO_SHOPPING, stats, buildBackup, restoreBackup, previewBackup, getFood, dateFormat = 'dmy',
   initialTab = 'backup',
 }) {
   const [tab, setTab] = useState(initialTab);

@@ -14,7 +14,9 @@ const CENTER_OFFSET = 50; // horizontaler Mittelpunkt aller Buttons, von rechts 
 // von dort aus die `bottom`-Achse nach oben, in der Reihe die `right`-Achse
 // nach links. `extraHandlers`/`holdProgress` sind optional (z.B. für
 // Long-Press auf den Add-Button, siehe useLongPress).
-export function FloatingActions({ zone, dark, t, items = [], layout = 'stack' }) {
+const NO_ITEMS = [];
+
+export function FloatingActions({ zone, dark, t, items = NO_ITEMS, layout = 'stack' }) {
   const pal = zonePalette(zone.color, dark);
   const isRow = layout === 'row';
   let bottom = BASE_BOTTOM;

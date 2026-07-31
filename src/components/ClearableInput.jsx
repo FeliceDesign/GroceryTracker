@@ -4,7 +4,9 @@ import { tr } from '../lib/i18n.js';
 // Textfeld mit kleinem x-Button am rechten Rand zum Leeren.
 // `onChange` bekommt den neuen Wert als String (nicht das Event).
 // `wrapperStyle` steuert das Layout (z.B. flex: 1), `style` das Eingabefeld.
-export function ClearableInput({ value, onChange, t, lang = 'de', style = {}, wrapperStyle = {}, inputRef, disabled, ...rest }) {
+const NO_STYLE = {};
+
+export function ClearableInput({ value, onChange, t, lang = 'de', style = NO_STYLE, wrapperStyle = NO_STYLE, inputRef, disabled, ...rest }) {
   const show = typeof value === 'string' && value.length > 0 && !disabled;
   const basePaddingRight = style.paddingRight != null ? style.paddingRight : 14;
   return (

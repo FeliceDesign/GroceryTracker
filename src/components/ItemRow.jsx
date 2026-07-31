@@ -11,8 +11,10 @@ import { tr } from '../lib/i18n.js';
 // `warnColors` optional: { soon, critical, expired } – eigene Farben aus den Einstellungen.
 // `hasFoodMacros` = ob für den Namen Makrodaten hinterlegt sind (kleines Icon,
 // separat in den Einstellungen einblendbar).
+const NO_WARN_COLORS = {};
+
 export function ItemRow({
-  item, zone, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = {}, openedShelfDays = null,
+  item, zone, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = NO_WARN_COLORS, openedShelfDays = null,
   justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast, showWarnDot = true, compact = false, showDelete = true,
   hasFoodMacros = false,
 }) {
