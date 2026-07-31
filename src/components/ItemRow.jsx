@@ -51,7 +51,10 @@ export function ItemRow({
     <div
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: compact ? '6px 14px' : '13px 14px',
+        // Rechts deutlich mehr Rand als links, damit die Mengen-/Lösch-Gruppe
+        // nicht unter dem schwebenden Button-Stapel unten rechts verschwindet
+        // (der reicht bis zu ~80px vom rechten Bildschirmrand).
+        padding: compact ? '6px 70px 6px 14px' : '13px 70px 13px 14px',
         borderBottom: !isLast ? `1px solid ${t.border}` : 'none',
         background: justChanged === item.id ? pal.accentBg : 'transparent',
         transition: 'background 0.3s ease',
@@ -112,11 +115,22 @@ export function ItemRow({
         <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent, compact ? 28 : 36)} aria-label={tr(lang, 'itemRow.increaseAria', { name: item.name })}>
           <Plus size={compact ? 12 : 14} strokeWidth={2.5} />
         </button>
-        {showDelete && (
-          <button onClick={() => onRemove(item.id)} style={{ ...btnCircle('transparent', t.danger, compact ? 28 : 32), marginLeft: 2 }} aria-label={tr(lang, 'itemRow.removeAria', { name: item.name })}>
-            <Trash2 size={compact ? 12 : 14} strokeWidth={2} />
-          </button>
-        )}
+        {/* Platz für den Lösch-Button immer reservieren (nur unsichtbar
+            schalten, nicht aus dem Layout nehmen) - sonst verschiebt sich die
+            Mengen-Gruppe je nachdem, ob der Entfernen-Modus aktiv ist. */}
+        <button
+          onClick={() => onRemove(item.id)}
+          disabled={!showDelete}
+          aria-hidden={!showDelete}
+          tabIndex={showDelete ? 0 : -1}
+          style={{
+            ...btnCircle('transparent', t.danger, compact ? 28 : 32), marginLeft: 2,
+            opacity: showDelete ? 1 : 0, pointerEvents: showDelete ? 'auto' : 'none',
+          }}
+          aria-label={tr(lang, 'itemRow.removeAria', { name: item.name })}
+        >
+          <Trash2 size={compact ? 12 : 14} strokeWidth={2} />
+        </button>
       </div>
     </div>
   );
