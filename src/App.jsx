@@ -3,7 +3,7 @@ import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, Hi
 
 import { useSystemTheme, buildTheme } from './lib/theme.js';
 import { zonePalette, ZONE_COLOR_CHOICES, MHD_COLOR_CHOICES } from './lib/colors.js';
-import { btnCircle } from './lib/styles.js';
+import { btnCircle, groupLabelStyle } from './lib/styles.js';
 import { useStorage } from './hooks/useStorage.js';
 import { useZones } from './hooks/useZones.js';
 import { useCategories } from './hooks/useCategories.js';
@@ -1333,7 +1333,7 @@ export default function App() {
 function Section({ t, title, children }) {
   return (
     <div style={{ marginBottom: 22 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: t.textFaint, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 8, paddingLeft: 2 }}>
+      <div style={{ ...groupLabelStyle(t), marginBottom: 8, paddingLeft: 2 }}>
         {title}
       </div>
       <div style={{ background: t.card, borderRadius: 16, overflow: 'hidden', boxShadow: t.shadow }}>

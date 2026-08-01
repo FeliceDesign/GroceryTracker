@@ -3,7 +3,7 @@ import { Search } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { SPICE_RULES } from '../../lib/spices.js';
-import { makeInputStyle } from '../../lib/styles.js';
+import { makeInputStyle, groupLabelStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 
 // Nachschlage-Übersicht: welche Gewürze zu welchen Gerichten passen
@@ -70,7 +70,7 @@ export function SpiceGuideSheet({ open, onClose, t, lang = 'de' }) {
                 <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: t.text }}>{label}</span>
               </div>
 
-              <div style={{ fontSize: 11, fontWeight: 700, color: t.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 8 }}>
+              <div style={{ ...groupLabelStyle(t), marginTop: 8 }}>
                 {tr(lang, 'spices.pairsWith')}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 5 }}>
@@ -81,7 +81,7 @@ export function SpiceGuideSheet({ open, onClose, t, lang = 'de' }) {
                 ))}
               </div>
 
-              <div style={{ fontSize: 11, fontWeight: 700, color: t.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 10 }}>
+              <div style={{ ...groupLabelStyle(t), marginTop: 10 }}>
                 {tr(lang, 'spices.shelfLife')}
               </div>
               <div style={{ fontSize: 12.5, color: t.textMuted, marginTop: 4 }}>

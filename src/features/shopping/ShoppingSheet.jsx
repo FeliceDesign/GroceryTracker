@@ -4,7 +4,7 @@ import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { FavoriteChips } from '../../components/FavoriteChips.jsx';
 import { zonePalette } from '../../lib/colors.js';
-import { makeInputStyle, btnCircle, pillStyle } from '../../lib/styles.js';
+import { makeInputStyle, btnCircle, pillStyle, makeLabelStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 
 const UNITS = ['stk', 'g', 'ml'];
@@ -144,7 +144,7 @@ function ShoppingRow({ entry, zone, zones, dark, t, lang, checked, onCheck, onRe
             </div>
 
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
+              <div style={{ ...makeLabelStyle(t), marginTop: 0, marginBottom: 6 }}>
                 {tr(lang, 'shopping.zoneLabel')}
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>

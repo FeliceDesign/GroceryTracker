@@ -1,4 +1,5 @@
 import { zonePalette } from '../lib/colors.js';
+import { makeLabelStyle } from '../lib/styles.js';
 import { tr } from '../lib/i18n.js';
 
 // Auswahl des Lagerorts als Chip-Reihe (Formulare). Passt sich an beliebig
@@ -7,10 +8,7 @@ export function ZonePicker({ zones, value, onChange, t, dark, lang = 'de', label
   return (
     <div>
       {label && (
-        <div style={{
-          fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase',
-          letterSpacing: '0.04em', marginBottom: 8,
-        }}>
+        <div style={{ ...makeLabelStyle(t), marginTop: 0, marginBottom: 8 }}>
           {label}
         </div>
       )}

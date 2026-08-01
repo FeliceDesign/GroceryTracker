@@ -4,7 +4,7 @@ import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { Toggle } from '../../components/Toggle.jsx';
 import { zonePalette } from '../../lib/colors.js';
-import { btnCircle, pillStyle, makeInputStyle } from '../../lib/styles.js';
+import { btnCircle, pillStyle, makeInputStyle, makeLabelStyle } from '../../lib/styles.js';
 import { hasMacros } from '../../lib/macros.js';
 import { tr } from '../../lib/i18n.js';
 
@@ -257,7 +257,7 @@ export function ManageFavoritesSheet({
         <>
           {favorites.length > 1 && (
             <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: t.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
+              <div style={{ ...makeLabelStyle(t), marginTop: 0, marginBottom: 6 }}>
                 {tr(lang, 'favorites.sortLabel')}
               </div>
               <Segmented

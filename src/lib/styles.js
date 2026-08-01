@@ -48,6 +48,24 @@ export function makeInputStyle(t) {
   };
 }
 
+// Kleine Überschrift, die eine Gruppe von Inhalten einleitet - Tages-Gruppen
+// in der Historie, Kategorien in der Bestandsliste, Unterabschnitte im
+// Artikel-Detail/Gewürz-/Haltbarkeits-Ratgeber. Anders als sectionLabelStyle
+// (Navigations-Abschnitte in den Einstellungs-Sheets, kräftiger/größer) - war
+// vorher an jeder Stelle leicht anders (Schriftgröße 10–12, Farbe textFaint/
+// textMuted, Laufweite 0.03–0.06em), jetzt eine gemeinsame Basis. Abstände
+// bleiben bewusst Sache der Aufrufstelle (per Objekt-Spread überschreibbar),
+// da die Einbettung sich je nach Kontext unterscheidet.
+export function groupLabelStyle(t) {
+  return {
+    fontSize: 11,
+    fontWeight: 700,
+    color: t.textFaint,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+  };
+}
+
 export function makeLabelStyle(t) {
   return {
     display: 'block',

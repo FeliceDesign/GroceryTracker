@@ -10,6 +10,7 @@ import { ProduceStorageDetails } from '../macros/ProduceStorageDetails.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel, formatDateDisplay } from '../../lib/date.js';
 import { MACRO_FIELDS, fmtNum, unsaturatedFat, hasMacros, basisLabel, copyMacros, copyToClipboard } from '../../lib/macros.js';
+import { groupLabelStyle } from '../../lib/styles.js';
 import { openedDaysFor, openedUntil, shelfLifeInfo } from '../../lib/openedShelfLife.js';
 import { unopenedInfo } from '../../lib/unopenedShelfLife.js';
 import { frozenInfo } from '../../lib/frozenShelfLife.js';
@@ -86,7 +87,7 @@ export function DetailItemSheet({
   };
 
   const section = { marginTop: 18 };
-  const secLabel = { fontSize: 11.5, fontWeight: 700, color: t.textFaint, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 };
+  const secLabel = { ...groupLabelStyle(t), marginBottom: 8 };
 
   const footer = (
     <div style={{ display: 'flex', gap: 10 }}>

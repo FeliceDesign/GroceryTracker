@@ -3,7 +3,7 @@ import { Plus, Copy, Check, Trash2, Search, Star, ChevronDown, ChevronRight } fr
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { MacroEditor } from './MacroEditor.jsx';
-import { makeInputStyle, primaryButtonStyle } from '../../lib/styles.js';
+import { makeInputStyle, primaryButtonStyle, makeLabelStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 import {
   emptyMacros, foodToMacros, macrosToFood, macroSummary, basisLabel,
@@ -140,7 +140,7 @@ export function ManageFoodsSheet({
     return (
       <Modal open={open} onClose={finishEditing} t={t} lang={lang} title={editing.key ? tr(lang, 'foods.editTitle') : tr(lang, 'foods.newTitle')} footer={footer}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
-          <label style={{ fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <label style={{ ...makeLabelStyle(t), marginTop: 0 }}>
             {tr(lang, 'foods.name')}
           </label>
           {onToggleFavorite && (

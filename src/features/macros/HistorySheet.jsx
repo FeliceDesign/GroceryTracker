@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Check, Copy, Trash2, PackagePlus, PackageMinus, Utensils, Search, Plus, Repeat, Scissors, Pencil } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
-import { primaryButtonStyle, pillStyle, btnCircle, makeInputStyle } from '../../lib/styles.js';
+import { primaryButtonStyle, pillStyle, btnCircle, makeInputStyle, makeLabelStyle, groupLabelStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 import { macroSummary, formatMacroTable, copyToClipboard, hasMacros } from '../../lib/macros.js';
 
@@ -139,7 +139,7 @@ function EntryRow({ row, t, lang, selected, onToggle, onCopy, copied, onRemove, 
     width: '100%', fontSize: 13.5, color: t.text, background: t.card,
     border: `1px solid ${t.border}`, borderRadius: 8, padding: '7px 9px', boxSizing: 'border-box',
   };
-  const fieldLabelStyle = { fontSize: 10.5, fontWeight: 700, color: t.textFaint, textTransform: 'uppercase', letterSpacing: '0.03em' };
+  const fieldLabelStyle = { ...makeLabelStyle(t), marginTop: 0 };
 
   const commitName = () => {
     const v = nameText.trim();
@@ -659,11 +659,7 @@ export function HistorySheet({
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {groupedHistory.map((day) => (
                 <div key={day.key}>
-                  <div style={{
-                    fontSize: 11.5, fontWeight: 700, color: t.textFaint, textTransform: 'uppercase',
-                    letterSpacing: '0.04em', marginBottom: 6,
-                  }}
-                  >
+                  <div style={{ ...groupLabelStyle(t), marginBottom: 6 }}>
                     {day.label}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -706,7 +702,7 @@ export function HistorySheet({
                               >
                                 {mealSelected && <Check size={11} color={t.pillActiveText} strokeWidth={3} />}
                               </button>
-                              <span style={{ fontSize: 10, color: t.textFaint, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                              <span style={{ ...makeLabelStyle(t), marginTop: 0 }}>
                                 {tr(lang, 'history.selectMealAria')}
                               </span>
                             </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronDown, ChevronRight, Check } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
+import { groupLabelStyle } from '../lib/styles.js';
 import { tr } from '../lib/i18n.js';
 
 // Favoriten-Schnellzugriff für die Einkaufsliste: Favorit antippen setzt ihn
@@ -32,7 +33,7 @@ export function FavoriteChips({ favorites, zones, dark, t, lang = 'de', onTap, l
             background: 'none', border: 'none', padding: 0, marginBottom: 6, cursor: 'pointer',
           }}
         >
-          <span style={{ fontSize: 11, fontWeight: 700, color: t.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <span style={groupLabelStyle(t)}>
             {label}
           </span>
           {collapsed ? <ChevronRight size={13} color={t.textFaint} /> : <ChevronDown size={13} color={t.textFaint} />}

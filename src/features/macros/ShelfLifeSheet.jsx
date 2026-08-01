@@ -5,7 +5,7 @@ import { OPENED_SHELF_RULES, storageLabel } from '../../lib/openedShelfLife.js';
 import { UNOPENED_SHELF_RULES } from '../../lib/unopenedShelfLife.js';
 import { FROZEN_SHELF_RULES } from '../../lib/frozenShelfLife.js';
 import { THAWING_RULES } from '../../lib/thawing.js';
-import { makeInputStyle, pillStyle } from '../../lib/styles.js';
+import { makeInputStyle, pillStyle, groupLabelStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 
 function StorageIcon({ storage, size = 14, color }) {
@@ -35,10 +35,7 @@ const TABS = (lang) => [
   { id: 'thawing', label: tr(lang, 'shelfLife.tabThawing') },
 ];
 
-const categoryHeaderStyle = (t) => ({
-  fontSize: 11, fontWeight: 700, color: t.textFaint, letterSpacing: '0.04em',
-  textTransform: 'uppercase', marginBottom: 8, paddingLeft: 2,
-});
+const categoryHeaderStyle = (t) => ({ ...groupLabelStyle(t), marginBottom: 8, paddingLeft: 2 });
 
 // Nachschlage-Übersicht aller Haltbarkeits-Richtwerte, mit Tab-Umschalter
 // zwischen Geöffnet / Ungeöffnet (über MHD hinaus) / Tiefgefroren, gruppiert
