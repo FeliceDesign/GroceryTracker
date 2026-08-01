@@ -338,7 +338,7 @@ export function HistorySheet({
   const [selectedIds, setSelectedIds] = useState([]);
   const [copied, setCopied] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
-  const [filter, setFilter] = useState('all'); // 'all' | 'added' | 'consumed'
+  const [filter, setFilter] = useState('consumed'); // 'all' | 'added' | 'consumed'
   const [period, setPeriod] = useState('all'); // 'all' | 'today' | '7d' | '30d'
   const [search, setSearch] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -353,7 +353,7 @@ export function HistorySheet({
       setSelectedIds([]);
       setCopied(false);
       setCopiedId(null);
-      setFilter('all');
+      setFilter('consumed');
       setPeriod('all');
       setSearch('');
       setShowAddForm(false);
@@ -624,9 +624,9 @@ export function HistorySheet({
             value={filter}
             onChange={setFilter}
             options={[
-              { value: 'all', label: tr(lang, 'history.filterAll') },
-              { value: 'added', label: tr(lang, 'history.filterAdded') },
               { value: 'consumed', label: tr(lang, 'history.filterConsumed') },
+              { value: 'added', label: tr(lang, 'history.filterAdded') },
+              { value: 'all', label: tr(lang, 'history.filterAll') },
             ]}
           />
           <div style={{ marginTop: 8 }}>
