@@ -5,6 +5,7 @@
 // normalisierten Namen mit den Bestands-Artikeln verknüpft. So bleiben die
 // Werte erhalten, auch wenn ein Artikel aufgebraucht/gelöscht wird.
 import { tr } from './i18n.js';
+import { parseNutritionFacts } from '../scan/nutrition.js';
 
 // Reihenfolge = Anzeige-/Kopier-Reihenfolge. `indent` markiert „davon"-Zeilen.
 // `label`/`tableLabel` bleiben Deutsch als interner Fallback/Schlüssel für
@@ -54,9 +55,11 @@ export function basisLabel(food, lang = 'de') {
   return tr(lang, 'macros.per100g');
 }
 
-// Leerer Bearbeitungs-Entwurf.
+// Leerer Bearbeitungs-Entwurf. `pasteDraft` ist der (noch) nicht übernommene
+// Text aus dem Nährwerttabellen-Einfügefeld - rein transient, landet nie im
+// gespeicherten Food-Datensatz (macrosToFood() schreibt eine feste Whitelist).
 export function emptyMacros(basis = '100g') {
-  const m = { basis, portionSize: null, ingredients: '', openedDays: null, stepGml: null };
+  const m = { basis, portionSize: null, ingredients: '', openedDays: null, stepGml: null, pasteDraft: '' };
   MACRO_FIELDS.forEach((f) => { m[f.key] = null; });
   return m;
 }
@@ -96,6 +99,18 @@ export function mergeScanned(draft, facts) {
     if (facts && facts[f.key] != null) next[f.key] = facts[f.key];
   });
   return next;
+}
+
+// Sicherheitsnetz beim Speichern: wurde ein Nährwerttabellen-Text eingefügt,
+// aber "Werte übernehmen" nicht gedrückt, hier alsdann automatisch anwenden -
+// sonst ginge der eingefügte Text beim Speichern kommentarlos verloren.
+// Scheitert das Parsen, bleibt der Entwurf unverändert (gleiches Verhalten
+// wie ein fehlgeschlagener manueller Klick auf "Werte übernehmen").
+export function applyPendingPaste(m) {
+  if (!m || !m.pasteDraft || !m.pasteDraft.trim()) return m;
+  const facts = parseNutritionFacts(m.pasteDraft);
+  if (!hasMacros(facts)) return m;
+  return { ...mergeScanned(m, facts), pasteDraft: '' };
 }
 
 export function hasMacros(m) {

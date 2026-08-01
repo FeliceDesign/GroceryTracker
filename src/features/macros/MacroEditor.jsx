@@ -24,12 +24,15 @@ export function MacroEditor({
   const [copied, setCopied] = useState(false);
   const [copiedIng, setCopiedIng] = useState(false);
   const [showPaste, setShowPaste] = useState(true);
-  const [pasteText, setPasteText] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
   const inputStyle = makeInputStyle(t);
   const showCopy = hasMacros(macros) && (name || '').trim().length > 0;
   const ruleDays = shelfLifeAfterOpening(name);
   const globalStepLabel = globalStepGml && globalStepGml !== 'auto' ? String(globalStepGml) : tr(lang, 'behavior.stepAuto');
+  // Liegt im Entwurf (macros.pasteDraft), nicht lokal - so übersteht der Text
+  // ein Speichern ohne Klick auf "Werte übernehmen" (siehe applyPendingPaste).
+  const pasteText = macros.pasteDraft || '';
+  const setPasteText = (v) => onChange({ pasteDraft: v });
   const pasteRef = useAutoGrowTextarea(pasteText);
   const ingredientsRef = useAutoGrowTextarea(macros.ingredients || '');
 
@@ -63,9 +66,8 @@ export function MacroEditor({
   const applyPaste = () => {
     const facts = parseNutritionFacts(pasteText);
     if (hasMacros(facts)) {
-      onChange(mergeScanned(macros, facts));
+      onChange({ ...mergeScanned(macros, facts), pasteDraft: '' });
       setMsg(tr(lang, 'macroEditor.pasteApplied'));
-      setPasteText('');
       setShowPaste(false);
     } else {
       setMsg(tr(lang, 'macroEditor.pasteFailed'));

@@ -7,7 +7,7 @@ import { makeInputStyle, primaryButtonStyle, makeLabelStyle } from '../../lib/st
 import { tr } from '../../lib/i18n.js';
 import {
   emptyMacros, foodToMacros, macrosToFood, macroSummary, basisLabel,
-  hasMacros, hasFoodData, normalizeName, copyMacros,
+  hasMacros, hasFoodData, applyPendingPaste, normalizeName, copyMacros,
 } from '../../lib/macros.js';
 
 // Stammdaten / Makros verwalten: alle Nährwert-Datensätze durchsuchen,
@@ -83,8 +83,11 @@ export function ManageFoodsSheet({
     // (z.B. bei einer reinen Umbenennung ohne weitere Angaben). Wurde bei
     // einem bestehenden Eintrag die letzte verbliebene Angabe gelöscht, den
     // Eintrag stattdessen entfernen statt ihn unverändert liegen zu lassen.
-    if (hasFoodData(editing.macros)) {
-      onUpsert(macrosToFood(editing.macros, name));
+    // Nicht per Klick übernommener Einfüge-Text (Nährwerttabelle) wird beim
+    // Speichern noch nachgeholt, statt verloren zu gehen.
+    const macros = applyPendingPaste(editing.macros);
+    if (hasFoodData(macros)) {
+      onUpsert(macrosToFood(macros, name));
       // Falls umbenannt (anderer Schlüssel): alten Datensatz entfernen.
       if (editing.key && editing.key !== normalizeName(name)) onRemove(editing.key);
     } else if (editing.key) {

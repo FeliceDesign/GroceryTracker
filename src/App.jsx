@@ -12,7 +12,7 @@ import { useFavorites } from './hooks/useFavorites.js';
 import { useHistory } from './hooks/useHistory.js';
 import { useLongPress } from './hooks/useLongPress.js';
 import { SEED } from './lib/defaults.js';
-import { emptyMacros, foodToMacros, macrosToFood, hasFoodData, hasMacros, defaultBasisForUnit, normalizeName } from './lib/macros.js';
+import { emptyMacros, foodToMacros, macrosToFood, hasFoodData, hasMacros, applyPendingPaste, defaultBasisForUnit, normalizeName } from './lib/macros.js';
 import { openedDaysFor, effectiveExpiry } from './lib/openedShelfLife.js';
 import { daysUntil, todayISO } from './lib/date.js';
 import { isScanSupported } from './scan/scan.js';
@@ -449,12 +449,15 @@ export default function App() {
     const name = newItem.name.trim();
     if (!name) return;
     const zoneId = newItem.zone || activeZone;
+    // Nicht per Klick übernommener Einfüge-Text (Nährwerttabelle) wird beim
+    // Speichern noch nachgeholt, statt verloren zu gehen.
+    const macros = applyPendingPaste(newItem.macros);
     setItems((prev) => [...prev, {
       id: newId(), zone: zoneId, category: newItem.category || categories[0],
       name, qty: newItem.qty, unit: newItem.unit, mhd: newItem.mhd || null,
     }]);
-    saveFoodMacros(name, newItem.macros);
-    logHistory(name, newItem.macros ? macrosToFood(newItem.macros, name) : getFood(name), 'added', newItem.qty, newItem.unit);
+    saveFoodMacros(name, macros);
+    logHistory(name, macros ? macrosToFood(macros, name) : getFood(name), 'added', newItem.qty, newItem.unit);
     setShopping((prev) => prev.filter((s) =>
       !(s.name.toLowerCase() === name.toLowerCase() && (s.zone === zoneId || s.zone === null))));
     setActiveZone(zoneId);
@@ -467,7 +470,10 @@ export default function App() {
     if (!editItem) return;
     const name = editItem.name.trim();
     if (!name) return;
-    saveFoodMacros(name, editItem.macros);
+    // Nicht per Klick übernommener Einfüge-Text (Nährwerttabelle) wird beim
+    // Speichern noch nachgeholt, statt verloren zu gehen.
+    const macros = applyPendingPaste(editItem.macros);
+    saveFoodMacros(name, macros);
     if (editItem.qty <= 0) {
       removeItem(editItem.id);
       setEditItem(null);
@@ -478,7 +484,7 @@ export default function App() {
     // (verzehrte Menge), nicht die neue Restmenge.
     const originalItem = items.find((i) => i.id === editItem.id);
     if (originalItem && editItem.qty < originalItem.qty) {
-      logHistory(name, editItem.macros ? macrosToFood(editItem.macros, name) : getFood(name), 'consumed', originalItem.qty - editItem.qty, editItem.unit);
+      logHistory(name, macros ? macrosToFood(macros, name) : getFood(name), 'consumed', originalItem.qty - editItem.qty, editItem.unit);
     }
     setItems((prev) => prev.map((i) => (i.id === editItem.id
       ? {
