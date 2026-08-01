@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, Copy, Trash2, PackagePlus, PackageMinus, Utensils, Search, Plus, Repeat, Scissors } from 'lucide-react';
+import { Check, Copy, Trash2, PackagePlus, PackageMinus, Utensils, Search, Plus, Repeat, Scissors, Pencil } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { primaryButtonStyle, pillStyle, btnCircle, makeInputStyle } from '../../lib/styles.js';
@@ -112,120 +112,82 @@ function groupHistory(entries, lang) {
   return days;
 }
 
-// Eine einzelne Historie-Zeile: Auswahl-Häkchen, Aktions-Symbol (antippbar,
-// wechselt hinzugefügt/verzehrt), Name (antippbar zum Umbenennen), Makro-Icon
-// (falls vorhanden), Menge+Einheit (antippbar), Zeitpunkt (antippbar),
-// Duplizieren, Kopieren, Löschen.
+// Eine einzelne Historie-Zeile: Auswahl-Häkchen, Aktions-Symbol, Name,
+// Makro-Icon (falls vorhanden), Menge+Einheit, Zeitpunkt - alles reine
+// Anzeige. Der Stift-Button klappt darunter ein Bearbeiten-Untermenü auf
+// (Name, Aktion, Menge/Einheit, Zeitpunkt als Formular), daneben Duplizieren,
+// Kopieren, Löschen.
 // `row` kann mehrere zusammengeführte Einträge desselben Artikels innerhalb
 // einer Mahlzeit repräsentieren (siehe mergeMealEntries) - Löschen entfernt
 // dann alle, jede Feld-Korrektur führt sie auf einen Eintrag zusammen.
 function EntryRow({ row, t, lang, selected, onToggle, onCopy, copied, onRemove, onUpdateRow, onDuplicate, isLast }) {
-  const [editingQty, setEditingQty] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [nameText, setNameText] = useState(row.food.name);
   const [qtyText, setQtyText] = useState(String(row.qty ?? ''));
   const [unitText, setUnitText] = useState(row.unit || 'stk');
-  useEffect(() => { setQtyText(String(row.qty ?? '')); setUnitText(row.unit || 'stk'); }, [row.qty, row.unit]);
-
-  const [editingName, setEditingName] = useState(false);
-  const [nameText, setNameText] = useState(row.food.name);
-  useEffect(() => { setNameText(row.food.name); }, [row.food.name]);
-
-  const [editingTime, setEditingTime] = useState(false);
   const [timeText, setTimeText] = useState(toLocalInputValue(row.consumedAt));
-  useEffect(() => { setTimeText(toLocalInputValue(row.consumedAt)); }, [row.consumedAt]);
+  useEffect(() => {
+    setNameText(row.food.name);
+    setQtyText(String(row.qty ?? ''));
+    setUnitText(row.unit || 'stk');
+    setTimeText(toLocalInputValue(row.consumedAt));
+  }, [row.food.name, row.qty, row.unit, row.consumedAt]);
 
   const hasQty = row.qty != null && row.qty > 0;
   const summary = macroSummary(row.food, lang);
+  const inputStyle = {
+    width: '100%', fontSize: 13.5, color: t.text, background: t.card,
+    border: `1px solid ${t.border}`, borderRadius: 8, padding: '7px 9px', boxSizing: 'border-box',
+  };
+  const fieldLabelStyle = { fontSize: 10.5, fontWeight: 700, color: t.textFaint, textTransform: 'uppercase', letterSpacing: '0.03em' };
+
+  const commitName = () => {
+    const v = nameText.trim();
+    if (v && v !== row.food.name) onUpdateRow(row, { food: { ...row.food, name: v } });
+    else setNameText(row.food.name);
+  };
 
   const commitQty = () => {
     const v = parseFloat(qtyText.replace(',', '.'));
     if (Number.isFinite(v) && v > 0) onUpdateRow(row, { qty: v, unit: unitText });
     else { setQtyText(String(row.qty ?? '')); setUnitText(row.unit || 'stk'); }
-    setEditingQty(false);
-  };
-
-  const commitName = () => {
-    const v = nameText.trim();
-    if (v) onUpdateRow(row, { food: { ...row.food, name: v } });
-    else setNameText(row.food.name);
-    setEditingName(false);
   };
 
   const commitTime = () => {
     const ts = new Date(timeText).getTime();
     if (Number.isFinite(ts)) onUpdateRow(row, { consumedAt: ts });
     else setTimeText(toLocalInputValue(row.consumedAt));
-    setEditingTime(false);
   };
 
-  const toggleAction = () => onUpdateRow(row, { action: row.action === 'added' ? 'consumed' : 'added' });
-
   return (
-    <div
-      style={{
-        display: 'flex', alignItems: 'center', gap: 4, padding: '10px 12px',
-        borderBottom: !isLast ? `1px solid ${t.border}` : 'none',
-      }}
-    >
-      {/* Bewusst ein div mit role="button" statt eines echten <button>: die
-          Zeile enthält eigene Eingabefelder (Name, Menge/Einheit, Zeitpunkt)
-          zum Bearbeiten, und interaktive Elemente dürfen nicht in einem
-          <button> verschachtelt werden. */}
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => onToggle(row.id)}
-        onKeyDown={(e) => {
-          if (e.target !== e.currentTarget) return; // Tastatureingaben in den Feldern nicht abfangen
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(row.id); }
-        }}
-        aria-pressed={selected}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, textAlign: 'left',
-          background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
-        }}
-      >
-        <span style={{
-          flexShrink: 0, width: 22, height: 22, borderRadius: 7,
-          border: `2px solid ${selected ? t.pillActive : t.border}`,
-          background: selected ? t.pillActive : 'transparent',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
+    <div style={{ borderBottom: !isLast ? `1px solid ${t.border}` : 'none' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '10px 12px' }}>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => onToggle(row.id)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(row.id); } }}
+          aria-pressed={selected}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, textAlign: 'left',
+            background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
+          }}
         >
-          {selected && <Check size={14} color={t.pillActiveText} strokeWidth={3} />}
-        </span>
-        <span style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ display: 'flex', alignItems: 'flex-start', gap: 5 }}>
-            <span
-              role="button"
-              tabIndex={0}
-              title={tr(lang, 'history.toggleActionAria', { action: tr(lang, row.action === 'added' ? 'history.filterAdded' : 'history.filterConsumed') })}
-              onClick={(e) => { e.stopPropagation(); toggleAction(); }}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); toggleAction(); } }}
-              style={{ flexShrink: 0, display: 'flex', marginTop: 2, cursor: 'pointer' }}
-            >
-              <ActionIcon action={row.action} t={t} />
-            </span>
-            {editingName ? (
-              <input
-                autoFocus
-                value={nameText}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setNameText(e.target.value)}
-                onBlur={commitName}
-                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                style={{
-                  flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, color: t.text, background: t.card,
-                  border: `1px solid ${t.border}`, borderRadius: 6, padding: '1px 4px',
-                }}
-              />
-            ) : (
-              <span
-                role="button"
-                tabIndex={0}
-                title={tr(lang, 'history.editNameAria', { name: row.food.name })}
-                onClick={(e) => { e.stopPropagation(); setEditingName(true); }}
-                style={{ fontSize: 14.5, fontWeight: 700, color: t.text, wordBreak: 'break-word', cursor: 'pointer' }}
-              >
+          <span style={{
+            flexShrink: 0, width: 22, height: 22, borderRadius: 7,
+            border: `2px solid ${selected ? t.pillActive : t.border}`,
+            background: selected ? t.pillActive : 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          >
+            {selected && <Check size={14} color={t.pillActiveText} strokeWidth={3} />}
+          </span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: 'flex', alignItems: 'flex-start', gap: 5 }}>
+              <span style={{ flexShrink: 0, display: 'flex', marginTop: 2 }}>
+                <ActionIcon action={row.action} t={t} />
+              </span>
+              <span style={{ fontSize: 14.5, fontWeight: 700, color: t.text, wordBreak: 'break-word' }}>
                 {row.food.name}
                 {hasMacros(row.food) && (
                   <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: 5 }}>
@@ -233,107 +195,130 @@ function EntryRow({ row, t, lang, selected, onToggle, onCopy, copied, onRemove, 
                   </span>
                 )}
               </span>
-            )}
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: t.textFaint, marginTop: 2, flexWrap: 'wrap' }}>
+              {summary && <span>{summary} ·</span>}
+              {hasQty && <span>{formatQty(row.qty, row.unit)} ·</span>}
+              <span>{timeOnly(row.consumedAt, lang)}</span>
+            </span>
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: t.textFaint, marginTop: 2, flexWrap: 'wrap' }}>
-            {summary && <span>{summary} ·</span>}
-            {hasQty && (
-              editingQty ? (
-                <span
-                  onClick={(e) => e.stopPropagation()}
-                  onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) commitQty(); }}
-                  style={{ display: 'inline-flex', gap: 3, alignItems: 'center' }}
+        </div>
+        <button
+          type="button"
+          onClick={() => setEditOpen((v) => !v)}
+          aria-label={tr(lang, 'history.editRowAria', { name: row.food.name })}
+          aria-expanded={editOpen}
+          style={btnCircle(editOpen ? t.pillActive : 'transparent', editOpen ? t.pillActiveText : t.textFaint, 30)}
+        >
+          <Pencil size={13} />
+        </button>
+        <button
+          type="button"
+          onClick={() => onDuplicate(row)}
+          aria-label={tr(lang, 'history.duplicateAria', { name: row.food.name })}
+          style={btnCircle('transparent', t.textFaint, 30)}
+        >
+          <Repeat size={13} />
+        </button>
+        <button
+          type="button"
+          onClick={() => onCopy(row)}
+          aria-label={tr(lang, 'history.copyOneAria', { name: row.food.name })}
+          style={btnCircle('transparent', copied ? t.success : t.textFaint, 30)}
+        >
+          {copied ? <Check size={15} /> : <Copy size={14} />}
+        </button>
+        <button
+          type="button"
+          onClick={() => onRemove(row)}
+          aria-label={tr(lang, 'history.removeAria', { name: row.food.name })}
+          style={btnCircle('transparent', t.textFaint, 30)}
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+
+      {editOpen && (
+        <div style={{ padding: '0 12px 12px' }}>
+          <div style={{ background: t.card, borderRadius: 10, padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={fieldLabelStyle}>{tr(lang, 'history.editNameLabel')}</span>
+              <input
+                value={nameText}
+                onChange={(e) => setNameText(e.target.value)}
+                onBlur={commitName}
+                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                style={inputStyle}
+              />
+            </label>
+
+            {/* div statt label: umschließt mehrere Buttons (Segmented), ein
+                <label> darf aber nur ein einzelnes Formularelement haben -
+                sonst verwirrt es die Accessible-Name-Berechnung der Buttons. */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={fieldLabelStyle}>{tr(lang, 'history.editActionLabel')}</span>
+              <Segmented
+                t={t}
+                value={row.action}
+                onChange={(action) => onUpdateRow(row, { action })}
+                options={[
+                  { value: 'added', label: tr(lang, 'history.filterAdded') },
+                  { value: 'consumed', label: tr(lang, 'history.filterConsumed') },
+                ]}
+              />
+            </div>
+
+            {/* div statt label: umschließt zwei Formularelemente (Menge +
+                Einheit), siehe Begründung bei "Aktion" oben. */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={fieldLabelStyle}>{tr(lang, 'history.editQtyLabel')}</span>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  aria-label={tr(lang, 'history.editQtyLabel')}
+                  value={qtyText}
+                  onChange={(e) => setQtyText(e.target.value)}
+                  onBlur={commitQty}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                  placeholder={tr(lang, 'history.addQtyPlaceholder')}
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+                <select
+                  value={unitText}
+                  onChange={(e) => setUnitText(e.target.value)}
+                  onBlur={commitQty}
+                  style={{ ...inputStyle, width: 84 }}
                 >
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    autoFocus
-                    value={qtyText}
-                    onChange={(e) => setQtyText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                    style={{
-                      width: 46, fontSize: 11.5, color: t.text, background: t.card,
-                      border: `1px solid ${t.border}`, borderRadius: 6, padding: '1px 4px',
-                    }}
-                  />
-                  <select
-                    value={unitText}
-                    onChange={(e) => setUnitText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                    style={{
-                      fontSize: 11.5, color: t.text, background: t.card,
-                      border: `1px solid ${t.border}`, borderRadius: 6, padding: '1px 2px',
-                    }}
-                  >
-                    <option value="g">g</option>
-                    <option value="ml">ml</option>
-                    <option value="stk">Stk</option>
-                  </select>
-                </span>
-              ) : (
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => { e.stopPropagation(); setEditingQty(true); }}
-                  style={{ textDecoration: 'underline dotted', cursor: 'pointer' }}
-                >
-                  {formatQty(row.qty, row.unit)}
-                </span>
-              )
-            )}
-            {hasQty && <span>·</span>}
-            {editingTime ? (
+                  <option value="g">g</option>
+                  <option value="ml">ml</option>
+                  <option value="stk">Stk</option>
+                </select>
+              </div>
+            </div>
+
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={fieldLabelStyle}>{tr(lang, 'history.editTimeLabel')}</span>
               <input
                 type="datetime-local"
-                autoFocus
                 value={timeText}
-                onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setTimeText(e.target.value)}
                 onBlur={commitTime}
                 onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                style={{
-                  fontSize: 11, color: t.text, background: t.card,
-                  border: `1px solid ${t.border}`, borderRadius: 6, padding: '1px 4px',
-                }}
+                style={inputStyle}
               />
-            ) : (
-              <span
-                role="button"
-                tabIndex={0}
-                title={tr(lang, 'history.editTimeAria', { name: row.food.name })}
-                onClick={(e) => { e.stopPropagation(); setEditingTime(true); }}
-                style={{ textDecoration: 'underline dotted', cursor: 'pointer' }}
-              >
-                {timeOnly(row.consumedAt, lang)}
-              </span>
-            )}
-          </span>
-        </span>
-      </div>
-      <button
-        type="button"
-        onClick={() => onDuplicate(row)}
-        aria-label={tr(lang, 'history.duplicateAria', { name: row.food.name })}
-        style={btnCircle('transparent', t.textFaint, 30)}
-      >
-        <Repeat size={13} />
-      </button>
-      <button
-        type="button"
-        onClick={() => onCopy(row)}
-        aria-label={tr(lang, 'history.copyOneAria', { name: row.food.name })}
-        style={btnCircle('transparent', copied ? t.success : t.textFaint, 30)}
-      >
-        {copied ? <Check size={15} /> : <Copy size={14} />}
-      </button>
-      <button
-        type="button"
-        onClick={() => onRemove(row)}
-        aria-label={tr(lang, 'history.removeAria', { name: row.food.name })}
-        style={btnCircle('transparent', t.textFaint, 30)}
-      >
-        <Trash2 size={14} />
-      </button>
+            </label>
+
+            <button
+              type="button"
+              onClick={() => setEditOpen(false)}
+              style={{ ...pillStyle(false, t), marginTop: 2 }}
+            >
+              {tr(lang, 'history.editDone')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
