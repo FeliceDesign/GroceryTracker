@@ -32,8 +32,8 @@ const NO_WARN_COLORS = {};
 
 export function DetailItemSheet({
   open, item, zone, food, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = NO_WARN_COLORS, dateFormat = 'dmy',
-  isFavorite = false, onToggleFavorite,
-  onClose, onEdit, onChangeQty, onRemove, onToggleOpened, onChangeMhd, onMacrosCopied,
+  isFavorite = false, onToggleFavorite, showSlider = true, stepGml,
+  onClose, onEdit, onChangeQty, onSetQty, onRemove, onToggleOpened, onChangeMhd, onMacrosCopied,
 }) {
   const [copied, setCopied] = useState(false);
   const [copiedIng, setCopiedIng] = useState(false);
@@ -74,6 +74,12 @@ export function DetailItemSheet({
 
   const showMacros = hasMacros(food);
   const unsat = unsaturatedFat(food);
+
+  // Schieberegler für g/ml-Artikel (Artikel-eigener Override geht vor der
+  // globalen Einstellung, gleiches Muster wie in Anlegen/Bearbeiten).
+  const effectiveStepGml = food?.stepGml != null ? food.stepGml : stepGml;
+  const qtyStep = effectiveStepGml && effectiveStepGml !== 'auto' ? Number(effectiveStepGml) : 10;
+  const sliderMax = 1000;
 
   const doCopy = async () => {
     const merged = { ...food, name: item.name };
@@ -141,6 +147,19 @@ export function DetailItemSheet({
           <Plus size={15} strokeWidth={2.5} />
         </button>
       </div>
+
+      {item.unit !== 'stk' && showSlider !== false && onSetQty && (
+        <input
+          type="range"
+          min={0}
+          max={sliderMax}
+          step={qtyStep}
+          value={Math.min(item.qty, sliderMax)}
+          onChange={(e) => onSetQty(item.id, Math.max(0, parseInt(e.target.value, 10) || 0))}
+          aria-label={tr(lang, 'edit.sliderAria')}
+          style={{ width: '100%', marginTop: 12, accentColor: pal.accent }}
+        />
+      )}
 
       {/* Status: MHD + Geöffnet */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>

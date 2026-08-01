@@ -311,6 +311,23 @@ export default function App() {
     flash(id);
   };
 
+  // Absolute Mengenänderung (Schieberegler in der Artikelvorschau) - gleiches
+  // Verhalten wie changeQty (Verbrauch loggen, bei 0 entfernen), nur mit
+  // Zielwert statt Schrittweite*Richtung.
+  const setItemQty = (id, qty) => {
+    const item = items.find((i) => i.id === id);
+    if (!item) return;
+    const next = Math.max(0, qty);
+    if (next === item.qty) return;
+    if (next === 0) {
+      removeItem(id);
+      return;
+    }
+    if (next < item.qty) logHistory(item.name, getFood(item.name), 'consumed', item.qty - next, item.unit);
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, qty: next } : i)));
+    flash(id);
+  };
+
   // Schnell öffnen/schließen (aus der Detail-Ansicht). Setzt/entfernt openedAt.
   const toggleOpened = (id) => {
     setItems((prev) => prev.map((i) => {
@@ -1048,6 +1065,24 @@ export default function App() {
               </button>
               <button
                 type="button"
+                onClick={() => setPrefs((p) => ({ ...p, compactList: p.compactList !== true }))}
+                aria-label={prefs.compactList === true ? tr(lang, 'app.hideCompactAria') : tr(lang, 'app.showCompactAria')}
+                aria-pressed={prefs.compactList === true}
+                style={btnCircle(prefs.compactList === true ? t.pillActive : 'transparent', prefs.compactList === true ? t.pillActiveText : t.textMuted, 30)}
+              >
+                <LayoutList size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setPrefs((p) => ({ ...p, showMacroIconMain: p.showMacroIconMain !== true }))}
+                aria-label={prefs.showMacroIconMain === true ? tr(lang, 'app.hideMacroIconAria') : tr(lang, 'app.showMacroIconAria')}
+                aria-pressed={prefs.showMacroIconMain === true}
+                style={btnCircle(prefs.showMacroIconMain === true ? t.pillActive : 'transparent', prefs.showMacroIconMain === true ? t.pillActiveText : t.textMuted, 30)}
+              >
+                <Utensils size={14} />
+              </button>
+              <button
+                type="button"
                 onClick={() => setShowItemTrash((v) => !v)}
                 aria-label={showItemTrash ? tr(lang, 'app.doneRemoving') : tr(lang, 'app.enableRemove')}
                 aria-pressed={showItemTrash}
@@ -1408,11 +1443,13 @@ export default function App() {
         zone={detailLive ? resolveZone(detailLive.zone) : null}
         food={detailLive ? getFood(detailLive.name) : null}
         t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors} dateFormat={prefs.dateFormat || 'dmy'}
+        showSlider={prefs.showSlider !== false} stepGml={prefs.stepGml}
         isFavorite={detailLive ? isFavorite(detailLive.name) : false}
         onToggleFavorite={() => detailLive && toggleFavorite(detailLive)}
         onClose={() => setDetailItem(null)}
         onEdit={(it) => { setDetailItem(null); openEdit(it); }}
         onChangeQty={changeQty}
+        onSetQty={setItemQty}
         onRemove={(id) => { setDetailItem(null); removeItem(id); }}
         onToggleOpened={toggleOpened}
         onChangeMhd={changeMhd}
