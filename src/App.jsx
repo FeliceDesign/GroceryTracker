@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History, Utensils, Trash2, Check } from 'lucide-react';
+import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History, Utensils, Trash2, Check, ArrowDownUp, Diff } from 'lucide-react';
 
 import { useSystemTheme, buildTheme } from './lib/theme.js';
 import { zonePalette, ZONE_COLOR_CHOICES, MHD_COLOR_CHOICES } from './lib/colors.js';
@@ -79,7 +79,7 @@ export default function App() {
     focusMode: false, buttonsHidden: false, bottomButtonsLayout: 'stack', historyPos: 'off',
     hideAddWithButtons: false, swapAddHideOrder: false, addSameSize: false, historyAllItems: false,
     searchPos: 'bottom', foodsPos: 'off',
-    showMacroIconMain: false, showMacroIconFavorites: true,
+    showMacroIconMain: false, showMacroIconFavorites: true, showQtyButtons: true,
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -172,10 +172,30 @@ export default function App() {
   const checkedTimerRef = useRef(null);
   const shoppingUndoTimerRef = useRef(null);
   const historyUndoTimerRef = useRef(null);
+  const initialScrollDoneRef = useRef(false);
 
   const scanSupported = isScanSupported();
   const ready = themeLoaded && zonesLoaded && catsLoaded && foodsLoaded && favoritesLoaded && historyLoaded && itemsLoaded && shoppingLoaded && warnLoaded && prefsLoaded
     && zones !== null && categories !== null && foods !== null && items !== null && shopping !== null && warn !== null && prefs !== null;
+
+  // Beim App-Start etwas herunterscrollen, damit die Toolbar über der
+  // Hauptliste (Sortier-/Mengen-/Entfernen-Buttons) nicht gleich ins Auge
+  // fällt - nur einmal pro Sitzung, nicht bei jedem Re-Render.
+  useEffect(() => {
+    if (!ready || initialScrollDoneRef.current) return;
+    initialScrollDoneRef.current = true;
+    // Doppeltes rAF: das erste feuert vor dem nächsten Layout/Paint, das
+    // zweite erst danach - sonst ist die Liste manchmal noch nicht (voll)
+    // gerendert und es gibt noch nichts zum Scrollen.
+    let id2 = null;
+    const id1 = requestAnimationFrame(() => {
+      id2 = requestAnimationFrame(() => window.scrollTo({ top: 60, behavior: 'auto' }));
+    });
+    return () => {
+      cancelAnimationFrame(id1);
+      if (id2 !== null) cancelAnimationFrame(id2);
+    };
+  }, [ready]);
 
   // activeZone gültig halten (z.B. nachdem ein Lagerort entfernt wurde) –
   // greift auch beim App-Start (activeZone noch null): dann zählt die in den
@@ -943,16 +963,43 @@ export default function App() {
       {/* Liste */}
       <div style={{ maxWidth: 480, margin: '0 auto', padding: '18px 20px 0' }}>
         {items.length > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: t.cardAlt, borderRadius: 14, padding: '6px 8px', marginBottom: 12,
+          }}>
             <button
               type="button"
-              onClick={() => setShowItemTrash((v) => !v)}
-              aria-label={showItemTrash ? tr(lang, 'app.doneRemoving') : tr(lang, 'app.enableRemove')}
-              aria-pressed={showItemTrash}
-              style={btnCircle(showItemTrash ? t.pillActive : 'transparent', showItemTrash ? t.pillActiveText : t.textMuted, 30)}
+              onClick={() => setPrefs((p) => ({
+                ...p,
+                mainSortMode: p.mainSortMode === 'category' ? 'name' : p.mainSortMode === 'name' ? 'mhd' : 'category',
+              }))}
+              aria-label={tr(lang, 'app.cycleSortAria', {
+                mode: tr(lang, (prefs.mainSortMode || 'category') === 'category' ? 'behavior.sortCategory' : prefs.mainSortMode === 'name' ? 'behavior.sortName' : 'behavior.sortMhd'),
+              })}
+              style={btnCircle('transparent', t.textMuted, 30)}
             >
-              {showItemTrash ? <Check size={15} /> : <Trash2 size={14} />}
+              <ArrowDownUp size={14} />
             </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <button
+                type="button"
+                onClick={() => setPrefs((p) => ({ ...p, showQtyButtons: p.showQtyButtons === false }))}
+                aria-label={prefs.showQtyButtons === false ? tr(lang, 'app.showQtyButtonsAria') : tr(lang, 'app.hideQtyButtonsAria')}
+                aria-pressed={prefs.showQtyButtons === false}
+                style={btnCircle(prefs.showQtyButtons === false ? t.pillActive : 'transparent', prefs.showQtyButtons === false ? t.pillActiveText : t.textMuted, 30)}
+              >
+                <Diff size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowItemTrash((v) => !v)}
+                aria-label={showItemTrash ? tr(lang, 'app.doneRemoving') : tr(lang, 'app.enableRemove')}
+                aria-pressed={showItemTrash}
+                style={btnCircle(showItemTrash ? t.pillActive : 'transparent', showItemTrash ? t.pillActiveText : t.textMuted, 30)}
+              >
+                {showItemTrash ? <Check size={15} /> : <Trash2 size={14} />}
+              </button>
+            </div>
           </div>
         )}
         {expiringView ? (
@@ -966,7 +1013,7 @@ export default function App() {
                     <ItemRow
                       key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                       justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                      showZoneBadge isLast={idx === expiringSoon.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
+                      showZoneBadge isLast={idx === expiringSoon.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash} showQtyButtons={prefs.showQtyButtons !== false}
                     />
                   ))}
                 </Section>
@@ -977,7 +1024,7 @@ export default function App() {
                     <ItemRow
                       key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                       justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                      showZoneBadge isLast={idx === expiringLater.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
+                      showZoneBadge isLast={idx === expiringLater.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash} showQtyButtons={prefs.showQtyButtons !== false}
                     />
                   ))}
                 </Section>
@@ -993,7 +1040,7 @@ export default function App() {
                 <ItemRow
                   key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                   justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                  showZoneBadge isLast={idx === searchResults.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
+                  showZoneBadge isLast={idx === searchResults.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash} showQtyButtons={prefs.showQtyButtons !== false}
                 />
               ))}
             </Section>
@@ -1008,7 +1055,7 @@ export default function App() {
                   <ItemRow
                     key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                     justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                    isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
+                    isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash} showQtyButtons={prefs.showQtyButtons !== false}
                   />
                 ))}
               </Section>
@@ -1022,7 +1069,7 @@ export default function App() {
               <ItemRow
                 key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                 justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                isLast={idx === flatSorted.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash}
+                isLast={idx === flatSorted.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash} showQtyButtons={prefs.showQtyButtons !== false}
               />
             ))}
           </Section>

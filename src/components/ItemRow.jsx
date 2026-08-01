@@ -16,7 +16,7 @@ const NO_WARN_COLORS = {};
 export function ItemRow({
   item, zone, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = NO_WARN_COLORS, openedShelfDays = null,
   justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast, showWarnDot = true, compact = false, showDelete = true,
-  hasFoodMacros = false,
+  hasFoodMacros = false, showQtyButtons = true,
 }) {
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
   const days = daysUntil(item.mhd); // gedrucktes MHD
@@ -110,9 +110,11 @@ export function ItemRow({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 10, flexShrink: 0 }}>
-        <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText, compact ? 28 : 36)} aria-label={tr(lang, 'itemRow.decreaseAria', { name: item.name })}>
-          <Minus size={compact ? 12 : 14} strokeWidth={2.5} />
-        </button>
+        {showQtyButtons && (
+          <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText, compact ? 28 : 36)} aria-label={tr(lang, 'itemRow.decreaseAria', { name: item.name })}>
+            <Minus size={compact ? 12 : 14} strokeWidth={2.5} />
+          </button>
+        )}
         <span
           onClick={() => (item.unit !== 'stk' ? onEdit(item) : null)}
           style={{
@@ -123,9 +125,11 @@ export function ItemRow({
         >
           {item.unit === 'stk' ? `${item.qty}x` : `${item.qty}${item.unit}`}
         </span>
-        <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent, compact ? 28 : 36)} aria-label={tr(lang, 'itemRow.increaseAria', { name: item.name })}>
-          <Plus size={compact ? 12 : 14} strokeWidth={2.5} />
-        </button>
+        {showQtyButtons && (
+          <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent, compact ? 28 : 36)} aria-label={tr(lang, 'itemRow.increaseAria', { name: item.name })}>
+            <Plus size={compact ? 12 : 14} strokeWidth={2.5} />
+          </button>
+        )}
         {/* Platz für den Lösch-Button immer reservieren (nur unsichtbar
             schalten, nicht aus dem Layout nehmen) - sonst verschiebt sich die
             Mengen-Gruppe je nachdem, ob der Entfernen-Modus aktiv ist. */}
