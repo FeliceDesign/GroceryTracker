@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History, Utensils, Trash2, Check, ArrowDownUp, Diff } from 'lucide-react';
+import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History, Utensils, Trash2, Check, ArrowDownUp, Diff, LayoutList } from 'lucide-react';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 import { useSystemTheme, buildTheme } from './lib/theme.js';
 import { zonePalette, ZONE_COLOR_CHOICES, MHD_COLOR_CHOICES } from './lib/colors.js';
@@ -225,6 +227,54 @@ export default function App() {
     const effItems = items.map((i) => ({ ...i, mhd: effectiveExpiry(i, openedDaysFor(i.name, getFood(i.name))).date }));
     syncExpiryNotifications(effItems, warn);
   }, [items, warn, itemsLoaded, warnLoaded, getFood]);
+
+  // Hardware-/Gesten-Zurück (Android): schließt zuerst ein offenes Sheet -
+  // in Prioritätsreihenfolge von "am tiefsten verschachtelt" bis "obere
+  // Ebene" -, erst wenn nichts mehr offen ist, wird die App beendet. Auf dem
+  // Web (Browser/Dev-Server) gibt es kein backButton-Event, dort passiert
+  // nichts.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return undefined;
+    let active = true;
+    let handle = null;
+    CapacitorApp.addListener('backButton', () => {
+      const closers = [
+        showScanFlow && (() => setShowScanFlow(false)),
+        detailItem && (() => setDetailItem(null)),
+        editItem && (() => { setEditItem(null); setScanMsg(''); }),
+        showAdd && closeAdd,
+        showLayout && (() => setShowLayout(false)),
+        showBehavior && (() => setShowBehavior(false)),
+        showWarnSettings && (() => setShowWarnSettings(false)),
+        showShopping && (() => setShowShopping(false)),
+        showZones && (() => setShowZones(false)),
+        showCategories && (() => setShowCategories(false)),
+        showFavorites && (() => setShowFavorites(false)),
+        showFoods && (() => {
+          setShowFoods(false);
+          setEditFoodName(null);
+          if (foodsFromFavorites) { setFoodsFromFavorites(false); setShowFavorites(true); }
+        }),
+        showShelfLife && (() => setShowShelfLife(false)),
+        showProduceStorage && (() => setShowProduceStorage(false)),
+        showSpiceGuide && (() => setShowSpiceGuide(false)),
+        showHistory && (() => setShowHistory(false)),
+        showBackup && (() => setShowBackup(false)),
+        showSettings && (() => setShowSettings(false)),
+        expiringView && (() => setExpiringView(false)),
+      ].filter(Boolean);
+      if (closers.length) { closers[0](); return; }
+      CapacitorApp.exitApp();
+    }).then((h) => { if (active) handle = h; else h.remove(); });
+    return () => {
+      active = false;
+      handle?.remove();
+    };
+  }, [
+    showScanFlow, detailItem, editItem, showAdd, showLayout, showBehavior, showWarnSettings,
+    showShopping, showZones, showCategories, showFavorites, showFoods, foodsFromFavorites,
+    showShelfLife, showProduceStorage, showSpiceGuide, showHistory, showBackup, showSettings, expiringView,
+  ]);
 
   const resolveZone = (id) => (zones ? zones.find((z) => z.id === id) : undefined);
   const countFor = (id) => (items ? items.filter((i) => i.zone === id).length : 0);
