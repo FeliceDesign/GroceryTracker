@@ -157,6 +157,7 @@ export default function App() {
   const [deletedItem, setDeletedItem] = useState(null);
   const [deletedZone, setDeletedZone] = useState(null);
   const [deletedFavorites, setDeletedFavorites] = useState(null);
+  const [deletedFavorite, setDeletedFavorite] = useState(null);
   const [restoredShopping, setRestoredShopping] = useState(null);
   const [deletedHistoryEntries, setDeletedHistoryEntries] = useState(null);
   const [justChanged, setJustChanged] = useState(null);
@@ -170,6 +171,7 @@ export default function App() {
   const undoTimerRef = useRef(null);
   const zoneUndoTimerRef = useRef(null);
   const favoritesUndoTimerRef = useRef(null);
+  const favoriteUndoTimerRef = useRef(null);
   const flashTimerRef = useRef(null);
   const checkedTimerRef = useRef(null);
   const shoppingUndoTimerRef = useRef(null);
@@ -214,6 +216,7 @@ export default function App() {
   useEffect(() => () => {
     clearTimeout(undoTimerRef.current);
     clearTimeout(favoritesUndoTimerRef.current);
+    clearTimeout(favoriteUndoTimerRef.current);
     clearTimeout(flashTimerRef.current);
     clearTimeout(checkedTimerRef.current);
     clearTimeout(shoppingUndoTimerRef.current);
@@ -446,6 +449,24 @@ export default function App() {
     if (!deletedFavorites) return;
     restoreFavorites(deletedFavorites);
     setDeletedFavorites(null);
+  };
+
+  // Einzelnen Favoriten löschen (Verwaltungs-Sheet) - gleiche Logik wie das
+  // Entfernen eines Artikels aus dem Bestand: sofort weg, aber 5s per Toast
+  // rückgängig machbar, statt wie bisher endgültig ohne Bestätigung.
+  const removeFavoriteWithUndo = (id) => {
+    const removed = favorites.find((f) => f.id === id);
+    if (!removed) return;
+    setDeletedFavorite(removed);
+    removeFavorite(id);
+    clearTimeout(favoriteUndoTimerRef.current);
+    favoriteUndoTimerRef.current = setTimeout(() => setDeletedFavorite(null), 5000);
+  };
+
+  const undoFavoriteDelete = () => {
+    if (!deletedFavorite) return;
+    restoreFavorites([deletedFavorite]);
+    setDeletedFavorite(null);
   };
 
   const removeItem = (id) => {
@@ -1246,7 +1267,16 @@ export default function App() {
         />
       )}
 
-      {!deletedItem && !deletedZone && !deletedFavorites && restoredShopping && (
+      {!deletedItem && !deletedZone && !deletedFavorites && deletedFavorite && (
+        <Toast
+          t={t}
+          message={tr(lang, 'favorites.toastRemoved', { name: deletedFavorite.name })}
+          actionLabel={tr(lang, 'app.undo')}
+          onAction={undoFavoriteDelete}
+        />
+      )}
+
+      {!deletedItem && !deletedZone && !deletedFavorites && !deletedFavorite && restoredShopping && (
         <Toast
           t={t}
           message={tr(lang, 'app.toastAddedFromShopping', { name: restoredShopping.entry.name })}
@@ -1255,7 +1285,7 @@ export default function App() {
         />
       )}
 
-      {!deletedItem && !deletedZone && !deletedFavorites && !restoredShopping && deletedHistoryEntries && (
+      {!deletedItem && !deletedZone && !deletedFavorites && !deletedFavorite && !restoredShopping && deletedHistoryEntries && (
         <Toast
           t={t}
           message={tr(lang, deletedHistoryEntries.length === 1 ? 'history.toastRemovedOne' : 'history.toastRemoved', { count: deletedHistoryEntries.length })}
@@ -1397,7 +1427,7 @@ export default function App() {
 
       <ManageFavoritesSheet
         open={showFavorites} onClose={() => setShowFavorites(false)} t={t} dark={dark} lang={lang}
-        favorites={sortedFavorites} zones={zones} onRemove={removeFavorite} onUpdate={updateFavorite} onMove={moveFavorite}
+        favorites={sortedFavorites} zones={zones} onRemove={removeFavoriteWithUndo} onUpdate={updateFavorite} onMove={moveFavorite}
         onAddToInventory={addFavoriteToInventory} onAddToShopping={addFavoriteToShopping}
         hasInventoryItems={items.length > 0} onAddAllFromInventory={addAllInventoryToFavorites}
         onClearAll={clearAllFavorites}

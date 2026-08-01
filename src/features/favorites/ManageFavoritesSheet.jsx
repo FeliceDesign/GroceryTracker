@@ -12,7 +12,7 @@ const UNITS = ['stk', 'g', 'ml'];
 
 function FavoriteRow({
   fav, zone, dark, t, lang, onRemove, onUpdate, onAddToInventory, onAddToShopping, onEditFood,
-  showMove = false, canMoveUp = false, canMoveDown = false, onMove, hasFoodMacros = false,
+  showMove = false, canMoveUp = false, canMoveDown = false, onMove, hasFoodMacros = false, showDelete = true,
 }) {
   const pal = zonePalette(zone ? zone.color : null, dark);
   // Kurzes Häkchen-Feedback nach dem Antippen, analog zum Kopieren-Feedback
@@ -127,7 +127,13 @@ function FavoriteRow({
         <button
           type="button"
           onClick={() => onRemove(fav.id)}
-          style={btnCircle('transparent', t.danger, 36)}
+          disabled={!showDelete}
+          aria-hidden={!showDelete}
+          tabIndex={showDelete ? 0 : -1}
+          style={{
+            ...btnCircle('transparent', t.danger, 36),
+            opacity: showDelete ? 1 : 0, pointerEvents: showDelete ? 'auto' : 'none',
+          }}
           aria-label={tr(lang, 'favorites.removeAria', { name: fav.name })}
         >
           <Trash2 size={15} />
@@ -195,10 +201,13 @@ export function ManageFavoritesSheet({
   const [addAllMsg, setAddAllMsg] = useState('');
   const [confirmClearAll, setConfirmClearAll] = useState(false);
   const [onlyWithMacros, setOnlyWithMacros] = useState(false);
+  // Lösch-Buttons bleiben standardmäßig ausgeblendet und erscheinen erst nach
+  // Tap auf "Entfernen" - gleiches Muster wie in der Hauptliste.
+  const [showFavTrash, setShowFavTrash] = useState(false);
 
   // Zustand zurücksetzen, sobald das Sheet zugeht.
   useEffect(() => {
-    if (!open) { setConfirmAddAll(false); setAddAllMsg(''); setConfirmClearAll(false); setOnlyWithMacros(false); }
+    if (!open) { setConfirmAddAll(false); setAddAllMsg(''); setConfirmClearAll(false); setOnlyWithMacros(false); setShowFavTrash(false); }
   }, [open]);
 
   useEffect(() => {
@@ -273,7 +282,22 @@ export function ManageFavoritesSheet({
               />
             </div>
           )}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <button
+              type="button"
+              onClick={() => setShowFavTrash((v) => !v)}
+              aria-label={showFavTrash ? tr(lang, 'favorites.doneRemoving') : tr(lang, 'favorites.enableRemove')}
+              aria-pressed={showFavTrash}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, border: 'none',
+                background: showFavTrash ? t.pillActive : 'transparent',
+                color: showFavTrash ? t.pillActiveText : t.textMuted,
+                fontSize: 12.5, fontWeight: 700, cursor: 'pointer', borderRadius: 8, padding: '4px 8px',
+              }}
+            >
+              {showFavTrash ? <Check size={14} /> : <Trash2 size={14} />}
+              {showFavTrash ? tr(lang, 'favorites.doneRemoving') : tr(lang, 'favorites.enableRemove')}
+            </button>
             <button
               type="button"
               onClick={handleClearAll}
@@ -295,6 +319,7 @@ export function ManageFavoritesSheet({
                 onEditFood={onEditFood}
                 showMove={sortMode === 'manual'} canMoveUp={idx > 0} canMoveDown={idx < favorites.length - 1} onMove={onMove}
                 hasFoodMacros={showMacroIcon && hasMacros(getFood?.(f.name))}
+                showDelete={showFavTrash}
               />
             ))}
           </div>
