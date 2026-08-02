@@ -477,8 +477,11 @@ export function HistorySheet({
     }
   };
 
+  // Artikel ohne hinterlegte Nährwerte tragen nichts zur Kopie bei (nur eine
+  // leere Kopfzeile) - werden deshalb ganz weggelassen, statt Leerzeilen in
+  // den kopierten Text zu mischen.
   const copySelected = async () => {
-    const chosen = allRows.filter((r) => selectedIds.includes(r.id));
+    const chosen = allRows.filter((r) => selectedIds.includes(r.id) && hasMacros(r.food));
     if (chosen.length === 0) return;
     const text = chosen.map((r) => formatMacroTable(r.food, lang)).join('\n\n');
     const ok = await copyToClipboard(text);
@@ -501,22 +504,27 @@ export function HistorySheet({
     setShowAddForm(false);
   };
 
+  // Zeigt/zählt nur die auswahl-Zeilen, die tatsächlich kopiert werden
+  // (mit Nährwerten) - sonst würde der Button z.B. "3 Makros kopieren"
+  // anzeigen, obwohl davon nur 2 wirklich etwas beitragen.
+  const selectedWithMacrosCount = allRows.filter((r) => selectedIds.includes(r.id) && hasMacros(r.food)).length;
+
   const footer = (history || []).length > 0 && (
     <button
       type="button"
       onClick={copySelected}
-      disabled={selectedIds.length === 0}
+      disabled={selectedWithMacrosCount === 0}
       style={{
         ...primaryButtonStyle(t),
-        opacity: selectedIds.length === 0 ? 0.45 : 1,
-        cursor: selectedIds.length === 0 ? 'default' : 'pointer',
+        opacity: selectedWithMacrosCount === 0 ? 0.45 : 1,
+        cursor: selectedWithMacrosCount === 0 ? 'default' : 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
       }}
     >
       {copied ? <Check size={17} /> : <Copy size={16} />}
       {copied
         ? tr(lang, 'history.copied')
-        : tr(lang, selectedIds.length === 1 ? 'history.copySelectedOne' : 'history.copySelected', { count: selectedIds.length })}
+        : tr(lang, selectedWithMacrosCount === 1 ? 'history.copySelectedOne' : 'history.copySelected', { count: selectedWithMacrosCount })}
     </button>
   );
 
