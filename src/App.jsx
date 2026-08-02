@@ -912,10 +912,19 @@ export default function App() {
       // Gleiche Reihenfolge wie die Hauptliste: manuelle Kategorien-
       // Reihenfolge (Settings -> Kategorien verwalten) statt alphabetisch.
       const catOrder = new Map((categories || []).map((c, i) => [c, i]));
-      const fallback = categories ? categories.length : 0;
+      // "Unbekannte" Kategorien (z.B. inzwischen gelöscht, aber noch an
+      // einem Favoriten hinterlegt - removeCategoryWithReassign räumt nur
+      // Artikel um, keine Favoriten) bekommen je einen eigenen, alphabetisch
+      // einsortierten Rang nach den bekannten. Sonst würden sich mehrere
+      // verschiedene unbekannte Kategorien nach Artikelname vermischen und
+      // beim Gruppieren in ManageFavoritesSheet nicht zusammenhängend
+      // auftauchen (gleiches Muster wie "unknown" in grouped weiter unten).
+      const unknownCats = [...new Set(favorites.filter((f) => !catOrder.has(f.category)).map((f) => f.category))]
+        .sort((a, b) => (a || '').localeCompare(b || '', 'de'));
+      const unknownOrder = new Map(unknownCats.map((c, i) => [c, catOrder.size + i]));
       return [...favorites].sort((a, b) => {
-        const ca = catOrder.has(a.category) ? catOrder.get(a.category) : fallback;
-        const cb = catOrder.has(b.category) ? catOrder.get(b.category) : fallback;
+        const ca = catOrder.has(a.category) ? catOrder.get(a.category) : unknownOrder.get(a.category);
+        const cb = catOrder.has(b.category) ? catOrder.get(b.category) : unknownOrder.get(b.category);
         return ca !== cb ? ca - cb : a.name.localeCompare(b.name, 'de');
       });
     }
