@@ -149,7 +149,10 @@ function FavoriteRow({
       </div>
 
       <div style={{ display: 'grid', gridTemplateRows: editingQty ? '1fr' : '0fr', transition: 'grid-template-rows 0.2s ease' }}>
-        <div style={{ overflow: 'hidden' }}>
+        {/* Nur im eingeklappten Zustand (bzw. während der Animation) clippen -
+            offen darf das Kategorie-Dropdown (position: absolute) über den
+            Rand hinausragen, sonst wird es unsichtbar abgeschnitten. */}
+        <div style={{ overflow: editingQty ? 'visible' : 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${t.border}`, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', gap: 6 }}>
               {UNITS.map((u) => (
