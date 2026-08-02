@@ -3,6 +3,8 @@ import { Trash2, ListPlus, PackagePlus, ShoppingCart, Check, Pencil, Minus, Plus
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { Toggle } from '../../components/Toggle.jsx';
+import { ZonePicker } from '../../components/ZonePicker.jsx';
+import { CategoryPicker } from '../../components/CategoryPicker.jsx';
 import { zonePalette } from '../../lib/colors.js';
 import { btnCircle, pillStyle, makeInputStyle, makeLabelStyle, groupLabelStyle } from '../../lib/styles.js';
 import { hasMacros } from '../../lib/macros.js';
@@ -11,9 +13,9 @@ import { tr } from '../../lib/i18n.js';
 const UNITS = ['stk', 'g', 'ml'];
 
 function FavoriteRow({
-  fav, zone, dark, t, lang, onRemove, onUpdate, onAddToInventory, onAddToShopping, onEditFood,
+  fav, zone, zones, dark, t, lang, onRemove, onUpdate, onAddToInventory, onAddToShopping, onEditFood,
   showMove = false, canMoveUp = false, canMoveDown = false, onMove, hasFoodMacros = false, showDelete = true,
-  inventoryQty = null,
+  inventoryQty = null, categories, onAddCategory,
 }) {
   const pal = zonePalette(zone ? zone.color : null, dark);
   // Kurzes Häkchen-Feedback nach dem Antippen, analog zum Kopieren-Feedback
@@ -189,6 +191,34 @@ function FavoriteRow({
               </div>
             )}
           </div>
+          {zones && (
+            <div style={{ marginTop: 10 }}>
+              <ZonePicker
+                zones={zones}
+                value={fav.zone}
+                onChange={(id) => onUpdate(fav.id, { zone: id })}
+                t={t}
+                dark={dark}
+                lang={lang}
+                label={tr(lang, 'add.location')}
+              />
+            </div>
+          )}
+          {categories && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ ...makeLabelStyle(t), marginTop: 0, marginBottom: 6 }}>
+                {tr(lang, 'add.category')}
+              </div>
+              <CategoryPicker
+                value={fav.category || tr(lang, 'favorites.noCategory')}
+                onChange={(c) => onUpdate(fav.id, { category: c })}
+                categories={categories}
+                onAddCategory={onAddCategory}
+                t={t}
+                lang={lang}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -201,7 +231,7 @@ function FavoriteRow({
 export function ManageFavoritesSheet({
   open, onClose, t, dark, lang = 'de', favorites, zones, onRemove, onUpdate, onMove, onAddToInventory, onAddToShopping,
   hasInventoryItems = false, onAddAllFromInventory, onClearAll, onEditFood, getFood, getInventoryQty,
-  sortMode = 'manual', onSetSortMode, showMacroIcon = true,
+  sortMode = 'manual', onSetSortMode, showMacroIcon = true, categories, onAddCategory,
 }) {
   const [confirmAddAll, setConfirmAddAll] = useState(false);
   const [addAllMsg, setAddAllMsg] = useState('');
@@ -332,13 +362,14 @@ export function ManageFavoritesSheet({
                     </div>
                   )}
                   <FavoriteRow
-                    fav={f} zone={zones.find((z) => z.id === f.zone)} dark={dark} t={t} lang={lang}
+                    fav={f} zone={zones.find((z) => z.id === f.zone)} zones={zones} dark={dark} t={t} lang={lang}
                     onRemove={onRemove} onUpdate={onUpdate} onAddToInventory={onAddToInventory} onAddToShopping={onAddToShopping}
                     onEditFood={onEditFood}
                     showMove={sortMode === 'manual'} canMoveUp={idx > 0} canMoveDown={idx < favorites.length - 1} onMove={onMove}
                     hasFoodMacros={showMacroIcon && hasMacros(getFood?.(f.name))}
                     inventoryQty={getInventoryQty?.(f.name, f.zone)}
                     showDelete={showFavTrash}
+                    categories={categories} onAddCategory={onAddCategory}
                   />
                 </div>
               );

@@ -1466,6 +1466,7 @@ export default function App() {
         getFood={getFood}
         getInventoryQty={inventoryQtyFor}
         showMacroIcon={prefs.showMacroIconFavorites !== false}
+        categories={categories} onAddCategory={addCategory}
       />
 
       <ManageFoodsSheet
