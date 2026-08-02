@@ -362,6 +362,16 @@ export default function App() {
     if (fav) updateFavorite(fav.id, { name: (newName || '').trim() });
   };
 
+  // Aktuelle Bestandsmenge eines Favoriten (Favoriten-Verwaltung) - nur im
+  // beim Favoriten hinterlegten Lagerort, keine Summe über alle Lagerorte
+  // (sonst wäre z.B. Kühlschrank- und Vorrats-Bestand irreführend vermischt).
+  // null, wenn nichts davon in diesem Lagerort ist - dann bleibt die Anzeige
+  // ausgeblendet statt "0" zu zeigen.
+  const inventoryQtyFor = (name, zone) => {
+    const match = items.find((i) => i.zone === zone && i.name.toLowerCase() === (name || '').toLowerCase());
+    return match ? { qty: match.qty, unit: match.unit } : null;
+  };
+
   // Ein-/Ausklappen der Favoriten-Chip-Leiste (gilt für Hauptliste und
   // Einkaufsliste gemeinsam, persistiert in den Prefs).
   const toggleFavoritesCollapsed = () => setPrefs((p) => ({ ...p, favoritesCollapsed: !p.favoritesCollapsed }));
@@ -899,13 +909,18 @@ export default function App() {
       });
     }
     if (mode === 'category') {
+      // Gleiche Reihenfolge wie die Hauptliste: manuelle Kategorien-
+      // Reihenfolge (Settings -> Kategorien verwalten) statt alphabetisch.
+      const catOrder = new Map((categories || []).map((c, i) => [c, i]));
+      const fallback = categories ? categories.length : 0;
       return [...favorites].sort((a, b) => {
-        const ca = (a.category || '').localeCompare(b.category || '', 'de');
-        return ca !== 0 ? ca : a.name.localeCompare(b.name, 'de');
+        const ca = catOrder.has(a.category) ? catOrder.get(a.category) : fallback;
+        const cb = catOrder.has(b.category) ? catOrder.get(b.category) : fallback;
+        return ca !== cb ? ca - cb : a.name.localeCompare(b.name, 'de');
       });
     }
     return favorites;
-  }, [favorites, zones, prefs]);
+  }, [favorites, zones, categories, prefs]);
 
   // Hauptlisten-Sortierung: "Kategorie" gruppiert nach der manuellen
   // Kategorien-Reihenfolge (Settings -> Kategorien verwalten), "Name"/"MHD"
@@ -1435,6 +1450,7 @@ export default function App() {
         sortMode={prefs.favoritesSortMode || 'manual'}
         onSetSortMode={(v) => setPrefs((p) => ({ ...p, favoritesSortMode: v }))}
         getFood={getFood}
+        getInventoryQty={inventoryQtyFor}
         showMacroIcon={prefs.showMacroIconFavorites !== false}
       />
 

@@ -4,7 +4,7 @@ import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { Toggle } from '../../components/Toggle.jsx';
 import { zonePalette } from '../../lib/colors.js';
-import { btnCircle, pillStyle, makeInputStyle, makeLabelStyle } from '../../lib/styles.js';
+import { btnCircle, pillStyle, makeInputStyle, makeLabelStyle, groupLabelStyle } from '../../lib/styles.js';
 import { hasMacros } from '../../lib/macros.js';
 import { tr } from '../../lib/i18n.js';
 
@@ -13,6 +13,7 @@ const UNITS = ['stk', 'g', 'ml'];
 function FavoriteRow({
   fav, zone, dark, t, lang, onRemove, onUpdate, onAddToInventory, onAddToShopping, onEditFood,
   showMove = false, canMoveUp = false, canMoveDown = false, onMove, hasFoodMacros = false, showDelete = true,
+  inventoryQty = null,
 }) {
   const pal = zonePalette(zone ? zone.color : null, dark);
   // Kurzes Häkchen-Feedback nach dem Antippen, analog zum Kopieren-Feedback
@@ -98,6 +99,11 @@ function FavoriteRow({
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11.5, color: t.textFaint }}>{fav.category}</span>
             <span style={{ fontSize: 11.5, color: t.textFaint }}>· {unit === 'stk' ? `${qty}x` : `${qty} ${unit}`}</span>
+            {inventoryQty && (
+              <span style={{ fontSize: 11.5, color: t.success, fontWeight: 700 }}>
+                · {tr(lang, 'favorites.inStock', { amount: inventoryQty.unit === 'stk' ? `${inventoryQty.qty}x` : `${inventoryQty.qty} ${inventoryQty.unit}` })}
+              </span>
+            )}
           </div>
         </button>
         <button
@@ -194,7 +200,7 @@ function FavoriteRow({
 // "Bestand übernehmen"-Button hier, kein eigenes Anlegen-Formular.
 export function ManageFavoritesSheet({
   open, onClose, t, dark, lang = 'de', favorites, zones, onRemove, onUpdate, onMove, onAddToInventory, onAddToShopping,
-  hasInventoryItems = false, onAddAllFromInventory, onClearAll, onEditFood, getFood,
+  hasInventoryItems = false, onAddAllFromInventory, onClearAll, onEditFood, getFood, getInventoryQty,
   sortMode = 'manual', onSetSortMode, showMacroIcon = true,
 }) {
   const [confirmAddAll, setConfirmAddAll] = useState(false);
@@ -312,16 +318,31 @@ export function ManageFavoritesSheet({
             </button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {favorites.map((f, idx) => (
-              <FavoriteRow
-                key={f.id} fav={f} zone={zones.find((z) => z.id === f.zone)} dark={dark} t={t} lang={lang}
-                onRemove={onRemove} onUpdate={onUpdate} onAddToInventory={onAddToInventory} onAddToShopping={onAddToShopping}
-                onEditFood={onEditFood}
-                showMove={sortMode === 'manual'} canMoveUp={idx > 0} canMoveDown={idx < favorites.length - 1} onMove={onMove}
-                hasFoodMacros={showMacroIcon && hasMacros(getFood?.(f.name))}
-                showDelete={showFavTrash}
-              />
-            ))}
+            {favorites.map((f, idx) => {
+              // Gruppen-Header nur im Kategorie-Sortiermodus, an jeder Stelle,
+              // an der sich die Kategorie zur vorherigen Zeile ändert - die
+              // Liste kommt bereits in der richtigen Reihenfolge an (manuelle
+              // Kategorien-Reihenfolge, siehe sortedFavorites in App.jsx).
+              const showHeader = sortMode === 'category' && f.category !== (idx > 0 ? favorites[idx - 1].category : undefined);
+              return (
+                <div key={f.id}>
+                  {showHeader && (
+                    <div style={{ ...groupLabelStyle(t), marginTop: idx > 0 ? 14 : 0, marginBottom: 6, paddingLeft: 2 }}>
+                      {f.category}
+                    </div>
+                  )}
+                  <FavoriteRow
+                    fav={f} zone={zones.find((z) => z.id === f.zone)} dark={dark} t={t} lang={lang}
+                    onRemove={onRemove} onUpdate={onUpdate} onAddToInventory={onAddToInventory} onAddToShopping={onAddToShopping}
+                    onEditFood={onEditFood}
+                    showMove={sortMode === 'manual'} canMoveUp={idx > 0} canMoveDown={idx < favorites.length - 1} onMove={onMove}
+                    hasFoodMacros={showMacroIcon && hasMacros(getFood?.(f.name))}
+                    inventoryQty={getInventoryQty?.(f.name, f.zone)}
+                    showDelete={showFavTrash}
+                  />
+                </div>
+              );
+            })}
           </div>
         </>
       )}
