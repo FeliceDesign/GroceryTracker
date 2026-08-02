@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { Plus, Copy, Check, Trash2, Search, Star, ChevronDown, ChevronRight } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
@@ -14,10 +14,10 @@ import {
 // bearbeiten, neu anlegen, kopieren und löschen. `initialEditName` springt
 // beim Öffnen direkt in den Editor für diesen Namen (z.B. von einem
 // Favoriten aus) - vorhandene Stammdaten werden geladen, sonst leer angelegt.
-export function ManageFoodsSheet({
+export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   open, onClose, t, lang = 'de', foods, onUpsert, onRemove, scanSupported, initialEditName, stepGml,
   onRenameLinkedFavorite, isFavorite, onToggleFavorite, onMacrosCopied,
-}) {
+}, ref) {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null); // { name, macros } oder null
   const [copiedKey, setCopiedKey] = useState(null);
@@ -55,6 +55,17 @@ export function ManageFoodsSheet({
     setEditing(null);
     if (directEntry) onClose();
   };
+
+  // Für den Zurück-Button (Android, siehe App.jsx): ist der Editor offen,
+  // erst einen Schritt zurück zur Liste (wie der X-Button), statt das ganze
+  // Sheet zu schließen. Gibt zurück, ob intern reagiert wurde.
+  useImperativeHandle(ref, () => ({
+    goBack: () => {
+      if (!editing) return false;
+      finishEditing();
+      return true;
+    },
+  }));
 
   // Zwei Sektionen: Artikel mit echten Makros oben (immer sichtbar), Artikel
   // mit sonstigen Stammdaten (nur Zutaten und/oder eigene Öffnungs-
@@ -259,7 +270,7 @@ export function ManageFoodsSheet({
       )}
     </Modal>
   );
-}
+});
 
 function FoodRow({ food, t, lang, onEdit, onCopy, copied, isFavorite, onToggleFavorite }) {
   return (

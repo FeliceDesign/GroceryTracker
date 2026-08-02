@@ -177,6 +177,7 @@ export default function App() {
   const shoppingUndoTimerRef = useRef(null);
   const historyUndoTimerRef = useRef(null);
   const initialScrollDoneRef = useRef(false);
+  const manageFoodsRef = useRef(null);
 
   const scanSupported = isScanSupported();
   const ready = themeLoaded && zonesLoaded && catsLoaded && foodsLoaded && favoritesLoaded && historyLoaded && itemsLoaded && shoppingLoaded && warnLoaded && prefsLoaded
@@ -254,6 +255,10 @@ export default function App() {
         showCategories && (() => setShowCategories(false)),
         showFavorites && (() => setShowFavorites(false)),
         showFoods && (() => {
+          // Ist der Stammdaten-Editor für ein einzelnes Lebensmittel offen,
+          // erst einen Schritt zurück zur Liste (wie der X-Button dort),
+          // statt gleich das ganze Sheet zu schließen.
+          if (manageFoodsRef.current?.goBack?.()) return;
           setShowFoods(false);
           setEditFoodName(null);
           if (foodsFromFavorites) { setFoodsFromFavorites(false); setShowFavorites(true); }
@@ -1464,6 +1469,7 @@ export default function App() {
       />
 
       <ManageFoodsSheet
+        ref={manageFoodsRef}
         open={showFoods}
         onClose={() => {
           setShowFoods(false);
