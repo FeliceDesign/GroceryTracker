@@ -97,7 +97,7 @@ function FavoriteRow({
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 11.5, color: t.textFaint }}>{fav.category}</span>
+            <span style={{ fontSize: 11.5, color: t.textFaint }}>{fav.category || tr(lang, 'favorites.noCategory')}</span>
             <span style={{ fontSize: 11.5, color: t.textFaint }}>· {unit === 'stk' ? `${qty}x` : `${qty} ${unit}`}</span>
             {inventoryQty && (
               <span style={{ fontSize: 11.5, color: t.success, fontWeight: 700 }}>
@@ -328,7 +328,7 @@ export function ManageFavoritesSheet({
                 <div key={f.id}>
                   {showHeader && (
                     <div style={{ ...groupLabelStyle(t), marginTop: idx > 0 ? 14 : 0, marginBottom: 6, paddingLeft: 2 }}>
-                      {f.category}
+                      {f.category || tr(lang, 'favorites.noCategory')}
                     </div>
                   )}
                   <FavoriteRow
