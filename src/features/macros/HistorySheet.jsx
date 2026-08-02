@@ -189,14 +189,14 @@ function EntryRow({ row, t, lang, selected, onToggle, onCopy, copied, onRemove, 
               </span>
               <span style={{ fontSize: 14.5, fontWeight: 700, color: t.text, wordBreak: 'break-word' }}>
                 {row.food.name}
-                {hasMacros(row.food) && (
-                  <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: 5 }}>
-                    <Utensils size={11} color={t.textMuted} />
-                  </span>
-                )}
               </span>
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: t.textFaint, marginTop: 2, flexWrap: 'wrap' }}>
+              {hasMacros(row.food) && (
+                <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ flexShrink: 0, display: 'flex' }}>
+                  <Utensils size={11} color={t.textMuted} />
+                </span>
+              )}
               {summary && <span>{summary} ·</span>}
               {hasQty && <span>{formatQty(row.qty, row.unit)} ·</span>}
               <span>{timeOnly(row.consumedAt, lang)}</span>

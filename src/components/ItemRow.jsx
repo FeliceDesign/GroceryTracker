@@ -71,14 +71,14 @@ export function ItemRow({
           )}
           <span style={{ fontSize: compact ? 13.5 : 15, color: t.text, fontWeight: 500, wordBreak: 'break-word', lineHeight: 1.3 }}>
             {item.name}
-            {hasFoodMacros && (
-              <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: 5 }}>
-                <Utensils size={compact ? 11 : 12} color={t.textMuted} />
-              </span>
-            )}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: compact ? 1 : 3, flexWrap: 'wrap' }}>
+          {hasFoodMacros && (
+            <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ flexShrink: 0, display: 'flex' }}>
+              <Utensils size={compact ? 11 : 12} color={t.textMuted} />
+            </span>
+          )}
           {showZoneBadge && zone && (
             <span style={{ fontSize: compact ? 9.5 : 10.5, fontWeight: 700, color: pal.accent }}>
               {zone.emoji} {zone.label}
