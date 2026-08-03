@@ -27,8 +27,8 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   // Favoriten aus) geöffnet wurde - dann soll Schließen/Speichern/Löschen
   // das ganze Sheet verlassen statt auf die Stammdaten-Liste zurückzufallen.
   const [directEntry, setDirectEntry] = useState(false);
-  // Sektion "Stammdaten ohne Makros" ist standardmäßig eingeklappt.
-  const [showNoMacros, setShowNoMacros] = useState(false);
+  // Sektion "Stammdaten ohne Makros" ist standardmäßig ausgeklappt.
+  const [showNoMacros, setShowNoMacros] = useState(true);
   const inputStyle = makeInputStyle(t);
 
   // Beim Schließen den Editor-/Suchzustand zurücksetzen; beim Öffnen mit
@@ -39,7 +39,7 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
       setDirectEntry(false);
       setSearch('');
       setCopiedKey(null);
-      setShowNoMacros(false);
+      setShowNoMacros(true);
     } else if (initialEditName) {
       const existing = (foods || []).find((f) => normalizeName(f.name) === normalizeName(initialEditName));
       setEditing(existing
