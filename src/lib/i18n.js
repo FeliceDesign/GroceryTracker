@@ -134,6 +134,7 @@ const DE = {
   foods: {
     title: 'Stammdaten / Makros', subtitle: '{{count}} Lebensmittel', searchPlaceholder: 'Lebensmittel suchen…',
     addNew: 'Lebensmittel anlegen', nothingFound: 'Nichts gefunden.', noneYet: 'Noch keine Nährwerte erfasst.',
+    sortLabel: 'Sortierung', sortAlpha: 'A-Z', sortCategory: 'Kategorie', unassigned: 'Ohne Zuordnung',
     editTitle: 'Nährwerte bearbeiten', newTitle: 'Neues Lebensmittel', name: 'Name', namePlaceholder: 'z.B. Frischmilch',
     delete: 'Löschen', save: 'Speichern', copyAria: 'Nährwerte kopieren',
     ingredientsPresent: 'Zutaten hinterlegt', noValues: 'keine Werte',
@@ -502,6 +503,7 @@ const EN = {
   foods: {
     title: 'Nutrition database', subtitle: '{{count}} foods', searchPlaceholder: 'Search foods…',
     addNew: 'Add food', nothingFound: 'Nothing found.', noneYet: 'No nutrition data yet.',
+    sortLabel: 'Sort by', sortAlpha: 'A-Z', sortCategory: 'Category', unassigned: 'Unassigned',
     editTitle: 'Edit nutrition data', newTitle: 'New food', name: 'Name', namePlaceholder: 'e.g. fresh milk',
     delete: 'Delete', save: 'Save', copyAria: 'Copy nutrition data',
     ingredientsPresent: 'Ingredients on file', noValues: 'no values',

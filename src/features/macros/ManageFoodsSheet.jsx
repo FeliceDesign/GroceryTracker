@@ -2,8 +2,9 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'r
 import { Plus, Copy, Check, Trash2, Search, Star, ChevronDown, ChevronRight } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
+import { Segmented } from '../../components/Segmented.jsx';
 import { MacroEditor } from './MacroEditor.jsx';
-import { makeInputStyle, primaryButtonStyle, makeLabelStyle } from '../../lib/styles.js';
+import { makeInputStyle, makeLabelStyle, primaryButtonStyle, groupLabelStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 import {
   emptyMacros, foodToMacros, macrosToFood, macroSummary, basisLabel,
@@ -17,6 +18,7 @@ import {
 export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   open, onClose, t, lang = 'de', foods, onUpsert, onRemove, scanSupported, initialEditName, stepGml,
   onRenameLinkedFavorite, isFavorite, onToggleFavorite, onMacrosCopied,
+  items, favorites, categories, sortMode = 'alpha', onSetSortMode,
 }, ref) {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null); // { name, macros } oder null
@@ -72,16 +74,44 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   // Haltbarkeit, keine Nährwerte) unten in einer ausklappbaren Sektion.
   // Komplett leere Datensätze (weder Nährwerte noch Zutaten noch eigene
   // Haltbarkeit) tauchen in keiner der beiden auf - es gibt dort nichts zu verwalten.
-  const { withMacros, withoutMacros } = useMemo(() => {
+  // Sortiermodus "Kategorie": Stammdaten haben selbst kein Kategorie-Feld
+  // (rein über den Namen mit Bestand verknüpft), die Kategorie wird deshalb
+  // abgeleitet - zuerst über einen aktuellen Bestandsartikel mit passendem
+  // Namen, sonst über einen passenden Favoriten, sonst "Ohne Zuordnung"
+  // (Sammelgruppe, auch für Kategorien, die es in der Kategorien-Liste gar
+  // nicht mehr gibt).
+  const { withMacros, withoutMacros, groupedWithMacros, groupedWithoutMacros } = useMemo(() => {
     const q = search.trim().toLowerCase();
     const matches = (f) => !q || f.name.toLowerCase().includes(q);
     const sortByName = (arr) => arr.slice().sort((a, b) => a.name.localeCompare(b.name, 'de'));
     const all = (foods || []).filter((f) => hasFoodData(f) && matches(f));
-    return {
-      withMacros: sortByName(all.filter((f) => hasMacros(f))),
-      withoutMacros: sortByName(all.filter((f) => !hasMacros(f))),
+    const withM = sortByName(all.filter((f) => hasMacros(f)));
+    const withoutM = sortByName(all.filter((f) => !hasMacros(f)));
+
+    const catOrder = new Map((categories || []).map((c, i) => [c, i]));
+    const group = (arr) => {
+      const byCat = {};
+      arr.forEach((f) => {
+        const norm = normalizeName(f.name);
+        const item = (items || []).find((i) => normalizeName(i.name) === norm);
+        const fav = !item ? (favorites || []).find((fv) => normalizeName(fv.name) === norm) : null;
+        const derived = item ? item.category : (fav ? fav.category : null);
+        const key = derived && catOrder.has(derived) ? derived : null;
+        (byCat[key] = byCat[key] || []).push(f);
+      });
+      const known = (categories || []).filter((c) => byCat[c]);
+      const groups = known.map((c) => [c, byCat[c]]);
+      if (byCat[null]) groups.push([null, byCat[null]]);
+      return groups;
     };
-  }, [foods, search]);
+
+    return {
+      withMacros: withM,
+      withoutMacros: withoutM,
+      groupedWithMacros: group(withM),
+      groupedWithoutMacros: group(withoutM),
+    };
+  }, [foods, search, categories, items, favorites]);
 
   const startNew = () => { setDirectEntry(false); setEditing({ name: search.trim(), macros: emptyMacros('100g') }); };
   const startEdit = (food) => { setDirectEntry(false); setEditing({ key: food.key, name: food.name, originalName: food.name, macros: foodToMacros(food) }); };
@@ -197,6 +227,26 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   }
 
   // ----- Listen-Ansicht ------------------------------------------------------
+  const renderRows = (arr) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {arr.map((food) => (
+        <FoodRow
+          key={food.key} food={food} t={t} lang={lang}
+          onEdit={startEdit} onCopy={copyRow} copied={copiedKey === food.key}
+          isFavorite={isFavorite} onToggleFavorite={onToggleFavorite}
+        />
+      ))}
+    </div>
+  );
+  const renderGrouped = (groups) => groups.map(([cat, arr]) => (
+    <div key={cat ?? '__unassigned__'} style={{ marginBottom: 14 }}>
+      <div style={{ ...groupLabelStyle(t), marginBottom: 8, paddingLeft: 2 }}>
+        {cat || tr(lang, 'foods.unassigned')}
+      </div>
+      {renderRows(arr)}
+    </div>
+  ));
+
   return (
     <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'foods.title')} subtitle={tr(lang, 'foods.subtitle', { count: (foods || []).filter(hasFoodData).length })}>
       <div style={{ position: 'relative', marginTop: 4, marginBottom: 12 }}>
@@ -208,6 +258,23 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
           style={{ ...inputStyle, marginTop: 0, paddingLeft: 36 }}
         />
       </div>
+
+      {onSetSortMode && (withMacros.length + withoutMacros.length > 1) && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ ...makeLabelStyle(t), marginTop: 0, marginBottom: 6 }}>
+            {tr(lang, 'foods.sortLabel')}
+          </div>
+          <Segmented
+            t={t}
+            value={sortMode}
+            onChange={onSetSortMode}
+            options={[
+              { value: 'alpha', label: tr(lang, 'foods.sortAlpha') },
+              { value: 'category', label: tr(lang, 'foods.sortCategory') },
+            ]}
+          />
+        </div>
+      )}
 
       <button
         type="button"
@@ -229,15 +296,7 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
       ) : (
         <>
           {withMacros.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {withMacros.map((food) => (
-                <FoodRow
-                  key={food.key} food={food} t={t} lang={lang}
-                  onEdit={startEdit} onCopy={copyRow} copied={copiedKey === food.key}
-                  isFavorite={isFavorite} onToggleFavorite={onToggleFavorite}
-                />
-              ))}
-            </div>
+            sortMode === 'category' ? renderGrouped(groupedWithMacros) : renderRows(withMacros)
           )}
 
           {withoutMacros.length > 0 && (
@@ -254,15 +313,7 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
                 {tr(lang, 'foods.noMacrosSection', { count: withoutMacros.length })}
               </button>
               {showNoMacros && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {withoutMacros.map((food) => (
-                    <FoodRow
-                      key={food.key} food={food} t={t} lang={lang}
-                      onEdit={startEdit} onCopy={copyRow} copied={copiedKey === food.key}
-                      isFavorite={isFavorite} onToggleFavorite={onToggleFavorite}
-                    />
-                  ))}
-                </div>
+                sortMode === 'category' ? renderGrouped(groupedWithoutMacros) : renderRows(withoutMacros)
               )}
             </div>
           )}

@@ -78,6 +78,7 @@ export default function App() {
     autoShoppingOnRemove: true, dateFormat: 'dmy', language: 'de', stripBrandNames: true,
     favoritesCollapsed: false, zoneEmojiBothSides: false, favoritesPos: 'off', showFavoriteChips: true,
     favoritesSortMode: 'manual', mainSortMode: 'category', compactList: false, defaultZoneId: null,
+    foodsSortMode: 'alpha',
     focusMode: false, buttonsHidden: false, bottomButtonsLayout: 'stack', historyPos: 'off',
     hideAddWithButtons: false, swapAddHideOrder: false, addSameSize: false, historyAllItems: false,
     searchPos: 'bottom', foodsPos: 'off',
@@ -1483,6 +1484,9 @@ export default function App() {
         onRenameLinkedFavorite={renameLinkedFavorite}
         isFavorite={isFavorite} onToggleFavorite={toggleFavorite}
         onMacrosCopied={(food) => logHistory(food.name, food, 'consumed')}
+        items={items} favorites={favorites} categories={categories}
+        sortMode={prefs.foodsSortMode || 'alpha'}
+        onSetSortMode={(v) => setPrefs((p) => ({ ...p, foodsSortMode: v }))}
       />
 
       <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} lang={lang} />
