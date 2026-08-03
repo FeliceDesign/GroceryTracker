@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, Copy, Trash2, PackagePlus, PackageMinus, Utensils, Search, Plus, Repeat, Scissors, Pencil } from 'lucide-react';
+import { Check, Copy, Trash2, PackagePlus, PackageMinus, Utensils, Search, Plus, Repeat, Scissors, Pencil, Filter } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { primaryButtonStyle, pillStyle, btnCircle, makeInputStyle, makeLabelStyle, groupLabelStyle } from '../../lib/styles.js';
@@ -340,6 +340,7 @@ export function HistorySheet({
   const [copiedId, setCopiedId] = useState(null);
   const [filter, setFilter] = useState('consumed'); // 'all' | 'added' | 'consumed'
   const [period, setPeriod] = useState('all'); // 'all' | 'today' | '7d' | '30d'
+  const [showFilters, setShowFilters] = useState(false);
   const [search, setSearch] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [addName, setAddName] = useState('');
@@ -355,6 +356,7 @@ export function HistorySheet({
       setCopiedId(null);
       setFilter('consumed');
       setPeriod('all');
+      setShowFilters(false);
       setSearch('');
       setShowAddForm(false);
       setAddName(''); setAddAction('consumed'); setAddQty(''); setAddUnit('stk');
@@ -617,39 +619,55 @@ export function HistorySheet({
             </div>
           )}
 
-          <div style={{ position: 'relative', marginBottom: 12 }}>
-            <Search size={16} color={t.textFaint} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={tr(lang, 'history.searchPlaceholder')}
-              style={{ ...makeInputStyle(t), marginTop: 0, paddingLeft: 36 }}
-            />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <Search size={16} color={t.textFaint} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={tr(lang, 'history.searchPlaceholder')}
+                style={{ ...makeInputStyle(t), marginTop: 0, paddingLeft: 36 }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowFilters((v) => !v)}
+              aria-label={tr(lang, showFilters ? 'history.hideFiltersAria' : 'history.showFiltersAria')}
+              aria-pressed={showFilters}
+              aria-expanded={showFilters}
+              style={btnCircle(showFilters ? t.pillActive : t.cardAlt, showFilters ? t.pillActiveText : t.textMuted, 38)}
+            >
+              <Filter size={15} />
+            </button>
           </div>
 
-          <Segmented
-            t={t}
-            value={filter}
-            onChange={setFilter}
-            options={[
-              { value: 'consumed', label: tr(lang, 'history.filterConsumed') },
-              { value: 'added', label: tr(lang, 'history.filterAdded') },
-              { value: 'all', label: tr(lang, 'history.filterAll') },
-            ]}
-          />
-          <div style={{ marginTop: 8 }}>
-            <Segmented
-              t={t}
-              value={period}
-              onChange={setPeriod}
-              options={[
-                { value: 'all', label: tr(lang, 'history.periodAll') },
-                { value: 'today', label: tr(lang, 'history.periodToday') },
-                { value: '7d', label: tr(lang, 'history.period7d') },
-                { value: '30d', label: tr(lang, 'history.period30d') },
-              ]}
-            />
-          </div>
+          {showFilters && (
+            <>
+              <Segmented
+                t={t}
+                value={filter}
+                onChange={setFilter}
+                options={[
+                  { value: 'consumed', label: tr(lang, 'history.filterConsumed') },
+                  { value: 'added', label: tr(lang, 'history.filterAdded') },
+                  { value: 'all', label: tr(lang, 'history.filterAll') },
+                ]}
+              />
+              <div style={{ marginTop: 8 }}>
+                <Segmented
+                  t={t}
+                  value={period}
+                  onChange={setPeriod}
+                  options={[
+                    { value: 'all', label: tr(lang, 'history.periodAll') },
+                    { value: 'today', label: tr(lang, 'history.periodToday') },
+                    { value: '7d', label: tr(lang, 'history.period7d') },
+                    { value: '30d', label: tr(lang, 'history.period30d') },
+                  ]}
+                />
+              </div>
+            </>
+          )}
           <div style={{ display: 'flex', gap: 8, marginTop: 12, marginBottom: 12, flexWrap: 'wrap' }}>
             <button type="button" onClick={selectAll} style={pillStyle(false, t)}>{tr(lang, 'history.selectAll')}</button>
             <button type="button" onClick={selectNone} style={pillStyle(false, t)}>{tr(lang, 'history.selectNone')}</button>
