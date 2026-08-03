@@ -352,16 +352,24 @@ export function ManageFavoritesSheet({
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {favorites.map((f, idx) => {
-              // Gruppen-Header nur im Kategorie-Sortiermodus, an jeder Stelle,
-              // an der sich die Kategorie zur vorherigen Zeile ändert - die
-              // Liste kommt bereits in der richtigen Reihenfolge an (manuelle
-              // Kategorien-Reihenfolge, siehe sortedFavorites in App.jsx).
-              const showHeader = sortMode === 'category' && f.category !== (idx > 0 ? favorites[idx - 1].category : undefined);
+              // Gruppen-Header nur im Kategorie-/Zonen-Sortiermodus, an jeder
+              // Stelle, an der sich Kategorie bzw. Zone zur vorherigen Zeile
+              // ändert - die Liste kommt bereits in der richtigen Reihenfolge
+              // an (manuelle Kategorien-/Zonen-Reihenfolge, siehe
+              // sortedFavorites in App.jsx).
+              const showCategoryHeader = sortMode === 'category' && f.category !== (idx > 0 ? favorites[idx - 1].category : undefined);
+              const showZoneHeader = sortMode === 'zone' && f.zone !== (idx > 0 ? favorites[idx - 1].zone : undefined);
+              const headerZone = showZoneHeader ? zones.find((z) => z.id === f.zone) : null;
               return (
                 <div key={f.id}>
-                  {showHeader && (
+                  {showCategoryHeader && (
                     <div style={{ ...groupLabelStyle(t), marginTop: idx > 0 ? 14 : 0, marginBottom: 6, paddingLeft: 2 }}>
                       {f.category || tr(lang, 'favorites.noCategory')}
+                    </div>
+                  )}
+                  {showZoneHeader && (
+                    <div style={{ ...groupLabelStyle(t), marginTop: idx > 0 ? 14 : 0, marginBottom: 6, paddingLeft: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {headerZone ? <>{headerZone.emoji} {headerZone.label}</> : tr(lang, 'favorites.noZone')}
                     </div>
                   )}
                   <FavoriteRow
