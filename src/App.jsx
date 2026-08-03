@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History, Utensils, Trash2, Check, ArrowDownUp, Diff, LayoutList } from 'lucide-react';
+import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History, Utensils, Trash2, Check, ArrowDownUp, Diff, LayoutList, Clock } from 'lucide-react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 
@@ -1104,7 +1104,16 @@ export default function App() {
             >
               <ArrowDownUp size={14} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => { setExpiringView((v) => !v); setSearch(''); }}
+                aria-label={expiringView ? tr(lang, 'app.hideExpiringFilterAria') : tr(lang, 'app.showExpiringFilterAria')}
+                aria-pressed={expiringView}
+                style={btnCircle(expiringView ? t.pillActive : 'transparent', expiringView ? t.pillActiveText : t.textMuted, 30)}
+              >
+                <Clock size={14} />
+              </button>
               <button
                 type="button"
                 onClick={() => setPrefs((p) => ({ ...p, showQtyButtons: p.showQtyButtons === false }))}
