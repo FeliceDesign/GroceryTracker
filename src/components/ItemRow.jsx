@@ -97,12 +97,11 @@ export function ItemRow({
               zeigt die Rest-Haltbarkeit nach dem Öffnen, wenn bekannt. */}
           {showOpenedBadge && (
             <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: compact ? 9.5 : 10.5, fontWeight: 700,
+              display: 'inline-flex', alignItems: 'center', fontSize: compact ? 9.5 : 10.5, fontWeight: 700,
               color: openColor,
               background: openBg,
               padding: '1px 7px', borderRadius: 6,
             }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: openColor }} aria-hidden="true" />
               {openDays != null ? tr(lang, 'itemRow.openedWith', { rem: remLabel }) : tr(lang, 'itemRow.opened')}
             </span>
           )}
