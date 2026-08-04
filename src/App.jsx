@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History, Utensils, Trash2, Check, ArrowDownUp, Diff, LayoutList, Clock } from 'lucide-react';
+import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History, Utensils, Trash2, Check, ArrowDownUp, Diff, LayoutList, Clock, Copy } from 'lucide-react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 
@@ -14,7 +14,10 @@ import { useFavorites } from './hooks/useFavorites.js';
 import { useHistory } from './hooks/useHistory.js';
 import { useLongPress } from './hooks/useLongPress.js';
 import { SEED } from './lib/defaults.js';
-import { emptyMacros, foodToMacros, macrosToFood, hasFoodData, hasMacros, applyPendingPaste, defaultBasisForUnit, normalizeName } from './lib/macros.js';
+import {
+  emptyMacros, foodToMacros, macrosToFood, hasFoodData, hasMacros, applyPendingPaste, defaultBasisForUnit, normalizeName,
+  copyMacros,
+} from './lib/macros.js';
 import { openedDaysFor, effectiveExpiry } from './lib/openedShelfLife.js';
 import { daysUntil, todayISO } from './lib/date.js';
 import { isScanSupported } from './scan/scan.js';
@@ -82,7 +85,7 @@ export default function App() {
     focusMode: false, buttonsHidden: false, bottomButtonsLayout: 'stack', historyPos: 'off',
     hideAddWithButtons: false, swapAddHideOrder: false, addSameSize: false, historyAllItems: false,
     searchPos: 'bottom', foodsPos: 'off',
-    showMacroIconMain: false, showMacroIconFavorites: true, showQtyButtons: true,
+    showMacroIconMain: false, showMacroIconFavorites: true, showQtyButtons: true, showMacroCopyMain: false,
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -163,6 +166,7 @@ export default function App() {
   const [deletedHistoryEntries, setDeletedHistoryEntries] = useState(null);
   const [justChanged, setJustChanged] = useState(null);
   const [justChecked, setJustChecked] = useState(null);
+  const [copiedMacrosId, setCopiedMacrosId] = useState(null);
   // Lösch-Buttons im Hauptbildschirm bleiben standardmäßig ausgeblendet
   // (weniger Buttons pro Zeile) und erscheinen erst nach Tap auf "Entfernen"
   // über der Liste - gleiches Muster wie in der Einkaufsliste.
@@ -174,6 +178,7 @@ export default function App() {
   const favoritesUndoTimerRef = useRef(null);
   const favoriteUndoTimerRef = useRef(null);
   const flashTimerRef = useRef(null);
+  const copyMacrosTimerRef = useRef(null);
   const checkedTimerRef = useRef(null);
   const shoppingUndoTimerRef = useRef(null);
   const historyUndoTimerRef = useRef(null);
@@ -303,6 +308,20 @@ export default function App() {
     setJustChanged(id);
     clearTimeout(flashTimerRef.current);
     flashTimerRef.current = setTimeout(() => setJustChanged((cur) => (cur === id ? null : cur)), 350);
+  };
+
+  // Kopiert die Nährwerttabelle eines Bestandsartikels (per Stammdaten-Name
+  // aufgelöst) - kurzes Checkmark-Feedback direkt am Button, gleiches Muster
+  // wie beim Einzel-Kopieren in der Historie.
+  const copyItemMacros = async (item) => {
+    const food = getFood(item.name);
+    if (!food || !hasMacros(food)) return;
+    const ok = await copyMacros(food, lang);
+    if (ok) {
+      setCopiedMacrosId(item.id);
+      clearTimeout(copyMacrosTimerRef.current);
+      copyMacrosTimerRef.current = setTimeout(() => setCopiedMacrosId((cur) => (cur === item.id ? null : cur)), 1600);
+    }
   };
 
   const changeQty = (id, direction) => {
@@ -1143,6 +1162,15 @@ export default function App() {
               </button>
               <button
                 type="button"
+                onClick={() => setPrefs((p) => ({ ...p, showMacroCopyMain: p.showMacroCopyMain !== true }))}
+                aria-label={prefs.showMacroCopyMain === true ? tr(lang, 'app.hideMacroCopyAria') : tr(lang, 'app.showMacroCopyAria')}
+                aria-pressed={prefs.showMacroCopyMain === true}
+                style={btnCircle(prefs.showMacroCopyMain === true ? t.pillActive : 'transparent', prefs.showMacroCopyMain === true ? t.pillActiveText : t.textMuted, 30)}
+              >
+                <Copy size={14} />
+              </button>
+              <button
+                type="button"
                 onClick={() => setShowItemTrash((v) => !v)}
                 aria-label={showItemTrash ? tr(lang, 'app.doneRemoving') : tr(lang, 'app.enableRemove')}
                 aria-pressed={showItemTrash}
@@ -1163,7 +1191,7 @@ export default function App() {
                   {expiringSoon.map((item, idx) => (
                     <ItemRow
                       key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
-                      justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                      justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} showMacroCopy={prefs.showMacroCopyMain === true && hasMacros(getFood(item.name))} onCopyMacros={copyItemMacros} copiedMacros={copiedMacrosId === item.id} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                       showZoneBadge isLast={idx === expiringSoon.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash} showQtyButtons={prefs.showQtyButtons !== false}
                     />
                   ))}
@@ -1174,7 +1202,7 @@ export default function App() {
                   {expiringLater.map((item, idx) => (
                     <ItemRow
                       key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
-                      justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                      justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} showMacroCopy={prefs.showMacroCopyMain === true && hasMacros(getFood(item.name))} onCopyMacros={copyItemMacros} copiedMacros={copiedMacrosId === item.id} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                       showZoneBadge isLast={idx === expiringLater.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash} showQtyButtons={prefs.showQtyButtons !== false}
                     />
                   ))}
@@ -1190,7 +1218,7 @@ export default function App() {
               {searchResults.map((item, idx) => (
                 <ItemRow
                   key={item.id} item={item} zone={resolveZone(item.zone)} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
-                  justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                  justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} showMacroCopy={prefs.showMacroCopyMain === true && hasMacros(getFood(item.name))} onCopyMacros={copyItemMacros} copiedMacros={copiedMacrosId === item.id} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                   showZoneBadge isLast={idx === searchResults.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash} showQtyButtons={prefs.showQtyButtons !== false}
                 />
               ))}
@@ -1205,7 +1233,7 @@ export default function App() {
                 {list.map((item, idx) => (
                   <ItemRow
                     key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
-                    justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                    justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} showMacroCopy={prefs.showMacroCopyMain === true && hasMacros(getFood(item.name))} onCopyMacros={copyItemMacros} copiedMacros={copiedMacrosId === item.id} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                     isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash} showQtyButtons={prefs.showQtyButtons !== false}
                   />
                 ))}
@@ -1219,7 +1247,7 @@ export default function App() {
             {flatSorted.map((item, idx) => (
               <ItemRow
                 key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
-                justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
+                justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} showMacroCopy={prefs.showMacroCopyMain === true && hasMacros(getFood(item.name))} onCopyMacros={copyItemMacros} copiedMacros={copiedMacrosId === item.id} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
                 isLast={idx === flatSorted.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash} showQtyButtons={prefs.showQtyButtons !== false}
               />
             ))}

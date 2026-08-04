@@ -37,6 +37,7 @@ const DE = {
     hideQtyButtonsAria: 'Mengen-Buttons ausblenden', showQtyButtonsAria: 'Mengen-Buttons einblenden',
     hideCompactAria: 'Kompakte Ansicht ausschalten', showCompactAria: 'Kompakte Ansicht einschalten',
     hideMacroIconAria: 'Makro-Symbol ausblenden', showMacroIconAria: 'Makro-Symbol einblenden',
+    hideMacroCopyAria: 'Makros-Kopieren-Button ausblenden', showMacroCopyAria: 'Makros-Kopieren-Button einblenden',
     hideExpiringFilterAria: 'Filter „bald ablaufend" ausschalten', showExpiringFilterAria: 'Nur bald ablaufende Artikel anzeigen',
     toastRemoved: '„{{name}}" entfernt · auf Einkaufsliste',
     toastRemovedPlain: '„{{name}}" entfernt',
@@ -51,7 +52,7 @@ const DE = {
   itemRow: {
     decreaseAria: '{{name}} Menge verringern', increaseAria: '{{name}} Menge erhöhen',
     removeAria: '{{name}} entfernen', mhdPrefix: 'MHD', opened: 'geöffnet',
-    openedWith: 'geöffnet · {{rem}}',
+    openedWith: 'geöffnet · {{rem}}', copyMacrosAria: 'Makros von {{name}} kopieren',
   },
   section: { moreZone: 'Lagerort {{label}}' },
   add: {
@@ -408,6 +409,7 @@ const EN = {
     hideQtyButtonsAria: 'Hide quantity buttons', showQtyButtonsAria: 'Show quantity buttons',
     hideCompactAria: 'Turn off compact view', showCompactAria: 'Turn on compact view',
     hideMacroIconAria: 'Hide macro icon', showMacroIconAria: 'Show macro icon',
+    hideMacroCopyAria: 'Hide macro copy button', showMacroCopyAria: 'Show macro copy button',
     hideExpiringFilterAria: 'Turn off "expiring soon" filter', showExpiringFilterAria: 'Show only items expiring soon',
     toastRemoved: '"{{name}}" removed · added to shopping list',
     toastRemovedPlain: '"{{name}}" removed',
@@ -422,7 +424,7 @@ const EN = {
   itemRow: {
     decreaseAria: 'Decrease quantity of {{name}}', increaseAria: 'Increase quantity of {{name}}',
     removeAria: 'Remove {{name}}', mhdPrefix: 'Best before', opened: 'opened',
-    openedWith: 'opened · {{rem}}',
+    openedWith: 'opened · {{rem}}', copyMacrosAria: 'Copy macros of {{name}}',
   },
   section: { moreZone: 'Location {{label}}' },
   add: {

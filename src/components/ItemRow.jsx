@@ -1,4 +1,4 @@
-import { Plus, Minus, Trash2, Utensils } from 'lucide-react';
+import { Plus, Minus, Trash2, Utensils, Copy, Check } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
 import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel } from '../lib/date.js';
 import { openedUntil } from '../lib/openedShelfLife.js';
@@ -16,7 +16,7 @@ const NO_WARN_COLORS = {};
 export function ItemRow({
   item, zone, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = NO_WARN_COLORS, openedShelfDays = null,
   justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast, showWarnDot = true, compact = false, showDelete = true,
-  hasFoodMacros = false, showQtyButtons = true,
+  hasFoodMacros = false, showQtyButtons = true, showMacroCopy = false, onCopyMacros, copiedMacros = false,
 }) {
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
   const days = daysUntil(item.mhd); // gedrucktes MHD
@@ -109,6 +109,15 @@ export function ItemRow({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 10, flexShrink: 0 }}>
+        {showMacroCopy && (
+          <button
+            onClick={() => onCopyMacros(item)}
+            style={btnCircle('transparent', copiedMacros ? t.success : t.textMuted, compact ? 28 : 36)}
+            aria-label={tr(lang, 'itemRow.copyMacrosAria', { name: item.name })}
+          >
+            {copiedMacros ? <Check size={compact ? 12 : 14} /> : <Copy size={compact ? 12 : 14} />}
+          </button>
+        )}
         {showQtyButtons && (
           <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText, compact ? 28 : 36)} aria-label={tr(lang, 'itemRow.decreaseAria', { name: item.name })}>
             <Minus size={compact ? 12 : 14} strokeWidth={2.5} />
