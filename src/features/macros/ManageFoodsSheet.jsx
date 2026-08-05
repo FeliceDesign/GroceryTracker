@@ -277,6 +277,15 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
     // goToBatchIndex/startEdit) - Löschen ergibt dort aber erst Sinn, wenn
     // tatsächlich schon ein Datensatz existiert.
     const hasRealRecord = !!editing.key && (foods || []).some((f) => f.key === editing.key);
+    // Titel zeigt den Artikelnamen selbst (statt nur "Nährwerte bearbeiten")
+    // - vor allem im Batch-Modus wichtig, sonst sieht man beim Sprung zum
+    // nächsten Eintrag nicht auf einen Blick, welcher Artikel gerade dran ist.
+    // Der generische Kontext ("Nährwerte bearbeiten"/"Neues Lebensmittel")
+    // wandert dafür in den Untertitel, zusammen mit dem Batch-Fortschritt.
+    const editorLabel = editing.key ? tr(lang, 'foods.editTitle') : tr(lang, 'foods.newTitle');
+    const subtitleParts = [];
+    if (editing.name) subtitleParts.push(editorLabel);
+    if (batch) subtitleParts.push(tr(lang, 'foods.batchProgress', { current: batch.index + 1, total: batch.queue.length }));
     const footer = (
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         {hasRealRecord && (
@@ -314,8 +323,8 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
     return (
       <Modal
         open={open} onClose={finishEditing} t={t} lang={lang}
-        title={editing.key ? tr(lang, 'foods.editTitle') : tr(lang, 'foods.newTitle')}
-        subtitle={batch ? tr(lang, 'foods.batchProgress', { current: batch.index + 1, total: batch.queue.length }) : undefined}
+        title={editing.name || tr(lang, 'foods.newTitle')}
+        subtitle={subtitleParts.length ? subtitleParts.join(' · ') : undefined}
         footer={footer}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
@@ -428,7 +437,7 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
         <Plus size={17} /> {tr(lang, 'foods.addNew')}
       </button>
 
-      {withMacros.length === 0 && withoutMacros.length === 0 ? (
+      {withMacros.length === 0 && withoutMacros.length === 0 && (hiddenMacroCategories || []).length === 0 ? (
         <div style={{ textAlign: 'center', color: t.textFaint, padding: '32px 12px', fontSize: 13.5 }}>
           {search.trim() ? tr(lang, 'foods.nothingFound') : tr(lang, 'foods.noneYet')}
         </div>
@@ -438,7 +447,10 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
             sortMode === 'category' ? renderGrouped(groupedWithMacros) : renderRows(withMacros)
           )}
 
-          {withoutMacros.length > 0 && (
+          {/* Sektion bleibt auch sichtbar, wenn die Liste durch ausgeblendete
+              Kategorien gerade leer ist - sonst gäbe es keinen Weg mehr
+              zurück zum Verwalten-Dialog, um sie wieder einzublenden. */}
+          {(withoutMacros.length > 0 || (hiddenMacroCategories || []).length > 0) && (
             <div style={{ marginTop: withMacros.length > 0 ? 18 : 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
                 <button
@@ -452,7 +464,7 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
                   {showNoMacros ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
                   {tr(lang, 'foods.noMacrosSection', { count: withoutMacros.length })}
                 </button>
-                {showNoMacros && (
+                {showNoMacros && withoutMacros.length > 0 && (
                   <button
                     type="button"
                     onClick={toggleSelectMode}
@@ -479,7 +491,13 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
                 </button>
               )}
 
-              {showNoMacros && selectMode && (
+              {showNoMacros && withoutMacros.length === 0 && (
+                <div style={{ fontSize: 12.5, color: t.textFaint, padding: '8px 2px' }}>
+                  {tr(lang, 'foods.allCategoriesHidden')}
+                </div>
+              )}
+
+              {showNoMacros && selectMode && withoutMacros.length > 0 && (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                   <button type="button" onClick={selectAllNoMacros} style={pillStyle(false, t)}>{tr(lang, 'foods.selectAll')}</button>
                   <button type="button" onClick={selectNoneNoMacros} style={pillStyle(false, t)}>{tr(lang, 'foods.selectNone')}</button>
@@ -498,7 +516,7 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
                 </div>
               )}
 
-              {showNoMacros && (
+              {showNoMacros && withoutMacros.length > 0 && (
                 sortMode === 'category' ? renderGrouped(groupedWithoutMacros, { selectable: selectMode }) : renderRows(withoutMacros, { selectable: selectMode })
               )}
             </div>
