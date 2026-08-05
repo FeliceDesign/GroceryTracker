@@ -50,5 +50,23 @@ export function useCategories() {
     [setCategories],
   );
 
-  return { categories, setCategories, loaded, addCategory, removeCategory, moveCategory };
+  // Reihenfolge ändern per Ziehen (ManageCategoriesSheet) - verschiebt den
+  // Eintrag an `fromIndex` direkt an `toIndex`, statt nur mit dem Nachbarn zu
+  // tauschen (siehe moveCategory).
+  const reorderCategories = useCallback(
+    (fromIndex, toIndex) => {
+      setCategories((prev) => {
+        if (fromIndex === toIndex || fromIndex < 0 || fromIndex >= prev.length || toIndex < 0 || toIndex >= prev.length) return prev;
+        const next = [...prev];
+        const [moved] = next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, moved);
+        return next;
+      });
+    },
+    [setCategories],
+  );
+
+  return {
+    categories, setCategories, loaded, addCategory, removeCategory, moveCategory, reorderCategories,
+  };
 }

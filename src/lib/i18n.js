@@ -132,6 +132,7 @@ const DE = {
     removeAria: '{{name}} entfernen', itemsCount: '{{count}} Art.', newPlaceholder: 'Neue Kategorie…',
     addAria: 'Kategorie hinzufügen', hint: 'Beim Umbenennen wandern alle Artikel mit. Beim Entfernen rutschen sie nach „Sonstiges".',
     moveUpAria: '{{name}} nach oben verschieben', moveDownAria: '{{name}} nach unten verschieben',
+    dragAria: '{{name}} durch Ziehen verschieben',
   },
   foods: {
     title: 'Stammdaten / Makros', subtitle: '{{count}} Lebensmittel', searchPlaceholder: 'Lebensmittel suchen…',
@@ -509,6 +510,7 @@ const EN = {
     removeAria: 'Remove {{name}}', itemsCount: '{{count}} items', newPlaceholder: 'New category…',
     addAria: 'Add category', hint: 'Renaming moves all items along. Removing moves them to "Other".',
     moveUpAria: 'Move {{name}} up', moveDownAria: 'Move {{name}} down',
+    dragAria: 'Drag to reorder {{name}}',
   },
   foods: {
     title: 'Nutrition database', subtitle: '{{count}} foods', searchPlaceholder: 'Search foods…',

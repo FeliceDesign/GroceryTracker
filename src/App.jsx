@@ -60,7 +60,9 @@ export default function App() {
   const t = buildTheme(dark);
 
   const { zones, loaded: zonesLoaded, addZone, updateZone, moveZone, setZones } = useZones();
-  const { categories, loaded: catsLoaded, addCategory, removeCategory, moveCategory, setCategories } = useCategories();
+  const {
+    categories, loaded: catsLoaded, addCategory, removeCategory, moveCategory, reorderCategories, setCategories,
+  } = useCategories();
   const { foods, setFoods, loaded: foodsLoaded, getFood, upsertFood, removeFood } = useFoods();
   const {
     favorites, loaded: favoritesLoaded, isFavorite, addFavorite, updateFavorite, moveFavorite, removeFavorite, removeFavoriteByName,
@@ -1490,6 +1492,7 @@ export default function App() {
         open={showCategories} onClose={() => setShowCategories(false)} t={t} lang={lang}
         categories={categories} countFor={countForCategory}
         onAdd={addCategory} onRename={renameCategory} onRemove={removeCategoryWithReassign} onMove={moveCategory}
+        onReorder={reorderCategories}
       />
 
       <ManageFavoritesSheet
