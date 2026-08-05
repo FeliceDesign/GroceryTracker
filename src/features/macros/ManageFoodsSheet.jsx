@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react';
-import { Plus, Copy, Check, Trash2, Search, Star, ChevronDown, ChevronRight, ListChecks } from 'lucide-react';
+import { Plus, Copy, Check, Trash2, Search, Star, ChevronDown, ChevronRight, ListChecks, EyeOff } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
@@ -19,6 +19,7 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   open, onClose, t, lang = 'de', foods, onUpsert, onRemove, scanSupported, initialEditName, stepGml,
   onRenameLinkedFavorite, isFavorite, onToggleFavorite, onMacrosCopied,
   items, favorites, categories, sortMode = 'alpha', onSetSortMode,
+  hiddenMacroCategories = [], onToggleHiddenCategory,
 }, ref) {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null); // { name, macros } oder null
@@ -34,6 +35,9 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   // siehe startBatch/goToBatchIndex weiter unten.
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState([]);
+  // Verwalten-Ansicht für Kategorien, die grundsätzlich keine Makros
+  // brauchen (z.B. Gewürze, Getränke) - blendet sie aus "Ohne Makros" aus.
+  const [manageHidden, setManageHidden] = useState(false);
   const inputStyle = makeInputStyle(t);
 
   // Beim Schließen den Editor-/Suchzustand zurücksetzen; beim Öffnen mit
@@ -47,6 +51,7 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
       setShowNoMacros(true);
       setSelectMode(false);
       setSelectedKeys([]);
+      setManageHidden(false);
     } else if (initialEditName) {
       const existing = (foods || []).find((f) => normalizeName(f.name) === normalizeName(initialEditName));
       setEditing(existing
@@ -77,10 +82,17 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   }));
 
   // Zwei Sektionen: Artikel mit echten Makros oben (immer sichtbar), Artikel
-  // mit sonstigen Stammdaten (nur Zutaten und/oder eigene Öffnungs-
-  // Haltbarkeit, keine Nährwerte) unten in einer ausklappbaren Sektion.
-  // Komplett leere Datensätze (weder Nährwerte noch Zutaten noch eigene
-  // Haltbarkeit) tauchen in keiner der beiden auf - es gibt dort nichts zu verwalten.
+  // ohne Makros unten in einer ausklappbaren Sektion - das ist jetzt wirklich
+  // "alle Artikel ohne Makros", nicht nur die mit einem Stammdaten-Eintrag:
+  // Quelle ist die Vereinigung aus (a) Stammdaten mit sonstigen Daten
+  // (Zutaten/eigene Öffnungs-Haltbarkeit), aber ohne Makros, und (b) allen
+  // aktuellen Bestandsartikeln ohne Makros, auch wenn dafür noch gar kein
+  // Stammdaten-Eintrag existiert - dann eine "virtuelle" Zeile (nur
+  // key/name/basis), die beim ersten Speichern automatisch zu einem echten
+  // Datensatz wird (gleicher Mechanismus wie "Lebensmittel anlegen").
+  // Kategorien in `hiddenMacroCategories` werden komplett ausgeklammert
+  // (z.B. Gewürze/Getränke, die grundsätzlich keine Makros brauchen - siehe
+  // Verwalten-Ansicht weiter unten).
   // Sortiermodus "Kategorie": Stammdaten haben selbst kein Kategorie-Feld
   // (rein über den Namen mit Bestand verknüpft), die Kategorie wird deshalb
   // abgeleitet - zuerst über einen aktuellen Bestandsartikel mit passendem
@@ -89,20 +101,37 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   // nicht mehr gibt).
   const { withMacros, withoutMacros, groupedWithMacros, groupedWithoutMacros } = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const matches = (f) => !q || f.name.toLowerCase().includes(q);
+    const matches = (name) => !q || name.toLowerCase().includes(q);
     const sortByName = (arr) => arr.slice().sort((a, b) => a.name.localeCompare(b.name, 'de'));
-    const all = (foods || []).filter((f) => hasFoodData(f) && matches(f));
-    const withM = sortByName(all.filter((f) => hasMacros(f)));
-    const withoutM = sortByName(all.filter((f) => !hasMacros(f)));
+
+    const deriveCategory = (name) => {
+      const norm = normalizeName(name);
+      const item = (items || []).find((i) => normalizeName(i.name) === norm);
+      const fav = !item ? (favorites || []).find((fv) => normalizeName(fv.name) === norm) : null;
+      return item ? item.category : (fav ? fav.category : null);
+    };
+
+    const withM = sortByName((foods || []).filter((f) => hasMacros(f) && matches(f.name)));
+
+    const rowsByKey = new Map();
+    (foods || []).forEach((f) => { if (!hasMacros(f) && hasFoodData(f)) rowsByKey.set(f.key, f); });
+    (items || []).forEach((i) => {
+      const key = normalizeName(i.name);
+      if (rowsByKey.has(key)) return;
+      const existingFood = (foods || []).find((f) => f.key === key);
+      if (existingFood) { if (!hasMacros(existingFood)) rowsByKey.set(key, existingFood); return; }
+      rowsByKey.set(key, { key, name: i.name, basis: '100g' });
+    });
+    const hiddenSet = new Set(hiddenMacroCategories || []);
+    const withoutM = sortByName(
+      [...rowsByKey.values()].filter((f) => matches(f.name) && !hiddenSet.has(deriveCategory(f.name))),
+    );
 
     const catOrder = new Map((categories || []).map((c, i) => [c, i]));
     const group = (arr) => {
       const byCat = {};
       arr.forEach((f) => {
-        const norm = normalizeName(f.name);
-        const item = (items || []).find((i) => normalizeName(i.name) === norm);
-        const fav = !item ? (favorites || []).find((fv) => normalizeName(fv.name) === norm) : null;
-        const derived = item ? item.category : (fav ? fav.category : null);
+        const derived = deriveCategory(f.name);
         const key = derived && catOrder.has(derived) ? derived : null;
         (byCat[key] = byCat[key] || []).push(f);
       });
@@ -118,7 +147,7 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
       groupedWithMacros: group(withM),
       groupedWithoutMacros: group(withoutM),
     };
-  }, [foods, search, categories, items, favorites]);
+  }, [foods, search, categories, items, favorites, hiddenMacroCategories]);
 
   const startNew = () => { setDirectEntry(false); setEditing({ name: search.trim(), macros: emptyMacros('100g') }); };
   const startEdit = (food) => { setDirectEntry(false); setEditing({ key: food.key, name: food.name, originalName: food.name, macros: foodToMacros(food) }); };
@@ -130,9 +159,12 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   // wie ein normales Verlassen des Editors.
   const goToBatchIndex = (queue, index) => {
     if (index >= queue.length) { finishEditing(); return; }
-    const food = (foods || []).find((f) => f.key === queue[index]);
-    if (!food) { goToBatchIndex(queue, index + 1); return; }
-    setEditing({ key: food.key, name: food.name, originalName: food.name, macros: foodToMacros(food), batch: { queue, index } });
+    // Nachschlagen in der kombinierten "Ohne Makros"-Liste statt nur in
+    // `foods` - der nächste Eintrag kann auch eine virtuelle Zeile sein
+    // (Bestandsartikel ohne eigenen Stammdaten-Eintrag).
+    const entry = withoutMacros.find((f) => f.key === queue[index]);
+    if (!entry) { goToBatchIndex(queue, index + 1); return; }
+    setEditing({ key: entry.key, name: entry.name, originalName: entry.name, macros: foodToMacros(entry), batch: { queue, index } });
   };
 
   const startBatch = () => {
@@ -193,14 +225,61 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
     }
   };
 
+  // ----- Verwalten-Ansicht: Kategorien ohne Makro-Pflicht --------------------
+  if (open && manageHidden) {
+    return (
+      <Modal
+        open={open} onClose={() => setManageHidden(false)} t={t} lang={lang}
+        title={tr(lang, 'foods.hiddenCategoriesTitle')} subtitle={tr(lang, 'foods.hiddenCategoriesSub')}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+          {(categories || []).map((c) => {
+            const hidden = (hiddenMacroCategories || []).includes(c);
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => onToggleHiddenCategory?.(c)}
+                aria-pressed={hidden}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                  background: t.cardAlt, borderRadius: 12, padding: '12px 14px', border: 'none', cursor: 'pointer', textAlign: 'left',
+                }}
+              >
+                <span style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{c}</span>
+                <span style={{
+                  flexShrink: 0, width: 22, height: 22, borderRadius: 7,
+                  border: `2px solid ${hidden ? t.pillActive : t.border}`,
+                  background: hidden ? t.pillActive : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+                >
+                  {hidden && <Check size={14} color={t.pillActiveText} strokeWidth={3} />}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 12, lineHeight: 1.4 }}>
+          {tr(lang, 'foods.hiddenCategoriesHint')}
+        </div>
+      </Modal>
+    );
+  }
+
   // ----- Editor-Ansicht ------------------------------------------------------
   if (open && editing) {
     const batch = editing.batch;
     const isLastInBatch = !!batch && batch.index === batch.queue.length - 1;
     const skipBatch = () => goToBatchIndex(batch.queue, batch.index + 1);
+    // `editing.key` ist auch bei virtuellen "Ohne Makros"-Zeilen (reine
+    // Bestandsartikel ohne Stammdaten-Eintrag) gesetzt (siehe
+    // goToBatchIndex/startEdit) - Löschen ergibt dort aber erst Sinn, wenn
+    // tatsächlich schon ein Datensatz existiert.
+    const hasRealRecord = !!editing.key && (foods || []).some((f) => f.key === editing.key);
     const footer = (
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        {editing.key && (
+        {hasRealRecord && (
           <button
             onClick={del}
             style={{
@@ -386,6 +465,19 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
                   </button>
                 )}
               </div>
+
+              {showNoMacros && (
+                <button
+                  type="button"
+                  onClick={() => setManageHidden(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5, border: 'none', background: 'transparent',
+                    color: t.textFaint, fontWeight: 700, fontSize: 11.5, cursor: 'pointer', padding: '2px 2px', marginBottom: 8,
+                  }}
+                >
+                  <EyeOff size={12} /> {tr(lang, 'foods.hiddenCategoriesManage')}
+                </button>
+              )}
 
               {showNoMacros && selectMode && (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>

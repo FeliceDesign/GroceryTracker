@@ -147,6 +147,10 @@ const DE = {
     batchStart: 'Für {{count}} starten', batchSkip: 'Überspringen',
     batchSaveNext: 'Speichern & weiter', batchSaveFinish: 'Speichern & fertig',
     batchProgress: 'Stapel: {{current}} von {{total}}',
+    hiddenCategoriesManage: 'Kategorien ausblenden',
+    hiddenCategoriesTitle: 'Kategorien ausblenden',
+    hiddenCategoriesSub: 'Diese Kategorien erscheinen nie unter „Ohne Makros"',
+    hiddenCategoriesHint: 'Betrifft nur die „Ohne Makros"-Liste. Bereits eingetragene Nährwerte bleiben überall sichtbar.',
   },
   history: {
     title: 'Historie', subtitle: '{{count}} Einträge', subtitleOne: '1 Eintrag',
@@ -525,6 +529,10 @@ const EN = {
     batchStart: 'Start for {{count}}', batchSkip: 'Skip',
     batchSaveNext: 'Save & next', batchSaveFinish: 'Save & finish',
     batchProgress: 'Batch: {{current}} of {{total}}',
+    hiddenCategoriesManage: 'Hide categories',
+    hiddenCategoriesTitle: 'Hide categories',
+    hiddenCategoriesSub: 'These categories never show up under "Without macros"',
+    hiddenCategoriesHint: 'Only affects the "Without macros" list. Nutrition data already entered stays visible everywhere.',
   },
   history: {
     title: 'History', subtitle: '{{count}} entries', subtitleOne: '1 entry',

@@ -88,6 +88,7 @@ export default function App() {
     hideAddWithButtons: false, swapAddHideOrder: false, addSameSize: false, historyAllItems: false,
     searchPos: 'bottom', foodsPos: 'off',
     showMacroIconMain: false, showMacroIconFavorites: true, showQtyButtons: true, showMacroCopyMain: false,
+    hiddenMacroCategories: [],
   });
   const lang = (prefs && prefs.language) || 'de';
   const setLang = (v) => setPrefs((p) => ({ ...p, language: v }));
@@ -1527,6 +1528,11 @@ export default function App() {
         items={items} favorites={favorites} categories={categories}
         sortMode={prefs.foodsSortMode || 'alpha'}
         onSetSortMode={(v) => setPrefs((p) => ({ ...p, foodsSortMode: v }))}
+        hiddenMacroCategories={prefs.hiddenMacroCategories || []}
+        onToggleHiddenCategory={(cat) => setPrefs((p) => {
+          const cur = p.hiddenMacroCategories || [];
+          return { ...p, hiddenMacroCategories: cur.includes(cat) ? cur.filter((c) => c !== cat) : [...cur, cat] };
+        })}
       />
 
       <ShelfLifeSheet open={showShelfLife} onClose={() => setShowShelfLife(false)} t={t} lang={lang} />
