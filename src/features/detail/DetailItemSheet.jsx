@@ -303,36 +303,40 @@ export function DetailItemSheet({
       )}
 
       {/* Haltbarkeit: Geöffnet / Ungeöffnet / Tiefgefroren – ein-/ausklappbar,
-          standardmäßig eingeklappt, wenn nirgends Daten vorliegen. */}
-      <div style={section}>
-        <button
-          type="button"
-          onClick={() => setShelfSectionOpen((v) => !v)}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-            background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
-            marginBottom: shelfSectionOpen ? 8 : 0,
-          }}
-        >
-          <span style={{ ...secLabel, marginBottom: 0 }}>{tr(lang, 'detail.shelfLife')}</span>
-          {shelfSectionOpen ? <ChevronDown size={16} color={t.textFaint} /> : <ChevronRight size={16} color={t.textFaint} />}
-        </button>
-        {shelfSectionOpen && (
-          <>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-              {shelfTabs.map((tab) => (
-                <button key={tab.id} type="button" onClick={() => setShelfTab(tab.id)} style={pillStyle(shelfTab === tab.id, t)}>
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            {shelfTab === 'opened' && <ShelfLifeDetails name={item.name} food={food} zone={zone} t={t} lang={lang} />}
-            {shelfTab === 'unopened' && <UnopenedShelfLifeDetails name={item.name} t={t} lang={lang} />}
-            {shelfTab === 'frozen' && <FrozenShelfLifeDetails name={item.name} t={t} lang={lang} />}
-            {shelfTab === 'thawing' && <ThawingDetails name={item.name} t={t} lang={lang} />}
-          </>
-        )}
-      </div>
+          standardmäßig eingeklappt, wenn nirgends Daten vorliegen. Ganz
+          ausgeblendet (nicht nur eingeklappt), wenn für den Artikel in
+          keinem der vier Tabs überhaupt etwas hinterlegt ist. */}
+      {shelfLifeHasData && (
+        <div style={section}>
+          <button
+            type="button"
+            onClick={() => setShelfSectionOpen((v) => !v)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+              background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
+              marginBottom: shelfSectionOpen ? 8 : 0,
+            }}
+          >
+            <span style={{ ...secLabel, marginBottom: 0 }}>{tr(lang, 'detail.shelfLife')}</span>
+            {shelfSectionOpen ? <ChevronDown size={16} color={t.textFaint} /> : <ChevronRight size={16} color={t.textFaint} />}
+          </button>
+          {shelfSectionOpen && (
+            <>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                {shelfTabs.map((tab) => (
+                  <button key={tab.id} type="button" onClick={() => setShelfTab(tab.id)} style={pillStyle(shelfTab === tab.id, t)}>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              {shelfTab === 'opened' && <ShelfLifeDetails name={item.name} food={food} zone={zone} t={t} lang={lang} />}
+              {shelfTab === 'unopened' && <UnopenedShelfLifeDetails name={item.name} t={t} lang={lang} />}
+              {shelfTab === 'frozen' && <FrozenShelfLifeDetails name={item.name} t={t} lang={lang} />}
+              {shelfTab === 'thawing' && <ThawingDetails name={item.name} t={t} lang={lang} />}
+            </>
+          )}
+        </div>
+      )}
     </Modal>
   );
 }
