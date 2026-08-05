@@ -21,6 +21,7 @@ const DE = {
   app: {
     loading: 'Lade Bestand…', defaultTitle: 'STOCK-TRACKER',
     expiringSortLabel: 'Nach MHD sortiert · alle Lagerorte',
+    allZonesLabel: 'Alle Lagerorte',
     emptyNoMhd: 'Kein Artikel mit bekanntem MHD',
     emptyNothingFoundFor: 'Nichts gefunden für „{{query}}"',
     emptyList: '— leer —',
@@ -39,6 +40,7 @@ const DE = {
     hideMacroIconAria: 'Makro-Symbol ausblenden', showMacroIconAria: 'Makro-Symbol einblenden',
     hideMacroCopyAria: 'Makros-Kopieren-Button ausblenden', showMacroCopyAria: 'Makros-Kopieren-Button einblenden',
     hideExpiringFilterAria: 'Filter „bald ablaufend" ausschalten', showExpiringFilterAria: 'Nur bald ablaufende Artikel anzeigen',
+    hideAllZonesAria: 'Zurück zur Lagerort-Ansicht', showAllZonesAria: 'Gesamten Bestand nach Kategorie zeigen (alle Lagerorte)',
     toastRemoved: '„{{name}}" entfernt · auf Einkaufsliste',
     toastRemovedPlain: '„{{name}}" entfernt',
     toastZoneRemoved: 'Lagerort „{{name}}" entfernt', undo: 'Rückgängig',
@@ -408,6 +410,7 @@ const EN = {
   app: {
     loading: 'Loading inventory…', defaultTitle: 'STOCK-TRACKER',
     expiringSortLabel: 'Sorted by best-before date · all locations',
+    allZonesLabel: 'All locations',
     emptyNoMhd: 'No item with a known best-before date',
     emptyNothingFoundFor: 'Nothing found for "{{query}}"',
     emptyList: '— empty —',
@@ -426,6 +429,7 @@ const EN = {
     hideMacroIconAria: 'Hide macro icon', showMacroIconAria: 'Show macro icon',
     hideMacroCopyAria: 'Hide macro copy button', showMacroCopyAria: 'Show macro copy button',
     hideExpiringFilterAria: 'Turn off "expiring soon" filter', showExpiringFilterAria: 'Show only items expiring soon',
+    hideAllZonesAria: 'Back to location view', showAllZonesAria: 'Show entire inventory by category (all locations)',
     toastRemoved: '"{{name}}" removed · added to shopping list',
     toastRemovedPlain: '"{{name}}" removed',
     toastZoneRemoved: 'Location "{{name}}" removed', undo: 'Undo',

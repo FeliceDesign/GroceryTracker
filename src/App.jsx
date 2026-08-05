@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History, Utensils, Trash2, Check, ArrowDownUp, Diff, LayoutList, Clock, Copy } from 'lucide-react';
+import { Package, ShoppingCart, Settings, Plus, Star, Search, X, Eye, EyeOff, History, Utensils, Trash2, Check, ArrowDownUp, Diff, LayoutList, Clock, Copy, Tags } from 'lucide-react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 
@@ -129,6 +129,9 @@ export default function App() {
   // Zonenübergreifende, nach Dringlichkeit sortierte Ansicht – geöffnet über
   // die Ablauf-Warnung statt eines normalen Zonenwechsels.
   const [expiringView, setExpiringView] = useState(false);
+  // Hauptliste zonenübergreifend nach Kategorie (bzw. Name/MHD, je nach
+  // mainSortMode) zeigen statt nur die aktive Zone - siehe grouped/flatSorted.
+  const [allZonesView, setAllZonesView] = useState(false);
 
   // Sheets
   const [showAdd, setShowAdd] = useState(false);
@@ -279,6 +282,7 @@ export default function App() {
         showBackup && (() => setShowBackup(false)),
         showSettings && (() => setShowSettings(false)),
         expiringView && (() => setExpiringView(false)),
+        allZonesView && (() => setAllZonesView(false)),
       ].filter(Boolean);
       if (closers.length) { closers[0](); return; }
       CapacitorApp.exitApp();
@@ -291,6 +295,7 @@ export default function App() {
     showScanFlow, detailItem, editItem, showAdd, showLayout, showBehavior, showWarnSettings,
     showShopping, showZones, showCategories, showFavorites, showFoods, foodsFromFavorites,
     showShelfLife, showProduceStorage, showSpiceGuide, showHistory, showBackup, showSettings, expiringView,
+    allZonesView,
   ]);
 
   const resolveZone = (id) => (zones ? zones.find((z) => z.id === id) : undefined);
@@ -964,10 +969,13 @@ export default function App() {
 
   // Hauptlisten-Sortierung: "Kategorie" gruppiert nach der manuellen
   // Kategorien-Reihenfolge (Settings -> Kategorien verwalten), "Name"/"MHD"
-  // zeigen stattdessen eine flache Liste ohne Gruppierung.
+  // zeigen stattdessen eine flache Liste ohne Gruppierung. Normalerweise nur
+  // die aktive Zone, mit `allZonesView` stattdessen der komplette Bestand
+  // zonenübergreifend (Toolbar-Button, siehe unten) - Artikel brauchen dann
+  // ihr eigenes Lagerort-Badge statt der sonst einheitlichen `zone`-Prop.
   const grouped = useMemo(() => {
     if (!items) return [];
-    const inZone = items.filter((i) => i.zone === activeZone);
+    const inZone = allZonesView ? items : items.filter((i) => i.zone === activeZone);
     const byCat = {};
     inZone.forEach((i) => {
       (byCat[i.category] = byCat[i.category] || []).push(i);
@@ -975,11 +983,11 @@ export default function App() {
     const known = (categories || []).filter((c) => byCat[c]);
     const unknown = Object.keys(byCat).filter((c) => !known.includes(c)).sort((a, b) => a.localeCompare(b, 'de'));
     return [...known, ...unknown].map((cat) => [cat, byCat[cat].sort((a, b) => a.name.localeCompare(b.name, 'de'))]);
-  }, [items, activeZone, categories]);
+  }, [items, activeZone, categories, allZonesView]);
 
   const flatSorted = useMemo(() => {
     if (!items) return [];
-    const inZone = items.filter((i) => i.zone === activeZone);
+    const inZone = allZonesView ? items : items.filter((i) => i.zone === activeZone);
     if ((prefs && prefs.mainSortMode) === 'mhd') {
       return inZone
         .map((i) => {
@@ -994,7 +1002,7 @@ export default function App() {
         });
     }
     return [...inZone].sort((a, b) => a.name.localeCompare(b.name, 'de'));
-  }, [items, activeZone, prefs, getFood]);
+  }, [items, activeZone, prefs, getFood, allZonesView]);
 
   const searchResults = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -1091,17 +1099,24 @@ export default function App() {
           showFoodsButton={!prefs.focusMode && !prefs.buttonsHidden && (prefs.foodsPos || 'off') === 'top'}
           addExtraHandlers={addLongPress.handlers} addHoldProgress={addLongPress.progress}
         />
-        <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={(id) => { setActiveZone(id); setExpiringView(false); }} t={t} dark={dark} />
+        <ZoneTabs zones={zones} activeZone={activeZone} countFor={countFor} onSelect={(id) => { setActiveZone(id); setExpiringView(false); setAllZonesView(false); }} t={t} dark={dark} />
       </div>
 
       {warn.showExpiringBanner !== false && (
-        <ExpiringBanner expiring={expiringSoon} t={t} lang={lang} onOpen={() => { setExpiringView(true); setSearch(''); }} />
+        <ExpiringBanner expiring={expiringSoon} t={t} lang={lang} onOpen={() => { setExpiringView(true); setAllZonesView(false); setSearch(''); }} />
       )}
 
       {expiringView ? (
         <div style={{ maxWidth: 480, margin: '14px auto 0', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>{tr(lang, 'app.expiringSortLabel')}</span>
           <button onClick={() => setExpiringView(false)} aria-label={tr(lang, 'common.close')} style={btnCircle(t.cardAlt, t.pillInactiveText, 30)}>
+            <X size={14} />
+          </button>
+        </div>
+      ) : allZonesView ? (
+        <div style={{ maxWidth: 480, margin: '14px auto 0', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>{tr(lang, 'app.allZonesLabel')}</span>
+          <button onClick={() => setAllZonesView(false)} aria-label={tr(lang, 'common.close')} style={btnCircle(t.cardAlt, t.pillInactiveText, 30)}>
             <X size={14} />
           </button>
         </div>
@@ -1132,12 +1147,21 @@ export default function App() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <button
                 type="button"
-                onClick={() => { setExpiringView((v) => !v); setSearch(''); }}
+                onClick={() => { setExpiringView((v) => !v); setAllZonesView(false); setSearch(''); }}
                 aria-label={expiringView ? tr(lang, 'app.hideExpiringFilterAria') : tr(lang, 'app.showExpiringFilterAria')}
                 aria-pressed={expiringView}
                 style={btnCircle(expiringView ? t.pillActive : 'transparent', expiringView ? t.pillActiveText : t.textMuted, 30)}
               >
                 <Clock size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAllZonesView((v) => !v); setExpiringView(false); setSearch(''); }}
+                aria-label={allZonesView ? tr(lang, 'app.hideAllZonesAria') : tr(lang, 'app.showAllZonesAria')}
+                aria-pressed={allZonesView}
+                style={btnCircle(allZonesView ? t.pillActive : 'transparent', allZonesView ? t.pillActiveText : t.textMuted, 30)}
+              >
+                <Tags size={14} />
               </button>
               <button
                 type="button"
@@ -1238,9 +1262,9 @@ export default function App() {
               <Section key={cat} t={t} title={cat}>
                 {list.map((item, idx) => (
                   <ItemRow
-                    key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
+                    key={item.id} item={item} zone={allZonesView ? resolveZone(item.zone) : zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                     justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} showMacroCopy={prefs.showMacroCopyMain === true && hasMacros(getFood(item.name))} onCopyMacros={copyItemMacros} copiedMacros={copiedMacrosId === item.id} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                    isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash} showQtyButtons={prefs.showQtyButtons !== false}
+                    showZoneBadge={allZonesView} isLast={idx === list.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash} showQtyButtons={prefs.showQtyButtons !== false}
                   />
                 ))}
               </Section>
@@ -1252,9 +1276,9 @@ export default function App() {
           <Section t={t} title={tr(lang, 'app.allSection', { count: flatSorted.length })}>
             {flatSorted.map((item, idx) => (
               <ItemRow
-                key={item.id} item={item} zone={zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
+                key={item.id} item={item} zone={allZonesView ? resolveZone(item.zone) : zone} t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors}
                 justChanged={justChanged} openedShelfDays={openedDaysFor(item.name, getFood(item.name))} hasFoodMacros={prefs.showMacroIconMain === true && hasMacros(getFood(item.name))} showMacroCopy={prefs.showMacroCopyMain === true && hasMacros(getFood(item.name))} onCopyMacros={copyItemMacros} copiedMacros={copiedMacrosId === item.id} onEdit={openDetail} onChangeQty={changeQty} onRemove={removeItem}
-                isLast={idx === flatSorted.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash} showQtyButtons={prefs.showQtyButtons !== false}
+                showZoneBadge={allZonesView} isLast={idx === flatSorted.length - 1} showWarnDot={prefs.showWarnDot !== false} compact={prefs.compactList === true} showDelete={showItemTrash} showQtyButtons={prefs.showQtyButtons !== false}
               />
             ))}
           </Section>
