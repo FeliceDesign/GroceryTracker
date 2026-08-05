@@ -1,10 +1,10 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react';
-import { Plus, Copy, Check, Trash2, Search, Star, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Copy, Check, Trash2, Search, Star, ChevronDown, ChevronRight, ListChecks } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { MacroEditor } from './MacroEditor.jsx';
-import { makeInputStyle, makeLabelStyle, primaryButtonStyle, groupLabelStyle } from '../../lib/styles.js';
+import { makeInputStyle, makeLabelStyle, primaryButtonStyle, groupLabelStyle, pillStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 import {
   emptyMacros, foodToMacros, macrosToFood, macroSummary, basisLabel,
@@ -29,6 +29,11 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   const [directEntry, setDirectEntry] = useState(false);
   // Sektion "Stammdaten ohne Makros" ist standardmäßig ausgeklappt.
   const [showNoMacros, setShowNoMacros] = useState(true);
+  // Mehrfachauswahl innerhalb der "Ohne Makros"-Sektion, um für mehrere
+  // Lebensmittel am Stück (nacheinander im Editor) Makros nachzutragen -
+  // siehe startBatch/goToBatchIndex weiter unten.
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState([]);
   const inputStyle = makeInputStyle(t);
 
   // Beim Schließen den Editor-/Suchzustand zurücksetzen; beim Öffnen mit
@@ -40,6 +45,8 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
       setSearch('');
       setCopiedKey(null);
       setShowNoMacros(true);
+      setSelectMode(false);
+      setSelectedKeys([]);
     } else if (initialEditName) {
       const existing = (foods || []).find((f) => normalizeName(f.name) === normalizeName(initialEditName));
       setEditing(existing
@@ -116,6 +123,34 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   const startNew = () => { setDirectEntry(false); setEditing({ name: search.trim(), macros: emptyMacros('100g') }); };
   const startEdit = (food) => { setDirectEntry(false); setEditing({ key: food.key, name: food.name, originalName: food.name, macros: foodToMacros(food) }); };
 
+  // Öffnet den Editor für den nächsten Eintrag einer Batch-Warteschlange
+  // (Liste von Food-Keys, zum Start-Zeitpunkt fixiert - siehe startBatch).
+  // Ist die Warteschlange abgearbeitet (oder ein Eintrag inzwischen
+  // verschwunden, z.B. gelöscht), springt sie weiter bzw. beendet den Batch
+  // wie ein normales Verlassen des Editors.
+  const goToBatchIndex = (queue, index) => {
+    if (index >= queue.length) { finishEditing(); return; }
+    const food = (foods || []).find((f) => f.key === queue[index]);
+    if (!food) { goToBatchIndex(queue, index + 1); return; }
+    setEditing({ key: food.key, name: food.name, originalName: food.name, macros: foodToMacros(food), batch: { queue, index } });
+  };
+
+  const startBatch = () => {
+    const queue = withoutMacros.filter((f) => selectedKeys.includes(f.key)).map((f) => f.key);
+    if (queue.length === 0) return;
+    setSelectMode(false);
+    setSelectedKeys([]);
+    setDirectEntry(false);
+    goToBatchIndex(queue, 0);
+  };
+
+  const toggleSelectMode = () => { setSelectMode((v) => !v); setSelectedKeys([]); };
+  const toggleSelectFood = (food) => {
+    setSelectedKeys((prev) => (prev.includes(food.key) ? prev.filter((k) => k !== food.key) : [...prev, food.key]));
+  };
+  const selectAllNoMacros = () => setSelectedKeys(withoutMacros.map((f) => f.key));
+  const selectNoneNoMacros = () => setSelectedKeys([]);
+
   const save = () => {
     const name = (editing.name || '').trim();
     if (!name) return;
@@ -139,12 +174,14 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
     if (editing.originalName && normalizeName(editing.originalName) !== normalizeName(name)) {
       onRenameLinkedFavorite?.(editing.originalName, name);
     }
-    finishEditing();
+    if (editing.batch) goToBatchIndex(editing.batch.queue, editing.batch.index + 1);
+    else finishEditing();
   };
 
   const del = () => {
     if (editing.key) onRemove(editing.key);
-    finishEditing();
+    if (editing.batch) goToBatchIndex(editing.batch.queue, editing.batch.index + 1);
+    else finishEditing();
   };
 
   const copyRow = async (food) => {
@@ -158,8 +195,11 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
 
   // ----- Editor-Ansicht ------------------------------------------------------
   if (open && editing) {
+    const batch = editing.batch;
+    const isLastInBatch = !!batch && batch.index === batch.queue.length - 1;
+    const skipBatch = () => goToBatchIndex(batch.queue, batch.index + 1);
     const footer = (
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         {editing.key && (
           <button
             onClick={del}
@@ -172,17 +212,33 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
             <Trash2 size={17} /> {tr(lang, 'foods.delete')}
           </button>
         )}
+        {batch && (
+          <button
+            onClick={skipBatch}
+            style={{
+              flexShrink: 0, padding: '14px 18px', borderRadius: 14, border: `1.5px solid ${t.border}`,
+              background: 'transparent', color: t.textMuted, fontWeight: 700, fontSize: 14.5, cursor: 'pointer',
+            }}
+          >
+            {tr(lang, 'foods.batchSkip')}
+          </button>
+        )}
         <button
           onClick={save}
           disabled={!(editing.name || '').trim()}
           style={{ ...primaryButtonStyle(t), opacity: (editing.name || '').trim() ? 1 : 0.45 }}
         >
-          {tr(lang, 'foods.save')}
+          {batch ? tr(lang, isLastInBatch ? 'foods.batchSaveFinish' : 'foods.batchSaveNext') : tr(lang, 'foods.save')}
         </button>
       </div>
     );
     return (
-      <Modal open={open} onClose={finishEditing} t={t} lang={lang} title={editing.key ? tr(lang, 'foods.editTitle') : tr(lang, 'foods.newTitle')} footer={footer}>
+      <Modal
+        open={open} onClose={finishEditing} t={t} lang={lang}
+        title={editing.key ? tr(lang, 'foods.editTitle') : tr(lang, 'foods.newTitle')}
+        subtitle={batch ? tr(lang, 'foods.batchProgress', { current: batch.index + 1, total: batch.queue.length }) : undefined}
+        footer={footer}
+      >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
           <label style={{ ...makeLabelStyle(t), marginTop: 0 }}>
             {tr(lang, 'foods.name')}
@@ -227,23 +283,27 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   }
 
   // ----- Listen-Ansicht ------------------------------------------------------
-  const renderRows = (arr) => (
+  // `selectable` gilt nur für die "Ohne Makros"-Sektion (Mehrfachauswahl für
+  // den Makro-Batch-Modus, siehe startBatch) - in der Sektion mit Makros gibt
+  // es dafür keinen Anwendungsfall.
+  const renderRows = (arr, { selectable = false } = {}) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {arr.map((food) => (
         <FoodRow
           key={food.key} food={food} t={t} lang={lang}
           onEdit={startEdit} onCopy={copyRow} copied={copiedKey === food.key}
           isFavorite={isFavorite} onToggleFavorite={onToggleFavorite}
+          selectable={selectable} selected={selectedKeys.includes(food.key)} onToggleSelect={toggleSelectFood}
         />
       ))}
     </div>
   );
-  const renderGrouped = (groups) => groups.map(([cat, arr]) => (
+  const renderGrouped = (groups, opts) => groups.map(([cat, arr]) => (
     <div key={cat ?? '__unassigned__'} style={{ marginBottom: 14 }}>
       <div style={{ ...groupLabelStyle(t), marginBottom: 8, paddingLeft: 2 }}>
         {cat || tr(lang, 'foods.unassigned')}
       </div>
-      {renderRows(arr)}
+      {renderRows(arr, opts)}
     </div>
   ));
 
@@ -301,19 +361,53 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
 
           {withoutMacros.length > 0 && (
             <div style={{ marginTop: withMacros.length > 0 ? 18 : 0 }}>
-              <button
-                type="button"
-                onClick={() => setShowNoMacros((v) => !v)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6, width: '100%', border: 'none', background: 'transparent',
-                  color: t.textMuted, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: '4px 2px', marginBottom: 8,
-                }}
-              >
-                {showNoMacros ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-                {tr(lang, 'foods.noMacrosSection', { count: withoutMacros.length })}
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowNoMacros((v) => !v)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent',
+                    color: t.textMuted, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: '4px 2px',
+                  }}
+                >
+                  {showNoMacros ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                  {tr(lang, 'foods.noMacrosSection', { count: withoutMacros.length })}
+                </button>
+                {showNoMacros && (
+                  <button
+                    type="button"
+                    onClick={toggleSelectMode}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 5, border: 'none', background: 'transparent',
+                      color: selectMode ? t.pillActive : t.textMuted, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: '4px 2px',
+                    }}
+                  >
+                    <ListChecks size={14} /> {tr(lang, selectMode ? 'foods.selectCancel' : 'foods.selectStart')}
+                  </button>
+                )}
+              </div>
+
+              {showNoMacros && selectMode && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <button type="button" onClick={selectAllNoMacros} style={pillStyle(false, t)}>{tr(lang, 'foods.selectAll')}</button>
+                  <button type="button" onClick={selectNoneNoMacros} style={pillStyle(false, t)}>{tr(lang, 'foods.selectNone')}</button>
+                  {selectedKeys.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={startBatch}
+                      style={{
+                        width: '100%', padding: '11px', borderRadius: 12, border: 'none',
+                        background: t.btnPrimary, color: t.btnPrimaryText, fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                      }}
+                    >
+                      {tr(lang, 'foods.batchStart', { count: selectedKeys.length })}
+                    </button>
+                  )}
+                </div>
+              )}
+
               {showNoMacros && (
-                sortMode === 'category' ? renderGrouped(groupedWithoutMacros) : renderRows(withoutMacros)
+                sortMode === 'category' ? renderGrouped(groupedWithoutMacros, { selectable: selectMode }) : renderRows(withoutMacros, { selectable: selectMode })
               )}
             </div>
           )}
@@ -323,12 +417,31 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   );
 });
 
-function FoodRow({ food, t, lang, onEdit, onCopy, copied, isFavorite, onToggleFavorite }) {
+function FoodRow({
+  food, t, lang, onEdit, onCopy, copied, isFavorite, onToggleFavorite,
+  selectable = false, selected = false, onToggleSelect,
+}) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: t.cardAlt, borderRadius: 14, padding: '10px 12px' }}>
+      {selectable && (
+        <button
+          type="button"
+          onClick={() => onToggleSelect(food)}
+          aria-pressed={selected}
+          aria-label={tr(lang, 'foods.selectAria', { name: food.name })}
+          style={{
+            flexShrink: 0, width: 22, height: 22, borderRadius: 7,
+            border: `2px solid ${selected ? t.pillActive : t.border}`,
+            background: selected ? t.pillActive : 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0,
+          }}
+        >
+          {selected && <Check size={14} color={t.pillActiveText} strokeWidth={3} />}
+        </button>
+      )}
       <button
         type="button"
-        onClick={() => onEdit(food)}
+        onClick={() => (selectable ? onToggleSelect(food) : onEdit(food))}
         style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0 }}
       >
         <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: t.text, overflowWrap: 'anywhere', lineHeight: 1.3 }}>
@@ -340,7 +453,7 @@ function FoodRow({ food, t, lang, onEdit, onCopy, copied, isFavorite, onToggleFa
             : (hasFoodData(food) ? tr(lang, 'foods.ingredientsPresent') : tr(lang, 'foods.noValues'))}
         </span>
       </button>
-      {onToggleFavorite && (
+      {!selectable && onToggleFavorite && (
         <button
           type="button"
           onClick={() => onToggleFavorite({ name: food.name })}

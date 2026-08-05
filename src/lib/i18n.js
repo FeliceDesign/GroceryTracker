@@ -141,6 +141,11 @@ const DE = {
     delete: 'Löschen', save: 'Speichern', copyAria: 'Nährwerte kopieren',
     ingredientsPresent: 'Zutaten hinterlegt', noValues: 'keine Werte',
     noMacrosSection: 'Ohne Makros ({{count}})',
+    selectStart: 'Auswählen', selectCancel: 'Fertig', selectAria: '{{name}} auswählen',
+    selectAll: 'Alle auswählen', selectNone: 'Auswahl aufheben',
+    batchStart: 'Für {{count}} starten', batchSkip: 'Überspringen',
+    batchSaveNext: 'Speichern & weiter', batchSaveFinish: 'Speichern & fertig',
+    batchProgress: 'Stapel: {{current}} von {{total}}',
   },
   history: {
     title: 'Historie', subtitle: '{{count}} Einträge', subtitleOne: '1 Eintrag',
@@ -513,6 +518,11 @@ const EN = {
     delete: 'Delete', save: 'Save', copyAria: 'Copy nutrition data',
     ingredientsPresent: 'Ingredients on file', noValues: 'no values',
     noMacrosSection: 'Without macros ({{count}})',
+    selectStart: 'Select', selectCancel: 'Done', selectAria: 'Select {{name}}',
+    selectAll: 'Select all', selectNone: 'Clear selection',
+    batchStart: 'Start for {{count}}', batchSkip: 'Skip',
+    batchSaveNext: 'Save & next', batchSaveFinish: 'Save & finish',
+    batchProgress: 'Batch: {{current}} of {{total}}',
   },
   history: {
     title: 'History', subtitle: '{{count}} entries', subtitleOne: '1 entry',
