@@ -129,9 +129,6 @@ export function AddItemSheet({
         </div>
       ) : (
         (() => {
-          // Artikel-eigener Override (Stammdaten) geht vor der globalen Einstellung.
-          const effectiveStepGml = newItem.macros?.stepGml != null ? newItem.macros.stepGml : stepGml;
-          const step = effectiveStepGml && effectiveStepGml !== 'auto' ? Number(effectiveStepGml) : 10;
           // Feste Obergrenze, unabhängig von der aktuellen Menge – sonst
           // verschiebt sich die Skala bei jeder Änderung mit (gleiches Muster
           // wie im Bearbeiten-Dialog).
@@ -153,7 +150,7 @@ export function AddItemSheet({
                   type="range"
                   min={0}
                   max={sliderMax}
-                  step={step}
+                  step={1}
                   value={Math.min(newItem.qty, sliderMax)}
                   onChange={(e) => setNewItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
                   aria-label={tr(lang, 'edit.sliderAria')}

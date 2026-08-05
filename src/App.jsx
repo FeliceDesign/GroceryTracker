@@ -1546,7 +1546,7 @@ export default function App() {
         zone={detailLive ? resolveZone(detailLive.zone) : null}
         food={detailLive ? getFood(detailLive.name) : null}
         t={t} dark={dark} lang={lang} yellowDays={yellowDays} orangeDays={orangeDays} warnColors={warnColors} dateFormat={prefs.dateFormat || 'dmy'}
-        showSlider={prefs.showSlider !== false} stepGml={prefs.stepGml}
+        showSlider={prefs.showSlider !== false}
         isFavorite={detailLive ? isFavorite(detailLive.name) : false}
         onToggleFavorite={() => detailLive && toggleFavorite(detailLive)}
         onClose={() => setDetailItem(null)}

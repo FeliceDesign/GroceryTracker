@@ -32,7 +32,7 @@ const NO_WARN_COLORS = {};
 
 export function DetailItemSheet({
   open, item, zone, food, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = NO_WARN_COLORS, dateFormat = 'dmy',
-  isFavorite = false, onToggleFavorite, showSlider = true, stepGml,
+  isFavorite = false, onToggleFavorite, showSlider = true,
   onClose, onEdit, onChangeQty, onSetQty, onRemove, onToggleOpened, onChangeMhd, onMacrosCopied,
 }) {
   const [copied, setCopied] = useState(false);
@@ -75,10 +75,11 @@ export function DetailItemSheet({
   const showMacros = hasMacros(food);
   const unsat = unsaturatedFat(food);
 
-  // Schieberegler für g/ml-Artikel (Artikel-eigener Override geht vor der
-  // globalen Einstellung, gleiches Muster wie in Anlegen/Bearbeiten).
-  const effectiveStepGml = food?.stepGml != null ? food.stepGml : stepGml;
-  const qtyStep = effectiveStepGml && effectiveStepGml !== 'auto' ? Number(effectiveStepGml) : 10;
+  // Schieberegler für g/ml-Artikel. Eigene, feine Schrittweite (1) statt der
+  // für die +/--Buttons konfigurierten Schrittweite (die kann z.B. 50 oder
+  // 100 sein) - ein <input type="range"> rastet beim Ziehen zwingend auf
+  // Vielfache von `step` ein, bei einer groben Schrittweite würde der Slider
+  // sonst nur noch wenige Positionen anbieten und wirkt "gelockt".
   const sliderMax = 1000;
 
   const doCopy = async () => {
@@ -153,7 +154,7 @@ export function DetailItemSheet({
           type="range"
           min={0}
           max={sliderMax}
-          step={qtyStep}
+          step={1}
           value={Math.min(item.qty, sliderMax)}
           onChange={(e) => onSetQty(item.id, Math.max(0, parseInt(e.target.value, 10) || 0))}
           aria-label={tr(lang, 'edit.sliderAria')}
