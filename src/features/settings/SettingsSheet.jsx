@@ -1,4 +1,4 @@
-import { Boxes, Tags, Utensils, Clock, ListOrdered, Sprout, ChefHat, Download, Upload, Sun, Moon, SunMoon, LayoutGrid, SlidersHorizontal, AlertTriangle, Languages, Star, History } from 'lucide-react';
+import { Boxes, Tags, Utensils, Clock, ListOrdered, Sprout, ChefHat, Download, Upload, Sun, Moon, SunMoon, LayoutGrid, SlidersHorizontal, AlertTriangle, Languages, Star, History, ShoppingCart } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { Segmented } from '../../components/Segmented.jsx';
 import { Row } from '../../components/Row.jsx';
@@ -12,7 +12,7 @@ import { sectionLabelStyle } from '../../lib/styles.js';
 export function SettingsSheet({
   open, onClose, t, lang = 'de', onSetLang, themeOverride, setThemeOverride,
   onManageZones, onManageCategories, onManageFoods, onManageFavorites, onOpenShelfLife, onOpenExpiringView, onOpenProduceStorage, onOpenSpiceGuide,
-  onOpenHistory, onOpenLayout, onOpenBehavior, onOpenWarnSettings, onOpenBackup, onOpenImport,
+  onOpenHistory, onOpenShopping, onOpenLayout, onOpenBehavior, onOpenWarnSettings, onOpenBackup, onOpenImport,
   stats,
 }) {
   return (
@@ -86,6 +86,13 @@ export function SettingsSheet({
           label={tr(lang, 'settings.historyTitle')}
           sub={tr(lang, 'settings.historySub', { count: stats.history })}
           onClick={onOpenHistory}
+        />
+        <Row
+          t={t}
+          icon={<ShoppingCart size={19} />}
+          label={tr(lang, 'settings.shoppingTitle')}
+          sub={tr(lang, 'settings.shoppingSub', { count: stats.shopping })}
+          onClick={onOpenShopping}
         />
       </div>
 

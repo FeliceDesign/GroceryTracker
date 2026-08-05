@@ -1423,12 +1423,16 @@ export default function App() {
         onManageCategories={() => { setShowSettings(false); setShowCategories(true); }}
         onManageFavorites={() => { setShowSettings(false); setShowFavorites(true); }}
         onManageFoods={() => { setShowSettings(false); setShowFoods(true); }}
-        stats={{ items: items.length, zones: zones.length, categories: categories.length, foods: foods.length, favorites: favorites.length, history: history.length }}
+        stats={{
+          items: items.length, zones: zones.length, categories: categories.length, foods: foods.length,
+          favorites: favorites.length, history: history.length, shopping: shopping.length,
+        }}
         onOpenShelfLife={() => { setShowSettings(false); setShowShelfLife(true); }}
         onOpenExpiringView={() => { setShowSettings(false); setExpiringView(true); setSearch(''); }}
         onOpenProduceStorage={() => { setShowSettings(false); setShowProduceStorage(true); }}
         onOpenSpiceGuide={() => { setShowSettings(false); setShowSpiceGuide(true); }}
         onOpenHistory={() => { setShowSettings(false); setShowHistory(true); }}
+        onOpenShopping={() => { setShowSettings(false); setShowShopping(true); }}
         onOpenBackup={() => { setShowSettings(false); setShowBackup(true); setBackupInitialTab('backup'); }}
         onOpenImport={() => { setShowSettings(false); setShowBackup(true); setBackupInitialTab('import'); }}
         onOpenLayout={() => { setShowSettings(false); setShowLayout(true); }}
