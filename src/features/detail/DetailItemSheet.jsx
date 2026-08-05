@@ -172,6 +172,7 @@ export function DetailItemSheet({
         {item.opened && (
           <span style={{ fontSize: 12.5, fontWeight: 700, color: openColor, background: openBg, padding: '5px 11px', borderRadius: 8 }}>
             {openDays != null ? tr(lang, 'itemRow.openedWith', { rem: remLabel }) : tr(lang, 'itemRow.opened')}
+            {item.openedAt && ` (${formatDateDisplay(item.openedAt, dateFormat)})`}
           </span>
         )}
       </div>
