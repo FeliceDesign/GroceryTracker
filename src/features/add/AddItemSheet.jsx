@@ -6,7 +6,7 @@ import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { BarcodeIcon } from '../../components/icons.jsx';
 import { MacroSection } from '../macros/MacroSection.jsx';
 import { zonePalette } from '../../lib/colors.js';
-import { emptyMacros, defaultBasisForUnit } from '../../lib/macros.js';
+import { emptyMacros, defaultBasisForUnit, normalizeName } from '../../lib/macros.js';
 import { makeInputStyle, makeLabelStyle, pillStyle, btnCircle, primaryButtonStyle } from '../../lib/styles.js';
 import { tr } from '../../lib/i18n.js';
 
@@ -14,7 +14,7 @@ import { tr } from '../../lib/i18n.js';
 // Aktionen – Scannen und Hinzufügen – unten in Daumenreichweite sitzen.
 export function AddItemSheet({
   open, onClose, t, dark, lang = 'de',
-  zones, categories, onAddCategory,
+  zones, categories, onAddCategory, items, favorites,
   newItem, setNewItem,
   scanSupported, scanBusy, scanMsg, stepGml, showSlider,
   onScanBarcode, onScanDate, onOpenBatch, onSubmit,
@@ -24,6 +24,27 @@ export function AddItemSheet({
   const zone = zones.find((z) => z.id === newItem.zone) || zones[0];
   const pal = zonePalette(zone.color, dark);
   const canSubmit = newItem.name.trim().length > 0;
+
+  // Kategorie-Vorschlag beim Tippen: existiert schon ein Bestandsartikel
+  // (oder sonst ein Favorit) mit exakt gleichem normalisierten Namen, dessen
+  // Kategorie übernehmen - aber nur, solange die Kategorie noch nicht bewusst
+  // bestätigt wurde (categoryStatus 'confirmed'), damit eine bewusste
+  // Nutzerwahl nie überschrieben wird. Ohne (weiteren) Treffer zurück auf den
+  // neutralen Ausgangszustand, statt eine veraltete Vermutung stehen zu lassen.
+  const handleNameChange = (v) => {
+    setNewItem((s) => {
+      if (s.categoryStatus === 'confirmed') return { ...s, name: v };
+      const norm = normalizeName(v);
+      const match = norm
+        ? ((items || []).find((i) => normalizeName(i.name) === norm) || (favorites || []).find((f) => normalizeName(f.name) === norm))
+        : null;
+      if (match && match.category) {
+        return { ...s, name: v, category: match.category, categoryStatus: 'suggested' };
+      }
+      return { ...s, name: v, category: categories[0], categoryStatus: 'default' };
+    });
+  };
+  const confirmCategorySuggestion = () => setNewItem((s) => ({ ...s, categoryStatus: 'confirmed' }));
 
   const scanBtn = (onClick, children, primary) => (
     <button
@@ -73,7 +94,7 @@ export function AddItemSheet({
         t={t}
         lang={lang}
         value={newItem.name}
-        onChange={(v) => setNewItem((s) => ({ ...s, name: v }))}
+        onChange={handleNameChange}
         placeholder={tr(lang, 'add.namePlaceholder')}
         style={inputStyle}
         wrapperStyle={{ marginTop: 6 }}
@@ -95,11 +116,13 @@ export function AddItemSheet({
       <label style={labelStyle}>{tr(lang, 'add.category')}</label>
       <CategoryPicker
         value={newItem.category}
-        onChange={(c) => setNewItem((s) => ({ ...s, category: c }))}
+        onChange={(c) => setNewItem((s) => ({ ...s, category: c, categoryStatus: 'confirmed' }))}
         categories={categories}
         onAddCategory={onAddCategory}
         t={t}
         lang={lang}
+        status={newItem.categoryStatus}
+        onConfirmSuggestion={confirmCategorySuggestion}
       />
 
       <label style={labelStyle}>{tr(lang, 'add.unit')}</label>

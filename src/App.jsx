@@ -538,7 +538,10 @@ export default function App() {
 
   // -- Hinzufügen -------------------------------------------------------------
   const openAdd = () => {
-    setNewItem({ name: '', zone: activeZone, category: categories[0], qty: 1, unit: 'stk', mhd: null, macros: emptyMacros('100g') });
+    setNewItem({
+      name: '', zone: activeZone, category: categories[0], categoryStatus: 'default',
+      qty: 1, unit: 'stk', mhd: null, macros: emptyMacros('100g'),
+    });
     setScanMsg('');
     setShowAdd(true);
   };
@@ -1367,6 +1370,7 @@ export default function App() {
       <AddItemSheet
         open={showAdd} onClose={closeAdd} t={t} dark={dark} lang={lang}
         zones={zones} categories={categories} onAddCategory={addCategory}
+        items={items} favorites={favorites}
         newItem={newItem} setNewItem={setNewItem}
         scanSupported={scanSupported} scanBusy={scanBusy} scanMsg={scanMsg} stepGml={prefs.stepGml} showSlider={prefs.showSlider}
         onScanBarcode={() => openScanFlow('single')} onScanDate={handleScanDate} onOpenBatch={() => openScanFlow('batch')} onSubmit={addItem}

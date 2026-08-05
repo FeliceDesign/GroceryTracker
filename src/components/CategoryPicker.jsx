@@ -5,12 +5,24 @@ import { makeInputStyle } from '../lib/styles.js';
 import { tr } from '../lib/i18n.js';
 
 // Dropdown zur Kategorieauswahl mit Möglichkeit, direkt eine neue Kategorie
-// anzulegen.
-export function CategoryPicker({ value, onChange, categories, onAddCategory, t, lang = 'de' }) {
+// anzulegen. `status` optional (nur beim Anlegen genutzt, sonst Standard
+// 'confirmed' ohne jede optische Änderung): 'default' = noch nicht bewusst
+// gewählt (Randfarbe Warnung), 'suggested' = anhand des Namens automatisch
+// vorgeschlagen und noch nicht bestätigt (Randfarbe Erfolg + kleiner
+// Bestätigen-Button), 'confirmed' = normale Darstellung.
+export function CategoryPicker({
+  value, onChange, categories, onAddCategory, t, lang = 'de',
+  status = 'confirmed', onConfirmSuggestion,
+}) {
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState('');
   const inputStyle = makeInputStyle(t);
+  const highlightStyle = status === 'default'
+    ? { border: `1.5px solid ${t.warningBorder}`, background: t.warningBg }
+    : status === 'suggested'
+      ? { border: `1.5px solid ${t.success}` }
+      : {};
 
   const confirmAdd = () => {
     const name = onAddCategory(draft);
@@ -22,17 +34,38 @@ export function CategoryPicker({ value, onChange, categories, onAddCategory, t, 
 
   return (
     <div style={{ position: 'relative', marginTop: 6 }}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        style={{
-          ...inputStyle, marginTop: 0, textAlign: 'left', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}
-      >
-        <span>{value}</span>
-        <span style={{ color: t.textFaint, fontSize: 11 }}>{open ? '▲' : '▼'}</span>
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          style={{
+            ...inputStyle, marginTop: 0, textAlign: 'left', cursor: 'pointer', flex: 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            ...highlightStyle,
+          }}
+        >
+          <span>{value}</span>
+          <span style={{ color: t.textFaint, fontSize: 11 }}>{open ? '▲' : '▼'}</span>
+        </button>
+        {status === 'suggested' && (
+          <button
+            type="button"
+            onClick={onConfirmSuggestion}
+            aria-label={tr(lang, 'categoryPicker.confirmSuggestionAria')}
+            style={{
+              flexShrink: 0, width: 40, height: 40, borderRadius: 12, border: 'none', cursor: 'pointer',
+              background: t.success, color: t.card, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <Check size={17} strokeWidth={3} />
+          </button>
+        )}
+      </div>
+      {status === 'suggested' && (
+        <div style={{ fontSize: 11.5, color: t.success, marginTop: 4 }}>
+          {tr(lang, 'categoryPicker.suggestedHint')}
+        </div>
+      )}
 
       {open && (
         <>
