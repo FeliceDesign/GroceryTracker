@@ -8,6 +8,18 @@ const DEFAULT_MAX_ENTRIES = 50;
 
 const byNewestFirst = (a, b) => b.consumedAt - a.consumedAt;
 
+// Schnelles Mehrfach-Tippen/Ziehen (z.B. Mengen-Slider) erzeugt sonst pro
+// Zwischenwert einen eigenen Historie-Eintrag - beobachtet z.B. 37 Einträge
+// für denselben Artikel in 3 Sekunden. Liegt ein neuer Eintrag innerhalb
+// dieses Fensters nach dem letzten für denselben Artikel/dieselbe Aktion/
+// Einheit, wird stattdessen die Menge addiert statt ein neuer Eintrag
+// angelegt. Bewusst kurz gewählt (typische Lücken innerhalb einer echten
+// Tipp-/Zieh-Serie liegen im Millisekunden- bis niedrigen Sekundenbereich) -
+// deutlich kürzer als das 30-Minuten-Fenster für die "Mahlzeit"-Gruppierung
+// in der Anzeige (siehe HistorySheet), die bewusst separate Aktionen nicht
+// verschmelzen soll.
+const MERGE_WINDOW_MS = 5000;
+
 // Speicher-Invariante: immer neueste zuerst, begrenzt auf `maxEntries`.
 // `groupHistory()` in der HistorySheet setzt diese Reihenfolge voraus - ohne
 // sie landen nachgetragene oder umdatierte Einträge an der falschen Stelle
@@ -43,9 +55,25 @@ export function useHistory(maxEntries = DEFAULT_MAX_ENTRIES) {
     (food, action, qty, unit, consumedAt) => {
       if (!food) return;
       setRaw((prev) => {
+        const list = prev || [];
+        const ts = consumedAt ?? Date.now();
+        // Nur mit dem unmittelbar letzten Eintrag verschmelzen (Invariante:
+        // neueste zuerst) - nie rückwirkend über einen anderen Artikel
+        // hinweg zusammenfassen, auch wenn der läge innerhalb des Fensters.
+        const last = list[0];
+        const canMerge = last
+          && last.action === action
+          && (last.food?.name || '').trim().toLowerCase() === (food.name || '').trim().toLowerCase()
+          && (last.unit ?? null) === (unit ?? null)
+          && qty != null && last.qty != null
+          && ts >= last.consumedAt && ts - last.consumedAt < MERGE_WINDOW_MS;
+        if (canMerge) {
+          const merged = { ...last, food, qty: last.qty + qty, consumedAt: ts };
+          return normalize([merged, ...list.slice(1)], maxEntries);
+        }
         const id = 'cs' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-        const entry = { id, food, action, consumedAt: consumedAt ?? Date.now(), qty: qty ?? null, unit: unit ?? null };
-        return normalize([entry, ...(prev || [])], maxEntries);
+        const entry = { id, food, action, consumedAt: ts, qty: qty ?? null, unit: unit ?? null };
+        return normalize([entry, ...list], maxEntries);
       });
     },
     [setRaw, maxEntries],
