@@ -8,7 +8,7 @@ import { FrozenShelfLifeDetails } from '../macros/FrozenShelfLifeDetails.jsx';
 import { ThawingDetails } from '../macros/ThawingDetails.jsx';
 import { ProduceStorageDetails } from '../macros/ProduceStorageDetails.jsx';
 import { zonePalette } from '../../lib/colors.js';
-import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel, formatDateDisplay } from '../../lib/date.js';
+import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel, formatDateDisplay, todayISO } from '../../lib/date.js';
 import { MACRO_FIELDS, fmtNum, unsaturatedFat, hasMacros, basisLabel, copyMacros, copyToClipboard } from '../../lib/macros.js';
 import { groupLabelStyle } from '../../lib/styles.js';
 import { openedDaysFor, openedUntil, shelfLifeInfo } from '../../lib/openedShelfLife.js';
@@ -33,7 +33,7 @@ const NO_WARN_COLORS = {};
 export function DetailItemSheet({
   open, item, zone, food, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = NO_WARN_COLORS, dateFormat = 'dmy',
   isFavorite = false, onToggleFavorite, showSlider = true,
-  onClose, onEdit, onChangeQty, onSetQty, onRemove, onToggleOpened, onChangeMhd, onMacrosCopied,
+  onClose, onEdit, onChangeQty, onSetQty, onRemove, onToggleOpened, onChangeMhd, onChangeOpenedAt, onMacrosCopied,
 }) {
   const [copied, setCopied] = useState(false);
   const [copiedIng, setCopiedIng] = useState(false);
@@ -209,6 +209,20 @@ export function DetailItemSheet({
         >
           <PackageOpen size={17} /> {item.opened ? tr(lang, 'detail.markUnopened') : tr(lang, 'detail.markOpened')}
         </button>
+      )}
+
+      {/* Öffnungsdatum direkt ändern – ohne ins Bearbeiten zu wechseln */}
+      {item.opened && onChangeOpenedAt && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+          <span style={{ fontSize: 13, color: t.textMuted, flexShrink: 0 }}>{tr(lang, 'edit.openedOn')}</span>
+          <input
+            type="date"
+            value={item.openedAt || todayISO()}
+            max={todayISO()}
+            onChange={(e) => onChangeOpenedAt(item.id, e.target.value)}
+            style={{ ...inputStyle, marginTop: 0 }}
+          />
+        </div>
       )}
 
       {/* Nährwerte */}

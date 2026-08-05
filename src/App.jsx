@@ -377,6 +377,15 @@ export default function App() {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, mhd: mhd || null } : i)));
   };
 
+  // Öffnungsdatum direkt ändern (Artikelvorschau), ohne den geöffnet-Status
+  // selbst anzufassen - analog zu changeMhd. Leere Eingabe fällt auf heute
+  // zurück statt den Artikel implizit in einen inkonsistenten Zustand
+  // (geöffnet ohne Datum) zu versetzen (gleiches Verhalten wie im
+  // Bearbeiten-Formular).
+  const changeOpenedAt = (id, date) => {
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, openedAt: date || todayISO() } : i)));
+  };
+
   // Favorit umschalten (Stern im Detail-Sheet) - merkt sich Lagerort/
   // Kategorie/Einheit als Vorlage für den Schnellzugriff, keine Menge.
   const toggleFavorite = (item) => {
@@ -1597,6 +1606,7 @@ export default function App() {
         onRemove={(id) => { setDetailItem(null); removeItem(id); }}
         onToggleOpened={toggleOpened}
         onChangeMhd={changeMhd}
+        onChangeOpenedAt={changeOpenedAt}
         onMacrosCopied={(food) => logHistory(food.name, food, 'consumed')}
       />
     </div>
