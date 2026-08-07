@@ -240,13 +240,13 @@ export function ManageFavoritesSheet({
   const [addAllMsg, setAddAllMsg] = useState('');
   const [confirmClearAll, setConfirmClearAll] = useState(false);
   const [onlyWithMacros, setOnlyWithMacros] = useState(false);
-  // Lösch-Buttons bleiben standardmäßig ausgeblendet und erscheinen erst nach
-  // Tap auf "Entfernen" - gleiches Muster wie in der Hauptliste.
-  const [showFavTrash, setShowFavTrash] = useState(false);
+  // Lösch-Buttons standardmäßig eingeblendet (abschaltbar über "Entfernen"/
+  // "Fertig", gleicher Toggle wie zuvor - nur der Startzustand ist jetzt an).
+  const [showFavTrash, setShowFavTrash] = useState(true);
 
   // Zustand zurücksetzen, sobald das Sheet zugeht.
   useEffect(() => {
-    if (!open) { setConfirmAddAll(false); setAddAllMsg(''); setConfirmClearAll(false); setOnlyWithMacros(false); setShowFavTrash(false); }
+    if (!open) { setConfirmAddAll(false); setAddAllMsg(''); setConfirmClearAll(false); setOnlyWithMacros(false); setShowFavTrash(true); }
   }, [open]);
 
   useEffect(() => {
