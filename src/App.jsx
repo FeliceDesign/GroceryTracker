@@ -320,7 +320,9 @@ export default function App() {
 
   // Kopiert die Nährwerttabelle eines Bestandsartikels (per Stammdaten-Name
   // aufgelöst) - kurzes Checkmark-Feedback direkt am Button, gleiches Muster
-  // wie beim Einzel-Kopieren in der Historie.
+  // wie beim Einzel-Kopieren in der Historie. Loggt wie das Kopieren in der
+  // Stammdaten-Liste/Artikelvorschau als "verzehrt" in die Historie (gleicher
+  // onMacrosCopied-Effekt, hier nur direkt statt über eine Prop-Callback).
   const copyItemMacros = async (item) => {
     const food = getFood(item.name);
     if (!food || !hasMacros(food)) return;
@@ -329,6 +331,7 @@ export default function App() {
       setCopiedMacrosId(item.id);
       clearTimeout(copyMacrosTimerRef.current);
       copyMacrosTimerRef.current = setTimeout(() => setCopiedMacrosId((cur) => (cur === item.id ? null : cur)), 1600);
+      logHistory(food.name, food, 'consumed');
     }
   };
 
