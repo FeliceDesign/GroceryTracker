@@ -16,7 +16,7 @@ import {
 // beim Öffnen direkt in den Editor für diesen Namen (z.B. von einem
 // Favoriten aus) - vorhandene Stammdaten werden geladen, sonst leer angelegt.
 export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
-  open, onClose, t, lang = 'de', foods, onUpsert, onRemove, scanSupported, initialEditName, stepGml,
+  open, onClose, t, lang = 'de', foods, onUpsert, onRemove, onDeleteWithUndo, scanSupported, initialEditName, stepGml,
   onRenameLinkedFavorite, isFavorite, onToggleFavorite, onMacrosCopied,
   items, favorites, categories, sortMode = 'alpha', onSetSortMode,
   hiddenMacroCategories = [], onToggleHiddenCategory,
@@ -38,6 +38,12 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   // Verwalten-Ansicht für Kategorien, die grundsätzlich keine Makros
   // brauchen (z.B. Gewürze, Getränke) - blendet sie aus "Ohne Makros" aus.
   const [manageHidden, setManageHidden] = useState(false);
+  // Lösch-Buttons pro Zeile (beide Sektionen) bleiben standardmäßig
+  // ausgeblendet und erscheinen erst nach Tap auf "Entfernen" - gleiches
+  // Muster wie in Hauptliste/Favoriten. Schließt sich mit dem Auswahl-Modus
+  // gegenseitig aus, um nicht Checkbox und Papierkorb gleichzeitig auf
+  // derselben Zeile zu zeigen.
+  const [showFoodTrash, setShowFoodTrash] = useState(false);
   const inputStyle = makeInputStyle(t);
 
   // Beim Schließen den Editor-/Suchzustand zurücksetzen; beim Öffnen mit
@@ -52,6 +58,7 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
       setSelectMode(false);
       setSelectedKeys([]);
       setManageHidden(false);
+      setShowFoodTrash(false);
     } else if (initialEditName) {
       const existing = (foods || []).find((f) => normalizeName(f.name) === normalizeName(initialEditName));
       setEditing(existing
@@ -176,12 +183,17 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
     goToBatchIndex(queue, 0);
   };
 
-  const toggleSelectMode = () => { setSelectMode((v) => !v); setSelectedKeys([]); };
+  // Auswahl-Modus (Makro-Batch) und Lösch-Modus schließen sich gegenseitig
+  // aus - sonst stünden Checkbox und Papierkorb gleichzeitig auf derselben
+  // Zeile.
+  const toggleSelectMode = () => { setSelectMode((v) => !v); setSelectedKeys([]); setShowFoodTrash(false); };
+  const toggleFoodTrash = () => { setShowFoodTrash((v) => !v); setSelectMode(false); setSelectedKeys([]); };
   const toggleSelectFood = (food) => {
     setSelectedKeys((prev) => (prev.includes(food.key) ? prev.filter((k) => k !== food.key) : [...prev, food.key]));
   };
   const selectAllNoMacros = () => setSelectedKeys(withoutMacros.map((f) => f.key));
   const selectNoneNoMacros = () => setSelectedKeys([]);
+  const deleteRow = (food) => onDeleteWithUndo?.(food.key);
 
   const save = () => {
     const name = (editing.name || '').trim();
@@ -211,7 +223,10 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   };
 
   const del = () => {
-    if (editing.key) onRemove(editing.key);
+    // Bewusst der Undo-fähige Callback (nicht das rohe onRemove, das intern
+    // auch für stille Aufräum-Fälle beim Speichern verwendet wird) - explizit
+    // angeklicktes Löschen soll immer rückgängig machbar sein.
+    if (editing.key) onDeleteWithUndo?.(editing.key);
     if (editing.batch) goToBatchIndex(editing.batch.queue, editing.batch.index + 1);
     else finishEditing();
   };
@@ -373,8 +388,9 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
   // ----- Listen-Ansicht ------------------------------------------------------
   // `selectable` gilt nur für die "Ohne Makros"-Sektion (Mehrfachauswahl für
   // den Makro-Batch-Modus, siehe startBatch) - in der Sektion mit Makros gibt
-  // es dafür keinen Anwendungsfall.
-  const renderRows = (arr, { selectable = false } = {}) => (
+  // es dafür keinen Anwendungsfall. `showDelete` (Lösch-Modus) gilt dagegen
+  // für beide Sektionen gleichermaßen.
+  const renderRows = (arr, { selectable = false, showDelete = false } = {}) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {arr.map((food) => (
         <FoodRow
@@ -382,6 +398,7 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
           onEdit={startEdit} onCopy={copyRow} copied={copiedKey === food.key}
           isFavorite={isFavorite} onToggleFavorite={onToggleFavorite}
           selectable={selectable} selected={selectedKeys.includes(food.key)} onToggleSelect={toggleSelectFood}
+          showDelete={showDelete} onDelete={deleteRow}
         />
       ))}
     </div>
@@ -437,6 +454,26 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
         <Plus size={17} /> {tr(lang, 'foods.addNew')}
       </button>
 
+      {(withMacros.length > 0 || withoutMacros.length > 0) && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+          <button
+            type="button"
+            onClick={toggleFoodTrash}
+            aria-label={tr(lang, showFoodTrash ? 'foods.doneRemoving' : 'foods.enableRemove')}
+            aria-pressed={showFoodTrash}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, border: 'none',
+              background: showFoodTrash ? t.pillActive : 'transparent',
+              color: showFoodTrash ? t.pillActiveText : t.textMuted,
+              fontSize: 12.5, fontWeight: 700, cursor: 'pointer', borderRadius: 8, padding: '4px 8px',
+            }}
+          >
+            {showFoodTrash ? <Check size={14} /> : <Trash2 size={14} />}
+            {tr(lang, showFoodTrash ? 'foods.doneRemoving' : 'foods.enableRemove')}
+          </button>
+        </div>
+      )}
+
       {withMacros.length === 0 && withoutMacros.length === 0 && (hiddenMacroCategories || []).length === 0 ? (
         <div style={{ textAlign: 'center', color: t.textFaint, padding: '32px 12px', fontSize: 13.5 }}>
           {search.trim() ? tr(lang, 'foods.nothingFound') : tr(lang, 'foods.noneYet')}
@@ -444,7 +481,7 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
       ) : (
         <>
           {withMacros.length > 0 && (
-            sortMode === 'category' ? renderGrouped(groupedWithMacros) : renderRows(withMacros)
+            sortMode === 'category' ? renderGrouped(groupedWithMacros, { showDelete: showFoodTrash }) : renderRows(withMacros, { showDelete: showFoodTrash })
           )}
 
           {/* Sektion bleibt auch sichtbar, wenn die Liste durch ausgeblendete
@@ -517,7 +554,9 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
               )}
 
               {showNoMacros && withoutMacros.length > 0 && (
-                sortMode === 'category' ? renderGrouped(groupedWithoutMacros, { selectable: selectMode }) : renderRows(withoutMacros, { selectable: selectMode })
+                sortMode === 'category'
+                  ? renderGrouped(groupedWithoutMacros, { selectable: selectMode, showDelete: showFoodTrash })
+                  : renderRows(withoutMacros, { selectable: selectMode, showDelete: showFoodTrash })
               )}
             </div>
           )}
@@ -530,6 +569,7 @@ export const ManageFoodsSheet = forwardRef(function ManageFoodsSheet({
 function FoodRow({
   food, t, lang, onEdit, onCopy, copied, isFavorite, onToggleFavorite,
   selectable = false, selected = false, onToggleSelect,
+  showDelete = false, onDelete,
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: t.cardAlt, borderRadius: 14, padding: '10px 12px' }}>
@@ -578,7 +618,7 @@ function FoodRow({
           <Star size={16} fill={isFavorite?.(food.name) ? 'currentColor' : 'none'} />
         </button>
       )}
-      {hasMacros(food) && (
+      {!selectable && hasMacros(food) && (
         <button
           type="button"
           onClick={() => onCopy(food)}
@@ -590,6 +630,28 @@ function FoodRow({
           }}
         >
           {copied ? <Check size={17} /> : <Copy size={16} />}
+        </button>
+      )}
+      {/* Platz für den Lösch-Button immer reservieren (nur unsichtbar
+          schalten, nicht aus dem Layout nehmen) - sonst verschiebt sich die
+          Zeile je nachdem, ob der Entfernen-Modus aktiv ist (gleiches Muster
+          wie in der Hauptliste). */}
+      {!selectable && (
+        <button
+          type="button"
+          onClick={() => onDelete?.(food)}
+          disabled={!showDelete}
+          aria-hidden={!showDelete}
+          tabIndex={showDelete ? 0 : -1}
+          aria-label={tr(lang, 'foods.removeAria', { name: food.name })}
+          style={{
+            flexShrink: 0, width: 36, height: 36, borderRadius: 10, border: 'none',
+            background: 'transparent', color: t.danger,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            opacity: showDelete ? 1 : 0, pointerEvents: showDelete ? 'auto' : 'none', cursor: 'pointer',
+          }}
+        >
+          <Trash2 size={16} />
         </button>
       )}
     </div>

@@ -168,6 +168,7 @@ export default function App() {
   const [deletedZone, setDeletedZone] = useState(null);
   const [deletedFavorites, setDeletedFavorites] = useState(null);
   const [deletedFavorite, setDeletedFavorite] = useState(null);
+  const [deletedFood, setDeletedFood] = useState(null);
   const [restoredShopping, setRestoredShopping] = useState(null);
   const [deletedHistoryEntries, setDeletedHistoryEntries] = useState(null);
   const [justChanged, setJustChanged] = useState(null);
@@ -183,6 +184,7 @@ export default function App() {
   const zoneUndoTimerRef = useRef(null);
   const favoritesUndoTimerRef = useRef(null);
   const favoriteUndoTimerRef = useRef(null);
+  const foodUndoTimerRef = useRef(null);
   const flashTimerRef = useRef(null);
   const copyMacrosTimerRef = useRef(null);
   const checkedTimerRef = useRef(null);
@@ -522,6 +524,27 @@ export default function App() {
     if (!deletedFavorite) return;
     restoreFavorites([deletedFavorite]);
     setDeletedFavorite(null);
+  };
+
+  // Stammdaten-Eintrag löschen (Editor-Button oder Papierkorb in der Liste) -
+  // gleiches Sicherheitsnetz wie bei Artikeln/Favoriten: sofort weg, aber 5s
+  // per Toast rückgängig machbar. Bewusst ein eigener Callback statt den
+  // rohen `removeFood`/onRemove zu ersetzen - der wird intern beim
+  // Umbenennen/Leer-Speichern auch für reine Aufräum-Zwecke aufgerufen, wo
+  // ein "gelöscht"-Toast nur verwirren würde.
+  const removeFoodWithUndo = (key) => {
+    const removed = foods.find((f) => f.key === key);
+    if (!removed) return;
+    setDeletedFood(removed);
+    removeFood(key);
+    clearTimeout(foodUndoTimerRef.current);
+    foodUndoTimerRef.current = setTimeout(() => setDeletedFood(null), 5000);
+  };
+
+  const undoFoodDelete = () => {
+    if (!deletedFood) return;
+    upsertFood(deletedFood);
+    setDeletedFood(null);
   };
 
   const removeItem = (id) => {
@@ -1403,6 +1426,15 @@ export default function App() {
         />
       )}
 
+      {!deletedItem && !deletedZone && !deletedFavorites && !deletedFavorite && !restoredShopping && !deletedHistoryEntries && deletedFood && (
+        <Toast
+          t={t}
+          message={tr(lang, 'foods.toastRemoved', { name: deletedFood.name })}
+          actionLabel={tr(lang, 'app.undo')}
+          onAction={undoFoodDelete}
+        />
+      )}
+
       <AddItemSheet
         open={showAdd} onClose={closeAdd} t={t} dark={dark} lang={lang}
         zones={zones} categories={categories} onAddCategory={addCategory}
@@ -1564,7 +1596,7 @@ export default function App() {
           if (foodsFromFavorites) { setFoodsFromFavorites(false); setShowFavorites(true); }
         }}
         t={t} lang={lang}
-        foods={foods} onUpsert={upsertFood} onRemove={removeFood}
+        foods={foods} onUpsert={upsertFood} onRemove={removeFood} onDeleteWithUndo={removeFoodWithUndo}
         scanSupported={scanSupported} initialEditName={editFoodName} stepGml={prefs.stepGml}
         onRenameLinkedFavorite={renameLinkedFavorite}
         isFavorite={isFavorite} onToggleFavorite={toggleFavorite}

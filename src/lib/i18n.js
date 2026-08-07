@@ -158,6 +158,8 @@ const DE = {
     hiddenCategoriesSub: 'Diese Kategorien erscheinen nie unter „Ohne Makros"',
     hiddenCategoriesHint: 'Betrifft nur die „Ohne Makros"-Liste. Bereits eingetragene Nährwerte bleiben überall sichtbar.',
     allCategoriesHidden: 'Alle Kategorien ausgeblendet.',
+    enableRemove: 'Entfernen', doneRemoving: 'Fertig',
+    removeAria: '{{name}} entfernen', toastRemoved: '„{{name}}" aus den Stammdaten entfernt',
   },
   history: {
     title: 'Historie', subtitle: '{{count}} Einträge', subtitleOne: '1 Eintrag',
@@ -548,6 +550,8 @@ const EN = {
     hiddenCategoriesSub: 'These categories never show up under "Without macros"',
     hiddenCategoriesHint: 'Only affects the "Without macros" list. Nutrition data already entered stays visible everywhere.',
     allCategoriesHidden: 'All categories hidden.',
+    enableRemove: 'Remove', doneRemoving: 'Done',
+    removeAria: 'Remove {{name}}', toastRemoved: '"{{name}}" removed from nutrition data',
   },
   history: {
     title: 'History', subtitle: '{{count}} entries', subtitleOne: '1 entry',
