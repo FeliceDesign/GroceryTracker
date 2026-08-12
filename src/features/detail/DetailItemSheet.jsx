@@ -75,12 +75,12 @@ export function DetailItemSheet({
   const showMacros = hasMacros(food);
   const unsat = unsaturatedFat(food);
 
-  // Schieberegler für g/ml-Artikel. Eigene, feine Schrittweite (1) statt der
+  // Schieberegler für g/ml-Artikel. Eigene, feste Schrittweite (10) statt der
   // für die +/--Buttons konfigurierten Schrittweite (die kann z.B. 50 oder
   // 100 sein) - ein <input type="range"> rastet beim Ziehen zwingend auf
-  // Vielfache von `step` ein, bei einer groben Schrittweite würde der Slider
-  // sonst nur noch wenige Positionen anbieten und wirkt "gelockt".
+  // Vielfache von `step` ein.
   const sliderMax = 1000;
+  const sliderStep = 10;
 
   const doCopy = async () => {
     const merged = { ...food, name: item.name };
@@ -154,7 +154,7 @@ export function DetailItemSheet({
           type="range"
           min={0}
           max={sliderMax}
-          step={1}
+          step={sliderStep}
           value={Math.min(item.qty, sliderMax)}
           onChange={(e) => onSetQty(item.id, Math.max(0, parseInt(e.target.value, 10) || 0))}
           aria-label={tr(lang, 'edit.sliderAria')}

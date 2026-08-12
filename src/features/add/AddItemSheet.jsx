@@ -154,8 +154,10 @@ export function AddItemSheet({
         (() => {
           // Feste Obergrenze, unabhängig von der aktuellen Menge – sonst
           // verschiebt sich die Skala bei jeder Änderung mit (gleiches Muster
-          // wie im Bearbeiten-Dialog).
+          // wie im Bearbeiten-Dialog). Feste Schrittweite (10), unabhängig von
+          // der für die +/--Buttons konfigurierten Schrittweite.
           const sliderMax = 1000;
+          const sliderStep = 10;
           return (
             <div style={{ marginTop: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -173,7 +175,7 @@ export function AddItemSheet({
                   type="range"
                   min={0}
                   max={sliderMax}
-                  step={1}
+                  step={sliderStep}
                   value={Math.min(newItem.qty, sliderMax)}
                   onChange={(e) => setNewItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
                   aria-label={tr(lang, 'edit.sliderAria')}

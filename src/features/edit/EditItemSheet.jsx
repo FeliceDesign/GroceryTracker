@@ -157,8 +157,11 @@ export function EditItemSheet({
       ) : (
         (() => {
           // Feste Obergrenze, unabhängig von der aktuellen Menge – sonst
-          // verschiebt sich die Skala bei jeder Änderung mit.
+          // verschiebt sich die Skala bei jeder Änderung mit. Feste
+          // Schrittweite (10), unabhängig von der für die +/--Buttons
+          // konfigurierten Schrittweite.
           const sliderMax = 1000;
+          const sliderStep = 10;
           return (
             <div style={{ marginTop: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -205,7 +208,7 @@ export function EditItemSheet({
                   type="range"
                   min={0}
                   max={sliderMax}
-                  step={1}
+                  step={sliderStep}
                   value={Math.min(editItem.qty, sliderMax)}
                   onChange={(e) => setEditItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
                   aria-label={tr(lang, 'edit.sliderAria')}
