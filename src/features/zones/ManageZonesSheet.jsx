@@ -1,83 +1,161 @@
 import { useState } from 'react';
-import { Plus, Trash2, Check } from 'lucide-react';
+import { Plus, Trash2, Refrigerator, Snowflake, Sun, ChevronUp, ChevronDown, Star, Eye } from 'lucide-react';
 import { Modal } from '../../components/Modal.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
+import { ColorSwatches } from '../../components/ColorSwatches.jsx';
+import { Segmented } from '../../components/Segmented.jsx';
 import { ZONE_COLOR_CHOICES, zonePalette } from '../../lib/colors.js';
+import { zoneStorageType } from '../../lib/openedShelfLife.js';
 import { makeInputStyle, btnCircle } from '../../lib/styles.js';
+import { tr } from '../../lib/i18n.js';
 
-function ColorRow({ value, onChange }) {
+// Lager-Temperatur eines Lagerorts (für Lager-Hinweise bei geöffneten
+// Artikeln): Gekühlt / Tiefgefroren / Raumtemperatur.
+function StorageTypeSegmented({ value, onChange, t, lang }) {
   return (
-    <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 8 }}>
-      {ZONE_COLOR_CHOICES.map((c) => (
-        <button
-          key={c}
-          type="button"
-          onClick={() => onChange(c)}
-          aria-label={`Farbe ${c}`}
-          style={{
-            width: 26, height: 26, borderRadius: '50%', background: c, cursor: 'pointer',
-            border: value === c ? '3px solid rgba(255,255,255,0.9)' : '3px solid transparent',
-            boxShadow: value === c ? `0 0 0 2px ${c}` : 'none',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          {value === c && <Check size={13} color="#fff" strokeWidth={3} />}
-        </button>
-      ))}
+    <div style={{ marginTop: 10 }}>
+      <Segmented
+        t={t}
+        value={value}
+        onChange={onChange}
+        options={[
+          { value: 'cooled', label: tr(lang, 'zones.storageCooled'), icon: <Refrigerator size={14} /> },
+          { value: 'frozen', label: tr(lang, 'zones.storageFrozen'), icon: <Snowflake size={14} /> },
+          { value: 'room', label: tr(lang, 'zones.storageRoom'), icon: <Sun size={14} /> },
+        ]}
+      />
     </div>
   );
 }
 
 // Lagerorte verwalten: umbenennen, Emoji/Farbe ändern, hinzufügen, entfernen.
-export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAdd, onUpdate, onRemove }) {
+export function ManageZonesSheet({
+  open, onClose, t, dark, lang = 'de', zones, countFor, onAdd, onUpdate, onRemove, onMove, customColors, onAddCustomColor, onRemoveCustomColor,
+  defaultZoneId, onSetDefaultZoneId, focusMode = false, onExitFocusMode,
+}) {
   const inputStyle = makeInputStyle(t);
-  const [draft, setDraft] = useState({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0] });
+  const [draft, setDraft] = useState({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], storageType: 'room' });
   const [showAdd, setShowAdd] = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
 
   const submitAdd = () => {
     if (!draft.label.trim()) return;
-    onAdd({ label: draft.label, emoji: draft.emoji || '📦', color: draft.color });
-    setDraft({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0] });
+    onAdd({ label: draft.label, emoji: draft.emoji || '📦', color: draft.color, storageType: draft.storageType });
+    setDraft({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], storageType: 'room' });
     setShowAdd(false);
   };
 
   return (
-    <Modal open={open} onClose={onClose} t={t} title="Lagerorte" subtitle="Anpassen, hinzufügen oder entfernen">
+    <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'zones.title')} subtitle={tr(lang, 'zones.subtitle')}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-        {zones.map((z) => {
+        {zones.map((z, idx) => {
           const pal = zonePalette(z.color, dark);
           const count = countFor(z.id);
           return (
             <div key={z.id} style={{ background: t.cardAlt, borderRadius: 14, padding: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => onMove(z.id, 'up')}
+                    disabled={idx === 0}
+                    style={{
+                      width: 24, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: 'none', borderRadius: 6, background: 'transparent', cursor: idx === 0 ? 'default' : 'pointer',
+                      color: idx === 0 ? t.border : t.textMuted,
+                    }}
+                    aria-label={tr(lang, 'zones.moveUpAria', { label: z.label })}
+                  >
+                    <ChevronUp size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onMove(z.id, 'down')}
+                    disabled={idx === zones.length - 1}
+                    style={{
+                      width: 24, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: 'none', borderRadius: 6, background: 'transparent', cursor: idx === zones.length - 1 ? 'default' : 'pointer',
+                      color: idx === zones.length - 1 ? t.border : t.textMuted,
+                    }}
+                    aria-label={tr(lang, 'zones.moveDownAria', { label: z.label })}
+                  >
+                    <ChevronDown size={15} />
+                  </button>
+                </div>
                 <input
                   value={z.emoji}
                   onChange={(e) => onUpdate(z.id, { emoji: e.target.value.slice(0, 3) })}
-                  aria-label="Emoji"
+                  aria-label={tr(lang, 'zones.emojiAria')}
                   style={{ ...inputStyle, marginTop: 0, width: 52, textAlign: 'center', padding: '10px 4px', fontSize: 20, flexShrink: 0 }}
                 />
                 <ClearableInput
                   t={t}
+                  lang={lang}
                   value={z.label}
                   onChange={(v) => onUpdate(z.id, { label: v })}
-                  aria-label="Name des Lagerorts"
+                  aria-label={tr(lang, 'zones.nameAria')}
                   style={{ ...inputStyle, marginTop: 0, borderColor: pal.accent }}
                   wrapperStyle={{ flex: 1, minWidth: 0 }}
                 />
                 <button
                   type="button"
-                  onClick={() => onRemove(z.id)}
+                  onClick={() => onSetDefaultZoneId(z.id === defaultZoneId ? null : z.id)}
+                  aria-pressed={z.id === defaultZoneId}
+                  aria-label={tr(lang, 'zones.setDefaultAria', { label: z.label })}
+                  style={{ ...btnCircle('transparent', z.id === defaultZoneId ? pal.accent : t.textFaint, 40) }}
+                >
+                  <Star size={16} fill={z.id === defaultZoneId ? pal.accent : 'none'} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmRemoveId(z.id)}
                   disabled={zones.length <= 1}
-                  aria-label={`${z.label} entfernen`}
+                  aria-label={tr(lang, 'zones.removeAria', { label: z.label })}
                   style={{ ...btnCircle('transparent', zones.length <= 1 ? t.textFaint : t.danger, 40), opacity: zones.length <= 1 ? 0.4 : 1, cursor: zones.length <= 1 ? 'default' : 'pointer' }}
                 >
                   <Trash2 size={16} />
                 </button>
               </div>
-              <ColorRow value={z.color} onChange={(c) => onUpdate(z.id, { color: c })} />
+              {z.id === defaultZoneId && (
+                <div style={{ fontSize: 11, fontWeight: 700, color: pal.accent, marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Star size={11} fill={pal.accent} /> {tr(lang, 'zones.isDefault')}
+                </div>
+              )}
+              <ColorSwatches
+                t={t} lang={lang} choices={ZONE_COLOR_CHOICES} value={z.color} onChange={(c) => onUpdate(z.id, { color: c })}
+                customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); onUpdate(z.id, { color: c }); }} onRemoveCustom={onRemoveCustomColor}
+              />
+              <StorageTypeSegmented t={t} lang={lang} value={zoneStorageType(z)} onChange={(v) => onUpdate(z.id, { storageType: v })} />
               <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 8 }}>
-                {count} {count === 1 ? 'Artikel' : 'Artikel'}{zones.length > 1 ? ' · beim Entfernen wandern sie in den ersten Lagerort' : ''}
+                {zones.length > 1 ? tr(lang, 'zones.itemsCountMoveHint', { count }) : tr(lang, 'zones.itemsCount', { count })}
               </div>
+              {confirmRemoveId === z.id && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                  marginTop: 10, padding: '10px 12px', borderRadius: 10,
+                  background: t.dangerBg, border: `1.5px solid ${t.dangerBorder}`,
+                }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: t.danger }}>
+                    {tr(lang, 'zones.confirmRemove', { label: z.label })}
+                  </span>
+                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmRemoveId(null)}
+                      style={{ border: 'none', background: 'transparent', color: t.textMuted, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: '6px 4px' }}
+                    >
+                      {tr(lang, 'zones.cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { onRemove(z.id); setConfirmRemoveId(null); }}
+                      style={{ border: 'none', background: 'transparent', color: t.danger, fontWeight: 800, fontSize: 12.5, cursor: 'pointer', padding: '6px 4px' }}
+                    >
+                      {tr(lang, 'zones.remove')}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
@@ -90,29 +168,34 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
               value={draft.emoji}
               onChange={(e) => setDraft((s) => ({ ...s, emoji: e.target.value.slice(0, 3) }))}
               placeholder="📦"
-              aria-label="Emoji"
+              aria-label={tr(lang, 'zones.emojiAria')}
               style={{ ...inputStyle, marginTop: 0, width: 52, textAlign: 'center', padding: '10px 4px', fontSize: 20, flexShrink: 0 }}
             />
             <ClearableInput
               t={t}
+              lang={lang}
               value={draft.label}
               onChange={(v) => setDraft((s) => ({ ...s, label: v }))}
               onKeyDown={(e) => e.key === 'Enter' && submitAdd()}
-              placeholder="z.B. Keller"
+              placeholder={tr(lang, 'zones.newZonePlaceholder')}
               autoFocus
-              aria-label="Name des Lagerorts"
+              aria-label={tr(lang, 'zones.nameAria')}
               style={{ ...inputStyle, marginTop: 0 }}
               wrapperStyle={{ flex: 1, minWidth: 0 }}
             />
           </div>
-          <ColorRow value={draft.color} onChange={(c) => setDraft((s) => ({ ...s, color: c }))} />
+          <ColorSwatches
+            t={t} lang={lang} choices={ZONE_COLOR_CHOICES} value={draft.color} onChange={(c) => setDraft((s) => ({ ...s, color: c }))}
+            customChoices={customColors} onAddCustom={(c) => { onAddCustomColor(c); setDraft((s) => ({ ...s, color: c })); }} onRemoveCustom={onRemoveCustomColor}
+          />
+          <StorageTypeSegmented t={t} lang={lang} value={draft.storageType} onChange={(v) => setDraft((s) => ({ ...s, storageType: v }))} />
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <button
               type="button"
-              onClick={() => { setShowAdd(false); setDraft({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0] }); }}
+              onClick={() => { setShowAdd(false); setDraft({ label: '', emoji: '', color: ZONE_COLOR_CHOICES[0], storageType: 'room' }); }}
               style={{ flex: 1, padding: '12px', borderRadius: 12, border: `1.5px solid ${t.border}`, background: 'transparent', color: t.textMuted, fontWeight: 700, cursor: 'pointer' }}
             >
-              Abbrechen
+              {tr(lang, 'zones.cancel')}
             </button>
             <button
               type="button"
@@ -120,7 +203,7 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
               disabled={!draft.label.trim()}
               style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: t.btnPrimary, color: t.btnPrimaryText, fontWeight: 700, cursor: draft.label.trim() ? 'pointer' : 'default', opacity: draft.label.trim() ? 1 : 0.5 }}
             >
-              Hinzufügen
+              {tr(lang, 'common.add')}
             </button>
           </div>
         </div>
@@ -134,8 +217,27 @@ export function ManageZonesSheet({ open, onClose, t, dark, zones, countFor, onAd
             background: 'transparent', color: t.textMuted, fontWeight: 700, fontSize: 14.5, cursor: 'pointer',
           }}
         >
-          <Plus size={18} /> Neuer Lagerort
+          <Plus size={18} /> {tr(lang, 'zones.addZone')}
         </button>
+      )}
+
+      {focusMode && (
+        <div style={{ marginTop: 12, background: t.cardAlt, borderRadius: 14, padding: 14 }}>
+          <div style={{ fontSize: 12, color: t.textFaint, lineHeight: 1.45, marginBottom: 10 }}>
+            {tr(lang, 'zones.focusModeHint')}
+          </div>
+          <button
+            type="button"
+            onClick={onExitFocusMode}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '12px', borderRadius: 12, border: 'none',
+              background: t.btnPrimary, color: t.btnPrimaryText, fontWeight: 700, fontSize: 14, cursor: 'pointer',
+            }}
+          >
+            <Eye size={17} /> {tr(lang, 'zones.showButtonsAgain')}
+          </button>
+        </div>
       )}
     </Modal>
   );

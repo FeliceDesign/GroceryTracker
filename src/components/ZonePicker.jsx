@@ -1,15 +1,14 @@
 import { zonePalette } from '../lib/colors.js';
+import { makeLabelStyle } from '../lib/styles.js';
+import { tr } from '../lib/i18n.js';
 
 // Auswahl des Lagerorts als Chip-Reihe (Formulare). Passt sich an beliebig
 // viele Lagerorte an (umbruch- und scrollfähig).
-export function ZonePicker({ zones, value, onChange, t, dark, label }) {
+export function ZonePicker({ zones, value, onChange, t, dark, lang = 'de', label }) {
   return (
     <div>
       {label && (
-        <div style={{
-          fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase',
-          letterSpacing: '0.04em', marginBottom: 8,
-        }}>
+        <div style={{ ...makeLabelStyle(t), marginTop: 0, marginBottom: 8 }}>
           {label}
         </div>
       )}
@@ -22,9 +21,9 @@ export function ZonePicker({ zones, value, onChange, t, dark, label }) {
               key={z.id}
               type="button"
               onClick={() => onChange(z.id)}
-              aria-label={`Lagerort ${z.label}`}
+              aria-label={tr(lang, 'zonePicker.locationAria', { label: z.label })}
               style={{
-                flex: '1 0 auto', minWidth: 80,
+                flex: '1 1 0', minWidth: 80, maxWidth: 130,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                 padding: '10px 6px', borderRadius: 12, cursor: 'pointer',
                 border: active ? `2px solid ${pal.headerBg}` : `2px solid transparent`,
@@ -33,8 +32,8 @@ export function ZonePicker({ zones, value, onChange, t, dark, label }) {
             >
               <span style={{ fontSize: 18 }}>{z.emoji}</span>
               <span style={{
-                fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap',
-                color: active ? pal.accent : t.pillInactiveText,
+                fontSize: 11, fontWeight: 700, color: active ? pal.accent : t.pillInactiveText,
+                whiteSpace: 'normal', overflowWrap: 'break-word', maxWidth: '100%', lineHeight: 1.2, textAlign: 'center',
               }}>
                 {z.label}
               </span>

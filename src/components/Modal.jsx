@@ -1,9 +1,10 @@
 import { X } from 'lucide-react';
 import { btnCircle } from '../lib/styles.js';
+import { tr } from '../lib/i18n.js';
 
 // Wiederverwendbares Bottom-Sheet. Overlay schließt bei Klick daneben; der
 // Inhalt scrollt bei Bedarf. `footer` bleibt unten sichtbar (Daumenbereich).
-export function Modal({ open, onClose, title, subtitle, t, children, footer, maxHeight = '92vh' }) {
+export function Modal({ open, onClose, title, subtitle, t, lang = 'de', children, footer, maxHeight = '92vh' }) {
   if (!open) return null;
   return (
     <div
@@ -38,7 +39,7 @@ export function Modal({ open, onClose, title, subtitle, t, children, footer, max
               <div style={{ fontSize: 12.5, color: t.textMuted, marginTop: 2 }}>{subtitle}</div>
             )}
           </div>
-          <button onClick={onClose} style={btnCircle(t.cardAlt, t.pillInactiveText)} aria-label="Schließen">
+          <button onClick={onClose} style={btnCircle(t.cardAlt, t.pillInactiveText)} aria-label={tr(lang, 'common.close')}>
             <X size={16} />
           </button>
         </div>

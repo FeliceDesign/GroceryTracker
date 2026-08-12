@@ -1,0 +1,234 @@
+import { Modal } from '../../components/Modal.jsx';
+import { Toggle } from '../../components/Toggle.jsx';
+import { SettingRow } from '../../components/SettingRow.jsx';
+import { Segmented } from '../../components/Segmented.jsx';
+import { tr } from '../../lib/i18n.js';
+import { sectionLabelStyle } from '../../lib/styles.js';
+
+// Verhaltens-/Anzeige-Toggles + Formate – vorher Teil der Haupt-Einstellungen
+// ("Darstellung"), jetzt eigenes Untermenü (Settings-Declutter). In
+// thematische Abschnitte gegliedert (gleiches Sektions-Muster wie
+// SettingsSheet.jsx), da die Liste über mehrere Sessions organisch auf 13
+// Einstellungen gewachsen war und flach unübersichtlich wurde.
+export function BehaviorSheet({
+  open, onClose, t, lang = 'de',
+  shoppingBadgeMode, onSetShoppingBadgeMode, autoShoppingOnRemove, onToggleAutoShoppingOnRemove, stepGml, onSetStepGml,
+  showSlider, onToggleShowSlider, showWarnDot, onToggleShowWarnDot, dateFormat, onSetDateFormat,
+  stripBrandNames, onToggleStripBrandNames, showFavoriteChips, onToggleShowFavoriteChips,
+  mainSortMode, onSetMainSortMode, compactList, onToggleCompactList,
+  historyAllItems, onToggleHistoryAllItems,
+  showMacroIconMain, onToggleShowMacroIconMain, showMacroIconFavorites, onToggleShowMacroIconFavorites,
+  historyMaxEntries, onSetHistoryMaxEntries,
+}) {
+  return (
+    <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'behavior.title')} subtitle={tr(lang, 'behavior.subtitle')}>
+      <div style={sectionLabelStyle(t, 0)}>{tr(lang, 'behavior.sectionMainList')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.mainSort')}</div>
+          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
+            {tr(lang, 'behavior.mainSortHint')}
+          </div>
+          <Segmented
+            t={t}
+            value={mainSortMode || 'category'}
+            onChange={onSetMainSortMode}
+            options={[
+              { value: 'category', label: tr(lang, 'behavior.sortCategory') },
+              { value: 'name', label: tr(lang, 'behavior.sortName') },
+              { value: 'mhd', label: tr(lang, 'behavior.sortMhd') },
+            ]}
+          />
+        </div>
+
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.compactList')}
+          sub={tr(lang, 'behavior.compactListHint')}
+          control={<Toggle t={t} on={compactList === true} onChange={onToggleCompactList} />}
+        />
+
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.warnDot')}
+          sub={tr(lang, 'behavior.warnDotHint')}
+          control={<Toggle t={t} on={showWarnDot !== false} onChange={onToggleShowWarnDot} />}
+        />
+
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.showMacroIconMain')}
+          sub={tr(lang, 'behavior.showMacroIconMainHint')}
+          control={<Toggle t={t} on={showMacroIconMain === true} onChange={onToggleShowMacroIconMain} />}
+        />
+      </div>
+
+      <div style={sectionLabelStyle(t, 22)}>{tr(lang, 'behavior.sectionShopping')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.shoppingCount')}</div>
+          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
+            {tr(lang, 'behavior.shoppingCountHint')}
+          </div>
+          <Segmented
+            t={t}
+            value={shoppingBadgeMode || 'count'}
+            onChange={onSetShoppingBadgeMode}
+            options={[
+              { value: 'count', label: tr(lang, 'behavior.badgeCount') },
+              { value: 'dot', label: tr(lang, 'behavior.badgeDot') },
+              { value: 'off', label: tr(lang, 'behavior.badgeOff') },
+            ]}
+          />
+        </div>
+
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.autoShopping')}
+          sub={tr(lang, 'behavior.autoShoppingHint')}
+          control={<Toggle t={t} on={autoShoppingOnRemove !== false} onChange={onToggleAutoShoppingOnRemove} />}
+        />
+
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.showFavoriteChips')}
+          sub={tr(lang, 'behavior.showFavoriteChipsHint')}
+          control={<Toggle t={t} on={showFavoriteChips !== false} onChange={onToggleShowFavoriteChips} />}
+        />
+      </div>
+
+      <div style={sectionLabelStyle(t, 22)}>{tr(lang, 'behavior.sectionQuantity')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.step')}</div>
+          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
+            {tr(lang, 'behavior.stepHint')}
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {[['auto', tr(lang, 'behavior.stepAuto')], [5, '5'], [10, '10'], [25, '25'], [50, '50'], [100, '100']].map(([val, lbl]) => {
+              const active = String(stepGml ?? 'auto') === String(val);
+              return (
+                <button
+                  key={String(val)}
+                  type="button"
+                  onClick={() => onSetStepGml(val)}
+                  style={{
+                    padding: '8px 14px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                    background: active ? t.pillActive : t.card, color: active ? t.pillActiveText : t.textMuted,
+                  }}
+                >
+                  {lbl}
+                </button>
+              );
+            })}
+            {(() => {
+              const stepPresets = ['auto', '5', '10', '25', '50', '100'];
+              const isCustom = !stepPresets.includes(String(stepGml ?? 'auto'));
+              return (
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  value={isCustom ? stepGml : ''}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === '') return;
+                    onSetStepGml(Math.max(1, parseInt(v, 10) || 1));
+                  }}
+                  placeholder={tr(lang, 'behavior.stepCustom')}
+                  style={{
+                    padding: '8px 10px', borderRadius: 999, border: 'none', cursor: 'text', fontSize: 13, fontWeight: 700,
+                    background: isCustom ? t.pillActive : t.card, color: isCustom ? t.pillActiveText : t.textMuted,
+                    width: 92, textAlign: 'center',
+                  }}
+                />
+              );
+            })()}
+          </div>
+        </div>
+
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.slider')}
+          sub={tr(lang, 'behavior.sliderHint')}
+          control={<Toggle t={t} on={showSlider !== false} onChange={onToggleShowSlider} />}
+        />
+      </div>
+
+      <div style={sectionLabelStyle(t, 22)}>{tr(lang, 'behavior.sectionHistory')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.historyAllItems')}
+          sub={tr(lang, 'behavior.historyAllItemsHint')}
+          control={<Toggle t={t} on={historyAllItems === true} onChange={onToggleHistoryAllItems} />}
+        />
+
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.historyMaxEntries')}</div>
+          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
+            {tr(lang, 'behavior.historyMaxEntriesHint')}
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {[50, 100, 200, 500].map((val) => {
+              const active = (historyMaxEntries || 50) === val;
+              return (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => onSetHistoryMaxEntries(val)}
+                  style={{
+                    padding: '8px 14px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                    background: active ? t.pillActive : t.card, color: active ? t.pillActiveText : t.textMuted,
+                  }}
+                >
+                  {val}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div style={sectionLabelStyle(t, 22)}>{tr(lang, 'behavior.sectionFavorites')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.showMacroIconFavorites')}
+          sub={tr(lang, 'behavior.showMacroIconFavoritesHint')}
+          control={<Toggle t={t} on={showMacroIconFavorites !== false} onChange={onToggleShowMacroIconFavorites} />}
+        />
+      </div>
+
+      <div style={sectionLabelStyle(t, 22)}>{tr(lang, 'behavior.sectionScan')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <SettingRow
+          t={t}
+          label={tr(lang, 'behavior.stripBrandNames')}
+          sub={tr(lang, 'behavior.stripBrandNamesHint')}
+          control={<Toggle t={t} on={stripBrandNames !== false} onChange={onToggleStripBrandNames} />}
+        />
+      </div>
+
+      <div style={sectionLabelStyle(t, 22)}>{tr(lang, 'behavior.sectionFormat')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ background: t.cardAlt, borderRadius: 14, padding: '12px 14px' }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text }}>{tr(lang, 'behavior.dateFormat')}</div>
+          <div style={{ fontSize: 12, color: t.textFaint, marginTop: 2, marginBottom: 10, lineHeight: 1.35 }}>
+            {tr(lang, 'behavior.dateFormatHint')}
+          </div>
+          <Segmented
+            t={t}
+            value={dateFormat || 'dmy'}
+            onChange={onSetDateFormat}
+            options={[
+              { value: 'dmy', label: tr(lang, 'behavior.fmtDmy') },
+              { value: 'dmy-short', label: tr(lang, 'behavior.fmtDmyShort') },
+              { value: 'iso', label: tr(lang, 'behavior.fmtIso') },
+            ]}
+          />
+        </div>
+      </div>
+    </Modal>
+  );
+}

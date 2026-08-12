@@ -45,6 +45,24 @@ body.gt-scanning .gt-hide-while-scanning {
   visibility: hidden !important;
 }
 
+/* Native Chrome bei Datumsfeldern ausblenden – wir haben einen eigenen
+   Clear-Button (ClearableInput). Das reine Ausblenden des Kalender-Icons
+   reichte nicht: im leeren Zustand rendert Android WebView statt des
+   Kalender-Icons einen eigenen Pfeil/Chevron, der hinter unserem
+   Clear-Button durchschimmerte (weißer Strich). -webkit-appearance:none
+   auf dem Feld selbst entfernt jegliche native Chrome; ein Tap aufs Feld
+   öffnet den Picker weiterhin. */
+input[type='date'] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='date']::-webkit-inner-spin-button,
+input[type='date']::-webkit-clear-button {
+  display: none;
+  -webkit-appearance: none;
+}
+
 /* Schmale, dezente Scrollbalken in Sheets */
 ::-webkit-scrollbar {
   width: 8px;

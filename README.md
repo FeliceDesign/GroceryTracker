@@ -1,4 +1,4 @@
-# GroceryTracker
+# Stock-Tracker
 
 Ein anpassbarer Vorrats-/Lebensmittel-Tracker als Android-App. Redesign des
 [Vorrats-Tracker](https://github.com/FeliceDesign/Vorratstracker) mit modularer

@@ -1,13 +1,29 @@
-import { ShoppingCart, Settings } from 'lucide-react';
+import { ShoppingCart, Settings, Plus, Star, History, Search, X, Utensils } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
+import { tr } from '../lib/i18n.js';
+import { CountBadge } from './CountBadge.jsx';
 
-export function Header({ zone, dark, t, totalInZone, shoppingCount, onShopping, onSettings }) {
+export function Header({
+  zone, dark, t, lang = 'de', totalInZone, shoppingCount, shoppingBadgeMode = 'count', align = 'left', title,
+  onShopping, onSettings, onAdd, onFavorites, onHistory, onToggleSearch, searchOpen = false, onFoods, onZoneClick,
+  showShoppingButton = true, showSettingsButton = true, showAddButton = false, showFavoritesButton = false,
+  showHistoryButton = false, showSearchButton = false, showFoodsButton = false,
+  emojiBothSides = false,
+  addExtraHandlers, addHoldProgress = 0,
+}) {
   const pal = zonePalette(zone.color, dark);
+  const center = align === 'center';
   const iconBtn = {
     background: 'rgba(255,255,255,0.18)', border: 'none', borderRadius: 12,
     width: 44, height: 44, color: t.headerText, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
   };
+  const buttonCount = (showShoppingButton ? 1 : 0) + (showSettingsButton ? 1 : 0) + (showAddButton ? 1 : 0) + (showFavoritesButton ? 1 : 0) + (showSearchButton ? 1 : 0) + (showHistoryButton ? 1 : 0) + (showFoodsButton ? 1 : 0);
+  // Breite der Buttons-Gruppe – im „zentriert"-Modus als Gegengewicht links,
+  // damit der Zonenname wirklich mittig sitzt statt vom Buttons-Platz nach
+  // links verschoben zu wirken. Passt sich an, wenn Buttons nach unten
+  // verschoben wurden und im Header gar nicht mehr auftauchen.
+  const buttonsWidth = buttonCount > 0 ? buttonCount * 44 + (buttonCount - 1) * 8 : 0;
 
   return (
     <div style={{
@@ -15,45 +31,101 @@ export function Header({ zone, dark, t, totalInZone, shoppingCount, onShopping, 
       paddingTop: 'calc(18px + env(safe-area-inset-top))', transition: 'background 0.3s ease',
     }}>
       <div style={{ maxWidth: 480, margin: '0 auto' }}>
-        <div style={{ fontSize: 12.5, fontWeight: 600, color: 'rgba(255,255,255,0.72)', letterSpacing: '0.06em' }}>
-          GROCERYTRACKER
+        <div style={{
+          fontSize: 12.5, fontWeight: 600, color: 'rgba(255,255,255,0.72)', letterSpacing: '0.06em',
+          textAlign: center ? 'center' : 'left',
+        }}>
+          {title && title.trim() ? title.toUpperCase() : tr(lang, 'app.defaultTitle')}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 4 }}>
-          <div style={{ minWidth: 0 }}>
-            <h1 style={{
+        {/* Zonenname + Aktions-Buttons in einer Zeile, damit sie auf gleicher Höhe sitzen. */}
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: 4, justifyContent: center ? 'center' : 'flex-start' }}>
+          {center && buttonsWidth > 0 && <div style={{ width: buttonsWidth, flexShrink: 0 }} aria-hidden="true" />}
+          <h1
+            onClick={onZoneClick}
+            style={{
               margin: 0, fontSize: 26, fontWeight: 800, color: t.headerText, letterSpacing: '-0.01em',
-              display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap',
-            }}>
-              <span>{zone.emoji}</span>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{zone.label}</span>
-            </h1>
-            <div style={{ color: 'rgba(255,255,255,0.85)', marginTop: 3 }}>
-              <span style={{ fontSize: 16, fontWeight: 700 }}>{totalInZone}</span>
-              <span style={{ fontSize: 12, opacity: 0.85, marginLeft: 5 }}>
-                {totalInZone === 1 ? 'Artikel' : 'Artikel'}
+              display: 'inline-flex', alignItems: 'center', minWidth: 0, position: 'relative',
+              flex: center ? '0 1 auto' : '1 1 auto',
+              cursor: onZoneClick ? 'pointer' : 'default',
+            }}
+          >
+            {/* Im zentrierten Modus (ohne beidseitiges Emoji) per absolute
+                Positionierung links vom Text platziert, damit nur der Text die
+                Center-Berechnung bestimmt - sonst wirkt der Text durch das
+                Emoji-Gewicht nach rechts verschoben. Mit beidseitigem Emoji
+                zählt das linke Emoji stattdessen mit, da beide Seiten dann
+                symmetrisch sind und das Gesamtpaket zentriert werden soll. */}
+            {zone.emoji && (
+              <span style={center && !emojiBothSides ? { position: 'absolute', right: '100%', marginRight: 9, flexShrink: 0 } : { marginRight: 9, flexShrink: 0 }}>
+                {zone.emoji}
               </span>
-            </div>
-          </div>
+            )}
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{zone.label}</span>
+            {emojiBothSides && zone.emoji && (
+              <span style={{ marginLeft: 9, flexShrink: 0 }}>{zone.emoji}</span>
+            )}
+          </h1>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <button onClick={onShopping} style={iconBtn} aria-label={`Einkaufsliste öffnen${shoppingCount > 0 ? ` (${shoppingCount})` : ''}`}>
-              <ShoppingCart size={20} strokeWidth={2.2} />
-              {shoppingCount > 0 && (
-                <span style={{
-                  position: 'absolute', top: -4, right: -4, minWidth: 19, height: 19,
-                  borderRadius: 10, background: t.headerText, color: pal.headerBg,
-                  fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', padding: '0 5px', boxSizing: 'border-box',
-                }}>
-                  {shoppingCount}
-                </span>
+          {buttonCount > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8, flexShrink: 0 }}>
+              {showShoppingButton && (
+                <button onClick={onShopping} style={iconBtn} aria-label={`${tr(lang, 'app.shoppingAria')}${shoppingCount > 0 ? ` (${shoppingCount})` : ''}`}>
+                  <ShoppingCart size={20} strokeWidth={2.2} />
+                  <CountBadge count={shoppingCount} mode={shoppingBadgeMode} badgeBg={t.headerText} badgeFg={pal.headerBg} holeBorder={pal.headerBg} />
+                </button>
               )}
-            </button>
-            <button onClick={onSettings} style={iconBtn} aria-label="Einstellungen öffnen">
-              <Settings size={20} strokeWidth={2.2} />
-            </button>
-          </div>
+              {showSettingsButton && (
+                <button onClick={onSettings} style={iconBtn} aria-label={tr(lang, 'app.settingsAria')}>
+                  <Settings size={20} strokeWidth={2.2} />
+                </button>
+              )}
+              {showAddButton && (
+                <button
+                  onClick={onAdd}
+                  {...(addExtraHandlers || {})}
+                  style={{ ...iconBtn, touchAction: 'none' }}
+                  aria-label={tr(lang, 'app.addAria')}
+                >
+                  {addHoldProgress > 0 && (
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        position: 'absolute', inset: 0, borderRadius: 12, pointerEvents: 'none',
+                        background: `conic-gradient(rgba(255,255,255,0.55) ${addHoldProgress * 360}deg, transparent 0deg)`,
+                      }}
+                    />
+                  )}
+                  <Plus size={22} strokeWidth={2.4} />
+                </button>
+              )}
+              {showFavoritesButton && (
+                <button onClick={onFavorites} style={iconBtn} aria-label={tr(lang, 'app.favoritesAria')}>
+                  <Star size={19} strokeWidth={2.2} />
+                </button>
+              )}
+              {showSearchButton && (
+                <button onClick={onToggleSearch} style={iconBtn} aria-label={tr(lang, searchOpen ? 'app.searchCloseAria' : 'app.searchAria')}>
+                  {searchOpen ? <X size={20} strokeWidth={2.2} /> : <Search size={19} strokeWidth={2.2} />}
+                </button>
+              )}
+              {showHistoryButton && (
+                <button onClick={onHistory} style={iconBtn} aria-label={tr(lang, 'app.historyAria')}>
+                  <History size={19} strokeWidth={2.2} />
+                </button>
+              )}
+              {showFoodsButton && (
+                <button onClick={onFoods} style={iconBtn} aria-label={tr(lang, 'app.foodsAria')}>
+                  <Utensils size={19} strokeWidth={2.2} />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div style={{ color: 'rgba(255,255,255,0.85)', marginTop: 3, textAlign: center ? 'center' : 'left' }}>
+          <span style={{ fontSize: 16, fontWeight: 700 }}>{totalInZone}</span>
+          <span style={{ fontSize: 12, opacity: 0.85, marginLeft: 5 }}>{tr(lang, 'common.items')}</span>
         </div>
       </div>
     </div>

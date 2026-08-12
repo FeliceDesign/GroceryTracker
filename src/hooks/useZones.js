@@ -8,9 +8,9 @@ export function useZones() {
   const [zones, setZones, loaded] = useStorage('gt-zones-v1', DEFAULT_ZONES);
 
   const addZone = useCallback(
-    ({ label, emoji, color }) => {
+    ({ label, emoji, color, storageType = 'room' }) => {
       const id = 'z' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-      const zone = { id, label: label.trim(), emoji: emoji || '📦', color };
+      const zone = { id, label: label.trim(), emoji: emoji || '📦', color, storageType };
       setZones((prev) => [...prev, zone]);
       return id;
     },
@@ -33,5 +33,21 @@ export function useZones() {
     [setZones],
   );
 
-  return { zones, setZones, loaded, addZone, updateZone, removeZone };
+  // Reihenfolge ändern (Hoch/Runter in der Zonen-Verwaltung) - vertauscht mit
+  // dem Nachbarn, bestimmt auch die Reihenfolge der Zonen-Tabs.
+  const moveZone = useCallback(
+    (id, direction) => {
+      setZones((prev) => {
+        const idx = prev.findIndex((z) => z.id === id);
+        const swapWith = direction === 'up' ? idx - 1 : idx + 1;
+        if (idx < 0 || swapWith < 0 || swapWith >= prev.length) return prev;
+        const next = [...prev];
+        [next[idx], next[swapWith]] = [next[swapWith], next[idx]];
+        return next;
+      });
+    },
+    [setZones],
+  );
+
+  return { zones, setZones, loaded, addZone, updateZone, removeZone, moveZone };
 }

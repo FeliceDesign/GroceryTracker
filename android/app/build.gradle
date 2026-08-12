@@ -1,5 +1,10 @@
 apply plugin: 'com.android.application'
 
+// versionCode muss bei jedem neuen Build höher sein als beim vorher installierten
+// APK, sonst verweigert Android das Update (Neuinstallation nötig). CI setzt
+// GITHUB_RUN_NUMBER, das bei jedem Workflow-Lauf hochzählt; lokal fällt es auf 1 zurück.
+def ciVersionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1") as Integer
+
 android {
     namespace = "de.felicedesign.grocerytracker"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,7 +12,7 @@ android {
         applicationId "de.felicedesign.grocerytracker"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode ciVersionCode
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Nur ARM-Architekturen bündeln (echte Geräte). x86/x86_64 sind nur
@@ -21,7 +26,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Fester Debug-Keystore (statt des von Gradle bei Bedarf frisch generierten),
+    // damit jede CI-gebaute APK mit demselben Key signiert ist und sich als
+    // Update über eine vorherige Installation drüberinstallieren lässt.
+    signingConfigs {
+        debug {
+            storeFile file('keystore/debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

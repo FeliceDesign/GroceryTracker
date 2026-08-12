@@ -43,4 +43,9 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+    <!-- Nur für den Backup-Export auf Android-Versionen vor Scoped Storage
+         (API 24-28) benötigt; ab Android 10 läuft der Export ohne diese
+         Berechtigung über die MediaStore-API (siehe DownloadsSaverPlugin). -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 </manifest>

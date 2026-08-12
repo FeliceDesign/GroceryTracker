@@ -17,10 +17,7 @@ import { TextRecognition } from '@capacitor-mlkit/text-recognition';
 import { Camera } from '@capacitor/camera';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { parseBestBeforeDate } from './scan.js';
-
-export function isNative() {
-  return Capacitor.isNativePlatform();
-}
+import { parseNutritionFacts } from './nutrition.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -96,17 +93,23 @@ export async function startBarcodeScan({ onDetected, zoom = 2, settleMs = 250 })
 // MHD – Foto (System-Kamera) + OCR
 // ---------------------------------------------------------------------------
 
-async function ocrFromBase64(base64) {
+// Roher OCR-Text aus einem Base64-JPEG (über eine Cache-Datei, die ML Kit
+// per file://-URI lesen kann). Danach wird die Datei wieder entfernt.
+async function ocrTextFromBase64(base64) {
   const name = `gt-ocr-${Date.now()}.jpg`;
-  let uri;
   try {
     await Filesystem.writeFile({ path: name, data: base64, directory: Directory.Cache });
-    ({ uri } = await Filesystem.getUri({ path: name, directory: Directory.Cache }));
+    const { uri } = await Filesystem.getUri({ path: name, directory: Directory.Cache });
     const { text } = await TextRecognition.processImage({ path: uri });
-    return { date: parseBestBeforeDate(text), text: text || '' };
+    return text || '';
   } finally {
     try { await Filesystem.deleteFile({ path: name, directory: Directory.Cache }); } catch { /* egal */ }
   }
+}
+
+async function ocrFromBase64(base64) {
+  const text = await ocrTextFromBase64(base64);
+  return { date: parseBestBeforeDate(text), text };
 }
 
 function drawToBase64(source, sw, sh, rect) {
@@ -115,10 +118,16 @@ function drawToBase64(source, sw, sh, rect) {
   const sy = Math.round(rect.y * sh);
   const cw = Math.round(rect.width * sw);
   const ch = Math.round(rect.height * sh);
-  const scale = 2; // hochskalieren hilft der Texterkennung bei kleiner Schrift
+  // 2x hochskalieren hilft der OCR bei kleiner Schrift. Aber die Ausgabe darf
+  // nicht zu groß werden: ein ganzes Kamerabild (z.B. 3000x4000) x2 sprengt in
+  // der Android-WebView das Canvas-Limit und liefert ein LEERES Bild – dann
+  // erkennt die OCR nichts. Deshalb die längste Seite auf ein sicheres Maß
+  // begrenzen (kleine Ausschnitte werden weiterhin hochskaliert).
+  const MAX_SIDE = 2600;
+  const scale = Math.min(2, MAX_SIDE / Math.max(cw, ch, 1));
   const canvas = document.createElement('canvas');
-  canvas.width = cw * scale;
-  canvas.height = ch * scale;
+  canvas.width = Math.max(1, Math.round(cw * scale));
+  canvas.height = Math.max(1, Math.round(ch * scale));
   const ctx = canvas.getContext('2d');
   ctx.drawImage(source, sx, sy, cw, ch, 0, 0, canvas.width, canvas.height);
   return canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
@@ -155,4 +164,41 @@ export async function captureMhdViaPhoto() {
   const full = drawToBase64(img, w, h, { x: 0, y: 0, width: 1, height: 1 });
   const second = await ocrFromBase64(full);
   return { date: second.date, text: second.text || first.text };
+}
+
+// ---------------------------------------------------------------------------
+// Nährwerttabelle – Foto (System-Kamera) + OCR + Parser
+// ---------------------------------------------------------------------------
+
+// Fotografiert die Nährwerttabelle und liest die Makros aus. Anders als beim
+// MHD wird das ganze Etikett ausgewertet (die Tabelle füllt meist das ganze
+// Bild). Gibt { facts, text } zurück; facts-Felder sind null, wo nichts
+// erkannt wurde.
+export async function captureNutritionViaPhoto() {
+  await Camera.requestPermissions({ permissions: ['camera'] }).catch(() => {});
+  const photo = await Camera.takePhoto({ quality: 85, correctOrientation: true });
+  const src = photo.webPath || photo.dataUrl || (photo.uri ? Capacitor.convertFileSrc(photo.uri) : '');
+  if (!src) return { facts: parseNutritionFacts(''), text: '' };
+
+  const img = await loadImage(src);
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+
+  const full = drawToBase64(img, w, h, { x: 0, y: 0, width: 1, height: 1 });
+  const text = await ocrTextFromBase64(full);
+  return { facts: parseNutritionFacts(text), text };
+}
+
+// Allgemeiner Text-Scan (z.B. Zutatenliste): fotografiert und gibt den rohen
+// OCR-Text des ganzen Bildes zurück.
+export async function captureTextViaPhoto() {
+  await Camera.requestPermissions({ permissions: ['camera'] }).catch(() => {});
+  const photo = await Camera.takePhoto({ quality: 85, correctOrientation: true });
+  const src = photo.webPath || photo.dataUrl || (photo.uri ? Capacitor.convertFileSrc(photo.uri) : '');
+  if (!src) return { text: '' };
+
+  const img = await loadImage(src);
+  const full = drawToBase64(img, img.naturalWidth, img.naturalHeight, { x: 0, y: 0, width: 1, height: 1 });
+  const text = await ocrTextFromBase64(full);
+  return { text };
 }

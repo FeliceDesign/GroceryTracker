@@ -1,94 +1,158 @@
-import { Plus, Minus, Trash2, Check } from 'lucide-react';
+import { Plus, Minus, Trash2, Utensils, Copy, Check } from 'lucide-react';
 import { zonePalette } from '../lib/colors.js';
-import { daysUntil, expiryLevel, levelColor, mhdLabel } from '../lib/date.js';
+import { daysUntil, expiryLevel, levelColor, levelBg, mhdLabel } from '../lib/date.js';
+import { openedUntil } from '../lib/openedShelfLife.js';
 import { btnCircle } from '../lib/styles.js';
+import { tr } from '../lib/i18n.js';
 
 // Eine Artikelzeile. `zone` ist das aufgelöste Lagerort-Objekt (oder undefined,
 // falls der Lagerort inzwischen entfernt wurde – dann neutraler Fallback).
-export function ItemRow({ item, zone, t, dark, yellowDays = 3, justChanged, onEdit, onChangeQty, onRemove, onToggleOpened, showZoneBadge, isLast }) {
+// `openedShelfDays` = aufgelöste Haltbarkeit nach dem Öffnen (oder null).
+// `warnColors` optional: { soon, critical, expired } – eigene Farben aus den Einstellungen.
+// `hasFoodMacros` = ob für den Namen Makrodaten hinterlegt sind (kleines Icon,
+// separat in den Einstellungen einblendbar).
+const NO_WARN_COLORS = {};
+
+export function ItemRow({
+  item, zone, t, dark, lang = 'de', yellowDays = 3, orangeDays = 1, warnColors = NO_WARN_COLORS, openedShelfDays = null,
+  justChanged, onEdit, onChangeQty, onRemove, showZoneBadge, isLast, showWarnDot = true, compact = false, showDelete = true,
+  hasFoodMacros = false, showQtyButtons = true, showMacroCopy = false, onCopyMacros, copiedMacros = false,
+}) {
   const pal = zonePalette(zone ? zone.color : t.textMuted, dark);
-  const days = daysUntil(item.mhd);
-  const level = expiryLevel(days, yellowDays); // null | 'expired' | 'soon' | 'ok'
-  const warn = level === 'expired' || level === 'soon';
-  const wColor = levelColor(level, t);
-  const wBg = level === 'expired' ? t.dangerBg : t.warningBg;
+  const days = daysUntil(item.mhd); // gedrucktes MHD
+  const mhdLevel = expiryLevel(days, yellowDays, orangeDays);
+  const mhdColor = levelColor(mhdLevel, t, warnColors);
+  const mhdBg = levelBg(mhdLevel, t, warnColors);
+  const mhdWarn = mhdLevel === 'expired' || mhdLevel === 'critical' || mhdLevel === 'soon';
+
+  // Rest-Haltbarkeit nach dem Öffnen
+  const openUntil = openedUntil(item, openedShelfDays);
+  const openDays = openUntil ? daysUntil(openUntil) : null;
+  const openLevel = openDays != null ? expiryLevel(openDays, yellowDays, orangeDays) : null;
+  const openColor = openLevel ? levelColor(openLevel, t, warnColors) : levelColor('soon', t, warnColors);
+  const openBg = openLevel ? levelBg(openLevel, t, warnColors) : levelBg('soon', t, warnColors);
+  const remLabel = openDays == null ? '' : openDays < 0 ? tr(lang, 'common.overdue', { n: Math.abs(openDays) }) : openDays === 0 ? tr(lang, 'common.today') : openDays === 1 ? tr(lang, 'common.tomorrow') : tr(lang, 'common.remainingDays', { n: openDays });
+
+  // Warn-Punkt vor dem Namen richtet sich nach dem frühesten (effektiven) Datum.
+  const effDays = [days, openDays].filter((d) => d != null);
+  const level = effDays.length ? expiryLevel(Math.min(...effDays), yellowDays, orangeDays) : null;
+  const warn = level === 'expired' || level === 'critical' || level === 'soon';
+  const wColor = levelColor(level, t, warnColors);
+
+  // In der Zeile nur die dringendere der beiden Fristen zeigen statt beide
+  // nebeneinander – bei bekannten Werten gewinnt die kürzere, sonst bleibt
+  // die jeweils einzig bekannte übrig.
+  let showMhdBadge = !!item.mhd;
+  let showOpenedBadge = !!item.opened;
+  if (item.mhd && item.opened) {
+    if (openDays != null) {
+      if (openDays < days) showMhdBadge = false; else showOpenedBadge = false;
+    } else {
+      showOpenedBadge = false;
+    }
+  }
 
   return (
     <div
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '13px 14px',
+        // Etwas mehr Rand als links, damit die Mengen-/Lösch-Gruppe nicht
+        // unter dem schwebenden Button-Stapel unten rechts verschwindet.
+        padding: compact ? '6px 26px 6px 14px' : '13px 26px 13px 14px',
         borderBottom: !isLast ? `1px solid ${t.border}` : 'none',
         background: justChanged === item.id ? pal.accentBg : 'transparent',
         transition: 'background 0.3s ease',
       }}
     >
       <div onClick={() => onEdit(item)} style={{ cursor: 'pointer', minWidth: 0, flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          {warn && (
-            <span style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', background: wColor }} aria-hidden="true" />
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
+          {warn && showWarnDot && (
+            <span style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', background: wColor, marginTop: compact ? 5 : 6 }} aria-hidden="true" />
           )}
-          <span style={{ fontSize: 15, color: t.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+          <span style={{ fontSize: compact ? 13.5 : 15, color: t.text, fontWeight: 500, wordBreak: 'break-word', lineHeight: 1.3 }}>
+            {item.name}
+          </span>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 2, flexWrap: 'wrap', paddingLeft: warn ? 15 : 0 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: compact ? 1 : 3, flexWrap: 'wrap' }}>
+          {hasFoodMacros && (
+            <span title={tr(lang, 'favorites.hasMacrosTitle')} aria-label={tr(lang, 'favorites.hasMacrosTitle')} style={{ flexShrink: 0, display: 'flex' }}>
+              <Utensils size={compact ? 11 : 12} color={t.textMuted} />
+            </span>
+          )}
           {showZoneBadge && zone && (
-            <span style={{ fontSize: 10.5, fontWeight: 700, color: pal.accent }}>
+            <span style={{ fontSize: compact ? 9.5 : 10.5, fontWeight: 700, color: pal.accent }}>
               {zone.emoji} {zone.label}
             </span>
           )}
-          {item.mhd && (
+          {showMhdBadge && (
             <span style={{
-              fontSize: 11, fontWeight: 700, color: wColor,
-              background: warn ? wBg : 'transparent',
-              padding: warn ? '1px 7px' : 0, borderRadius: 6,
+              fontSize: compact ? 10 : 11, fontWeight: 700, color: mhdColor,
+              background: mhdWarn ? mhdBg : 'transparent',
+              padding: '1px 7px', borderRadius: 6,
             }}>
-              MHD {mhdLabel(days)}
+              {tr(lang, 'itemRow.mhdPrefix')} {mhdLabel(days, lang)}
             </span>
           )}
-          {/* „geöffnet"-Häkchen – eigener Klickbereich, öffnet nicht die Bearbeitung */}
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onToggleOpened(item.id); }}
-            aria-pressed={!!item.opened}
-            aria-label={item.opened ? `${item.name} als nicht geöffnet markieren` : `${item.name} als geöffnet markieren`}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5, border: 'none', background: 'transparent',
-              cursor: 'pointer', padding: 0, fontSize: 10.5, fontWeight: 700,
-              color: item.opened ? t.warning : t.textFaint,
-            }}
-          >
+          {/* „geöffnet"-Badge – nur sichtbar, wenn im Bearbeiten-Menü aktiviert;
+              zeigt die Rest-Haltbarkeit nach dem Öffnen, wenn bekannt. */}
+          {showOpenedBadge && (
             <span style={{
-              width: 14, height: 14, borderRadius: 4, flexShrink: 0,
-              border: `1.5px solid ${item.opened ? t.warning : t.textFaint}`,
-              background: item.opened ? t.warning : 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              display: 'inline-flex', alignItems: 'center', fontSize: compact ? 9.5 : 10.5, fontWeight: 700,
+              color: openColor,
+              background: openBg,
+              padding: '1px 7px', borderRadius: 6,
             }}>
-              {item.opened && <Check size={10} strokeWidth={3.5} color={t.bg} />}
+              {openDays != null ? tr(lang, 'itemRow.openedWith', { rem: remLabel }) : tr(lang, 'itemRow.opened')}
             </span>
-            geöffnet
-          </button>
+          )}
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-        <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText)} aria-label={`${item.name} Menge verringern`}>
-          <Minus size={14} strokeWidth={2.5} />
-        </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 10, flexShrink: 0 }}>
+        {showMacroCopy && (
+          <button
+            onClick={() => onCopyMacros(item)}
+            style={btnCircle('transparent', copiedMacros ? t.success : t.textMuted, compact ? 28 : 36)}
+            aria-label={tr(lang, 'itemRow.copyMacrosAria', { name: item.name })}
+          >
+            {copiedMacros ? <Check size={compact ? 12 : 14} /> : <Copy size={compact ? 12 : 14} />}
+          </button>
+        )}
+        {showQtyButtons && (
+          <button onClick={() => onChangeQty(item.id, -1)} style={btnCircle(t.cardAlt, t.pillInactiveText, compact ? 28 : 36)} aria-label={tr(lang, 'itemRow.decreaseAria', { name: item.name })}>
+            <Minus size={compact ? 12 : 14} strokeWidth={2.5} />
+          </button>
+        )}
         <span
           onClick={() => (item.unit !== 'stk' ? onEdit(item) : null)}
           style={{
             minWidth: item.unit === 'stk' ? 20 : 46, textAlign: 'center',
-            fontSize: 14, fontWeight: 700, color: pal.accent,
+            fontSize: compact ? 12.5 : 14, fontWeight: 700, color: pal.accent,
             cursor: item.unit !== 'stk' ? 'pointer' : 'default',
           }}
         >
           {item.unit === 'stk' ? `${item.qty}x` : `${item.qty}${item.unit}`}
         </span>
-        <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent)} aria-label={`${item.name} Menge erhöhen`}>
-          <Plus size={14} strokeWidth={2.5} />
-        </button>
-        <button onClick={() => onRemove(item.id)} style={{ ...btnCircle('transparent', t.danger), marginLeft: 2 }} aria-label={`${item.name} entfernen`}>
-          <Trash2 size={14} strokeWidth={2} />
+        {showQtyButtons && (
+          <button onClick={() => onChangeQty(item.id, 1)} style={btnCircle(pal.accentBg, pal.accent, compact ? 28 : 36)} aria-label={tr(lang, 'itemRow.increaseAria', { name: item.name })}>
+            <Plus size={compact ? 12 : 14} strokeWidth={2.5} />
+          </button>
+        )}
+        {/* Platz für den Lösch-Button immer reservieren (nur unsichtbar
+            schalten, nicht aus dem Layout nehmen) - sonst verschiebt sich die
+            Mengen-Gruppe je nachdem, ob der Entfernen-Modus aktiv ist. */}
+        <button
+          onClick={() => onRemove(item.id)}
+          disabled={!showDelete}
+          aria-hidden={!showDelete}
+          tabIndex={showDelete ? 0 : -1}
+          style={{
+            ...btnCircle('transparent', t.danger, compact ? 28 : 32), marginLeft: 2,
+            opacity: showDelete ? 1 : 0, pointerEvents: showDelete ? 'auto' : 'none',
+          }}
+          aria-label={tr(lang, 'itemRow.removeAria', { name: item.name })}
+        >
+          <Trash2 size={compact ? 12 : 14} strokeWidth={2} />
         </button>
       </div>
     </div>

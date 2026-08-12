@@ -101,9 +101,31 @@ function parseQuantity(quantityStr) {
   }
 }
 
+// Schneidet bekannte Markennamen (Open-Food-Facts-Feld `brands`, komma-
+// getrennt) vom Anfang oder Ende des Produktnamens ab, z.B. "Alpro
+// Kokosdrink Ungesüßt" + brands="Alpro" -> "Kokosdrink Ungesüßt". Schneidet
+// bewusst NICHT mitten im Namen (könnte echte Wörter verstümmeln) und lässt
+// den Namen nie leer werden (dann lieber Original behalten).
+export function stripBrandName(name, brandsField) {
+  if (!name || !brandsField) return name;
+  const brands = String(brandsField).split(',').map((b) => b.trim()).filter((b) => b.length >= 2);
+  let result = name;
+  for (const brand of brands) {
+    const esc = brand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const reStart = new RegExp(`^${esc}\\b[\\s,-]*`, 'i');
+    const reEnd = new RegExp(`[\\s,-]*\\b${esc}$`, 'i');
+    if (reStart.test(result)) result = result.replace(reStart, '');
+    else if (reEnd.test(result)) result = result.replace(reEnd, '');
+  }
+  result = result.trim();
+  return result || name;
+}
+
 // Fragt Open Food Facts nach einem Barcode. Gibt die vorbefüllbaren Felder
-// zurück oder null, wenn das Produkt nicht bekannt ist.
-export async function lookupOpenFoodFacts(barcode) {
+// zurück oder null, wenn das Produkt nicht bekannt ist. `stripBrand`
+// (Standard: an) entfernt den Markennamen aus dem Produktnamen, sofern
+// Open Food Facts eine Marke kennt - siehe stripBrandName().
+export async function lookupOpenFoodFacts(barcode, { stripBrand = true } = {}) {
   const url =
     `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json` +
     `?fields=product_name,product_name_de,generic_name,generic_name_de,brands,quantity,categories,categories_tags`;
@@ -123,7 +145,8 @@ export async function lookupOpenFoodFacts(barcode) {
   const p = json.product;
 
   const rawName = (p.product_name_de || p.product_name || p.generic_name_de || p.generic_name || '').trim();
-  const name = rawName ? rawName.replace(/\s+/g, ' ') : (p.brands ? String(p.brands).split(',')[0].trim() : '');
+  let name = rawName ? rawName.replace(/\s+/g, ' ') : (p.brands ? String(p.brands).split(',')[0].trim() : '');
+  if (name && rawName && stripBrand) name = stripBrandName(name, p.brands);
   if (!name) return null;
 
   const catText = [p.categories, (p.categories_tags || []).join(' ')].join(' ');

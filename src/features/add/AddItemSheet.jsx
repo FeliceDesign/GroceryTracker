@@ -4,16 +4,19 @@ import { ZonePicker } from '../../components/ZonePicker.jsx';
 import { CategoryPicker } from '../../components/CategoryPicker.jsx';
 import { ClearableInput } from '../../components/ClearableInput.jsx';
 import { BarcodeIcon } from '../../components/icons.jsx';
+import { MacroSection } from '../macros/MacroSection.jsx';
 import { zonePalette } from '../../lib/colors.js';
+import { emptyMacros, defaultBasisForUnit, normalizeName } from '../../lib/macros.js';
 import { makeInputStyle, makeLabelStyle, pillStyle, btnCircle, primaryButtonStyle } from '../../lib/styles.js';
+import { tr } from '../../lib/i18n.js';
 
 // Erfassungs-Formular. Bewusst so aufgebaut, dass die häufig genutzten
 // Aktionen – Scannen und Hinzufügen – unten in Daumenreichweite sitzen.
 export function AddItemSheet({
-  open, onClose, t, dark,
-  zones, categories, onAddCategory,
+  open, onClose, t, dark, lang = 'de',
+  zones, categories, onAddCategory, items, favorites,
   newItem, setNewItem,
-  scanSupported, scanBusy, scanMsg,
+  scanSupported, scanBusy, scanMsg, stepGml, showSlider,
   onScanBarcode, onScanDate, onOpenBatch, onSubmit,
 }) {
   const labelStyle = makeLabelStyle(t);
@@ -21,6 +24,27 @@ export function AddItemSheet({
   const zone = zones.find((z) => z.id === newItem.zone) || zones[0];
   const pal = zonePalette(zone.color, dark);
   const canSubmit = newItem.name.trim().length > 0;
+
+  // Kategorie-Vorschlag beim Tippen: existiert schon ein Bestandsartikel
+  // (oder sonst ein Favorit) mit exakt gleichem normalisierten Namen, dessen
+  // Kategorie übernehmen - aber nur, solange die Kategorie noch nicht bewusst
+  // bestätigt wurde (categoryStatus 'confirmed'), damit eine bewusste
+  // Nutzerwahl nie überschrieben wird. Ohne (weiteren) Treffer zurück auf den
+  // neutralen Ausgangszustand, statt eine veraltete Vermutung stehen zu lassen.
+  const handleNameChange = (v) => {
+    setNewItem((s) => {
+      if (s.categoryStatus === 'confirmed') return { ...s, name: v };
+      const norm = normalizeName(v);
+      const match = norm
+        ? ((items || []).find((i) => normalizeName(i.name) === norm) || (favorites || []).find((f) => normalizeName(f.name) === norm))
+        : null;
+      if (match && match.category) {
+        return { ...s, name: v, category: match.category, categoryStatus: 'suggested' };
+      }
+      return { ...s, name: v, category: categories[0], categoryStatus: 'default' };
+    });
+  };
+  const confirmCategorySuggestion = () => setNewItem((s) => ({ ...s, categoryStatus: 'confirmed' }));
 
   const scanBtn = (onClick, children, primary) => (
     <button
@@ -49,8 +73,8 @@ export function AddItemSheet({
       )}
       {scanSupported && (
         <div style={{ display: 'flex', gap: 8 }}>
-          {scanBtn(onScanBarcode, (<><BarcodeIcon size={18} color={pal.accent} /> {scanBusy ? 'Scanne…' : 'Barcode'}</>), true)}
-          {scanBtn(onOpenBatch, (<><Layers size={17} /> Mehrere</>), false)}
+          {scanBtn(onScanBarcode, (<><BarcodeIcon size={18} color={pal.accent} /> {scanBusy ? tr(lang, 'add.scanning') : tr(lang, 'add.barcode')}</>), true)}
+          {scanBtn(onOpenBatch, (<><Layers size={17} /> {tr(lang, 'add.multiple')}</>), false)}
         </div>
       )}
       <button
@@ -58,19 +82,20 @@ export function AddItemSheet({
         disabled={!canSubmit}
         style={{ ...primaryButtonStyle(t), opacity: canSubmit ? 1 : 0.45, cursor: canSubmit ? 'pointer' : 'default' }}
       >
-        Hinzufügen
+        {tr(lang, 'add.submit')}
       </button>
     </div>
   );
 
   return (
-    <Modal open={open} onClose={onClose} t={t} title="Neuer Artikel" footer={footer}>
-      <label style={{ ...labelStyle, marginTop: 4 }}>Name</label>
+    <Modal open={open} onClose={onClose} t={t} lang={lang} title={tr(lang, 'add.title')} footer={footer}>
+      <label style={{ ...labelStyle, marginTop: 4 }}>{tr(lang, 'add.name')}</label>
       <ClearableInput
         t={t}
+        lang={lang}
         value={newItem.name}
-        onChange={(v) => setNewItem((s) => ({ ...s, name: v }))}
-        placeholder="z.B. Frischmilch"
+        onChange={handleNameChange}
+        placeholder={tr(lang, 'add.namePlaceholder')}
         style={inputStyle}
         wrapperStyle={{ marginTop: 6 }}
         autoFocus
@@ -83,20 +108,24 @@ export function AddItemSheet({
           onChange={(id) => setNewItem((s) => ({ ...s, zone: id }))}
           t={t}
           dark={dark}
-          label="Lagerort"
+          lang={lang}
+          label={tr(lang, 'add.location')}
         />
       </div>
 
-      <label style={labelStyle}>Kategorie</label>
+      <label style={labelStyle}>{tr(lang, 'add.category')}</label>
       <CategoryPicker
         value={newItem.category}
-        onChange={(c) => setNewItem((s) => ({ ...s, category: c }))}
+        onChange={(c) => setNewItem((s) => ({ ...s, category: c, categoryStatus: 'confirmed' }))}
         categories={categories}
         onAddCategory={onAddCategory}
         t={t}
+        lang={lang}
+        status={newItem.categoryStatus}
+        onConfirmSuggestion={confirmCategorySuggestion}
       />
 
-      <label style={labelStyle}>Einheit</label>
+      <label style={labelStyle}>{tr(lang, 'add.unit')}</label>
       <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
         {['stk', 'g', 'ml'].map((u) => (
           <button
@@ -105,60 +134,99 @@ export function AddItemSheet({
             onClick={() => setNewItem((s) => ({ ...s, unit: u, qty: u === 'stk' ? 1 : 500 }))}
             style={pillStyle(newItem.unit === u, t)}
           >
-            {u === 'stk' ? 'Stück' : u}
+            {u === 'stk' ? tr(lang, 'add.piece') : u}
           </button>
         ))}
       </div>
 
-      <label style={labelStyle}>Menge</label>
+      <label style={labelStyle}>{tr(lang, 'add.quantity')}</label>
       {newItem.unit === 'stk' ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
-          <button type="button" onClick={() => setNewItem((s) => ({ ...s, qty: Math.max(1, s.qty - 1) }))} style={btnCircle(t.cardAlt, t.pillInactiveText, 38)}>
+          <button type="button" onClick={() => setNewItem((s) => ({ ...s, qty: Math.max(1, s.qty - 1) }))} style={btnCircle(t.cardAlt, t.pillInactiveText, 36)}>
             <Minus size={16} strokeWidth={2.5} />
           </button>
           <span style={{ fontSize: 18, fontWeight: 800, minWidth: 28, textAlign: 'center', color: t.text }}>{newItem.qty}x</span>
-          <button type="button" onClick={() => setNewItem((s) => ({ ...s, qty: s.qty + 1 }))} style={btnCircle(pal.accentBg, pal.accent, 38)}>
+          <button type="button" onClick={() => setNewItem((s) => ({ ...s, qty: s.qty + 1 }))} style={btnCircle(pal.accentBg, pal.accent, 36)}>
             <Plus size={16} strokeWidth={2.5} />
           </button>
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
-          <input
-            type="number"
-            inputMode="numeric"
-            value={newItem.qty}
-            onChange={(e) => setNewItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
-            style={{ ...inputStyle, marginTop: 0 }}
-          />
-          <span style={{ fontSize: 15, fontWeight: 700, color: t.textMuted }}>{newItem.unit}</span>
-        </div>
+        (() => {
+          // Feste Obergrenze, unabhängig von der aktuellen Menge – sonst
+          // verschiebt sich die Skala bei jeder Änderung mit (gleiches Muster
+          // wie im Bearbeiten-Dialog). Feste Schrittweite (10), unabhängig von
+          // der für die +/--Buttons konfigurierten Schrittweite.
+          const sliderMax = 1000;
+          const sliderStep = 10;
+          return (
+            <div style={{ marginTop: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={newItem.qty}
+                  onChange={(e) => setNewItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
+                  style={{ ...inputStyle, marginTop: 0 }}
+                />
+                <span style={{ fontSize: 15, fontWeight: 700, color: t.textMuted }}>{newItem.unit}</span>
+              </div>
+              {showSlider !== false && (
+                <input
+                  type="range"
+                  min={0}
+                  max={sliderMax}
+                  step={sliderStep}
+                  value={Math.min(newItem.qty, sliderMax)}
+                  onChange={(e) => setNewItem((s) => ({ ...s, qty: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
+                  aria-label={tr(lang, 'edit.sliderAria')}
+                  style={{ width: '100%', marginTop: 12, accentColor: pal.accent }}
+                />
+              )}
+            </div>
+          );
+        })()
       )}
 
-      <label style={labelStyle}>Mindesthaltbarkeitsdatum (optional)</label>
+      <label style={labelStyle}>{tr(lang, 'add.mhd')}</label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-        <input
+        <ClearableInput
+          t={t}
+          lang={lang}
           type="date"
           value={newItem.mhd || ''}
-          onChange={(e) => setNewItem((s) => ({ ...s, mhd: e.target.value || null }))}
+          onChange={(v) => setNewItem((s) => ({ ...s, mhd: v || null }))}
           style={{ ...inputStyle, marginTop: 0 }}
+          wrapperStyle={{ flex: 1, minWidth: 0 }}
         />
         {scanSupported && (
           <button
             type="button"
             onClick={() => onScanDate('add')}
             disabled={scanBusy}
-            aria-label="MHD per Foto einlesen"
+            aria-label={scanBusy ? tr(lang, 'add.reading') : tr(lang, 'add.photoAria')}
+            title={tr(lang, 'add.photoAria')}
             style={{
-              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
-              padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${t.border}`,
-              background: 'transparent', color: t.textMuted, fontWeight: 700, fontSize: 13.5,
+              flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 46, height: 46, borderRadius: 12, border: `1.5px solid ${t.border}`,
+              background: 'transparent', color: pal.accent,
               cursor: scanBusy ? 'default' : 'pointer', opacity: scanBusy ? 0.6 : 1,
             }}
           >
-            <Camera size={17} /> Foto
+            <Camera size={17} />
           </button>
         )}
       </div>
+
+      <MacroSection
+        name={newItem.name}
+        macros={newItem.macros || emptyMacros(defaultBasisForUnit(newItem.unit))}
+        onChange={(patch) => setNewItem((s) => ({ ...s, macros: { ...(s.macros || emptyMacros(defaultBasisForUnit(s.unit))), ...patch } }))}
+        t={t}
+        lang={lang}
+        scanSupported={scanSupported}
+        accent={pal.accent}
+        globalStepGml={stepGml}
+      />
     </Modal>
   );
 }

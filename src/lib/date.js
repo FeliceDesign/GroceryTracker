@@ -1,5 +1,14 @@
 // Mindesthaltbarkeitsdatum (MHD) – Berechnung und Darstellung.
 // Ein MHD ist optional und pro Artikel im Format JJJJ-MM-TT gespeichert.
+import { rgba } from './colors.js';
+import { tr } from './i18n.js';
+
+// Heutiges Datum als JJJJ-MM-TT (lokale Zeitzone).
+export function todayISO() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
 
 export function daysUntil(mhd) {
   if (!mhd) return null;
@@ -10,26 +19,56 @@ export function daysUntil(mhd) {
 }
 
 // Einstufung eines MHD:
-//  'expired' – bereits überfällig (rot)
-//  'soon'    – läuft innerhalb von `yellowDays` Tagen ab (gelb)
-//  'ok'      – noch genug Zeit
-export function expiryLevel(days, yellowDays = 3) {
+//  'expired'  – bereits überfällig (rot)
+//  'critical' – läuft innerhalb von `orangeDays` Tagen ab (Stufe 2)
+//  'soon'     – läuft innerhalb von `yellowDays` Tagen ab (Stufe 1, gelb)
+//  'ok'       – noch genug Zeit
+export function expiryLevel(days, yellowDays = 3, orangeDays = 1) {
   if (days === null || days === undefined) return null;
   if (days < 0) return 'expired';
+  if (days <= orangeDays) return 'critical';
   if (days <= yellowDays) return 'soon';
   return 'ok';
 }
 
-export function levelColor(level, t) {
-  if (level === 'expired') return t.danger;
-  if (level === 'soon') return t.warning;
+// Default-Farbe für Stufe 2, falls in den Einstellungen keine eigene Farbe
+// gewählt wurde (das Theme kennt von Haus aus nur "warning"/"danger").
+const DEFAULT_CRITICAL_COLOR = '#C2703D';
+
+// `colors` optional: { soon, critical, expired } – eigene Hex-Werte aus den
+// Einstellungen überschreiben die Theme-/Default-Farben.
+export function levelColor(level, t, colors = {}) {
+  if (level === 'expired') return colors.expired || t.danger;
+  if (level === 'critical') return colors.critical || DEFAULT_CRITICAL_COLOR;
+  if (level === 'soon') return colors.soon || t.warning;
   return t.textMuted;
 }
 
-export function mhdLabel(days) {
+// Passender zarter Flächen-Hintergrund zur jeweiligen Stufe (für Badges).
+export function levelBg(level, t, colors = {}) {
+  if (level === 'expired') return colors.expired ? rgba(colors.expired, 0.16) : t.dangerBg;
+  if (level === 'critical') return colors.critical ? rgba(colors.critical, 0.16) : rgba(DEFAULT_CRITICAL_COLOR, 0.16);
+  if (level === 'soon') return colors.soon ? rgba(colors.soon, 0.16) : t.warningBg;
+  return 'transparent';
+}
+
+export function mhdLabel(days, lang = 'de') {
   if (days === null) return '';
-  if (days < 0) return `${Math.abs(days)}T überfällig`;
-  if (days === 0) return 'heute';
-  if (days === 1) return 'morgen';
-  return `in ${days}T`;
+  if (days < 0) return tr(lang, 'date.overdue', { n: Math.abs(days) });
+  if (days === 0) return tr(lang, 'date.today');
+  if (days === 1) return tr(lang, 'date.tomorrow');
+  return tr(lang, 'date.dueIn', { n: days });
+}
+
+// Formatiert ein ISO-Datum (JJJJ-MM-TT) für eigene Text-Anzeigen (Badges
+// etc.) nach dem in den Einstellungen gewählten Format. Betrifft nur diese
+// Text-Ausgaben – native <input type="date">-Felder folgen weiterhin immer
+// der Geräte-/Browsersprache, das lässt sich nicht überschreiben.
+export function formatDateDisplay(iso, format = 'dmy') {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  if (!y || !m || !d) return iso;
+  if (format === 'iso') return iso;
+  if (format === 'dmy-short') return `${d}.${m}.${y.slice(2)}`;
+  return `${d}.${m}.${y}`; // 'dmy' (Standard): TT.MM.JJJJ
 }
